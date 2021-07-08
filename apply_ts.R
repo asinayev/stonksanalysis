@@ -9,6 +9,7 @@ read_w_name = function(stockname){
   dt[,stock:=stockname]
   return(dt)
 }
+
 pct_diff = function(x,y){(x-y)/x}
 
 allstocks = rbindlist(lapply(stocknames[1:200], read_w_name))
@@ -31,7 +32,6 @@ allstocks[,CloseDiff7D:=
             frollmean(CloseDiffLag1, 7, fill=NA, algo="exact", align="right", na.rm=FALSE),
           stock]
 
-
 train_start = "2017-01-01"
 test_start = "2018-01-01"
 oos_start = "2019-01-01"
@@ -42,7 +42,6 @@ strategy = function(params, trainstonks=trainstonks, teststonks=teststonks){
   if(length(unique(trainstonks$AdjClose))>100){
     dlply(trainstonks,)
     model = lm(CloseDiff~CloseDiffLag1*CloseDiff7D+CloseDiffLag2+CloseDiffLag3,trainstonks)
-    
     teststonks = stonkdata[Date<oos_start & Date>test_start]
     teststonks[,'predDiff':=predict(model,teststonks)]
     
