@@ -45,6 +45,7 @@ strategy = function(params, allstocks=allstocks, stocknames=stocknames){
   # print(params)
   x = lapply(stocknames,function(stockname){
     x=allstocks[stock==stockname]
+    x[,stock:=stockname]
     if(length(unique(x[sample=='train']$AdjClose))>100){
       model = lm(CloseDiff~CloseDiffLag1*CloseDiff7D+CloseDiffLag2+CloseDiffLag3,
                  data=x, subset=sample=="train")
@@ -52,27 +53,32 @@ strategy = function(params, allstocks=allstocks, stocknames=stocknames){
       error_improvement = pct_diff(x[sample=='test',mean(abs(CloseDiff-mean(CloseDiff)))], x[sample=='test',mean(abs(PredDiff-CloseDiff))])
       if(!is.na(error_improvement) & (error_improvement>params['minPerformance']) #& model['converged']$converged 
          ){
-        return(x[PredDiff>params['minAlpha'] & sample=='test', sum(CloseDiff)])
+        return(x[PredDiff>params['minAlpha'] & sample=='oos'])
       } else {
-        return(0)
+        return(x[1==0])
       }
       
     } else {
-      return(0)
+      x[,PredDiff:=0]
+      return(x[1==0])
     }
   })
-  names(x)=stocknames
+  x=rbindlist(x)
   # print(x)
-  return(-sum(unlist(x)))
+  return(x)
 }
 
 stocknames = list.files("data/stocks", pattern="*.csv", full.names=TRUE)
-chosenstocks = sample(stocknames,50)
+chosenstocks = sample(stocknames,500)
 allstocks = rbindlist(lapply(chosenstocks, read_w_name))
-allstocks = prep_data(allstocks)
+allstocks = prep_data(allstocks, oos_start = "2019-01-08", oos_end = "2019-01-16")
 
-strategy(params=c("minPerformance"=.01, "minAlpha"=.01), allstocks, chosenstocks)
-params = expand.grid("minPerformance"=seq(0,.01,.001),"minAlpha"=seq(0,.011,.001))
+results = strategy(params=c("minPerformance"=.02, "minAlpha"=.002), allstocks, chosenstocks)
+results[,.(sum(CloseDiff),.N)]
+
+
+
+params = expand.grid("minPerformance"=seq(0,.01,.001),"minAlpha"=seq(0,.015,.001))
 params$value = apply(params, 1, 
                      function(x) {
                        strategy(params=x, allstocks, chosenstocks)
