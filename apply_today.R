@@ -5,34 +5,24 @@ install.packages("readxl")
 library(tidyquant)
 library(TTR)
 
-read_w_name = function(stockname){
-  if(exists(stockname)){
-    dat = Ad(get(stockname))
-    names(dat)='AdjClose'
-    return(
-      data.frame(
-        "Date"=index(dat),
-        "AdjClose"=dat,
-        "stock"=stockname
-      )
-    )
-  }
-}
+train_start = "2019-02-01"
+train_end = "2020-02-01"
+test_start = "2020-07-15"
+today = "2021-07-09"
+tomorrow = "2021-07-10"
 
+chosenstocks = c("CIX",   "GBR"   ,"GRF"   ,"GSS"   ,"FAS"   ,"IYF"   ,"JHMF"  ,"RIGS"  ,"TOUR"  ,"ZIONP")
+system.time({chosenstockdat = tq_get(chosenstocks, from = train_start, to = today) %>% data.table})
+stockdatPrepped = prep_data(chosenstockdat, 
+          train_start = train_start,
+          train_end = train_end,
+          test_start = test_start,
+          test_end = today,
+          oos_start = today,
+          oos_end = tomorrow,
+          rename_from=c("symbol","date","adjusted"),rename_to=c("stock","Date","AdjClose"),
+          future=T
+          )
 
-
-chosenstocks = TTR::stockSymbols()$Symbol
-getSymbols(chosenstocks, from = "2019-02-01", to = "2021-08-01", auto.assign = TRUE)
-
-chosenstockdat = rbindlist(lapply(chosenstocks, read_w_name))
-chosenstockdat = prep_data(chosenstockdat, 
-                           train_start = "2019-02-01",
-                           train_end = "2020-02-01",
-                           test_start = "2020-04-15",
-                           test_end = "2021-04-15",
-                           oos_start = "2021-04-15",
-                           oos_end = "2021-08-15",
-                           rename_from="AdjClose",rename_to="AdjClose")
-
-results = strategy(params=c("minPerformance"=.02, "minAlpha"=.002), chosenstockdat, chosenstocks)
-results[,.(sum(CloseDiff),.N),stock]
+results = strategy(params=c("minPerformance"=.02, "minAlpha"=.002), stockdatPrepped, chosenstocks)
+results
