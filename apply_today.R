@@ -21,7 +21,7 @@ read_w_name = function(stockname){
 
 
 
-chosenstocks = sample(TTR::stockSymbols()$Symbol,500)
+chosenstocks = TTR::stockSymbols()$Symbol
 getSymbols(chosenstocks, from = "2019-02-01", to = "2021-08-01", auto.assign = TRUE)
 
 chosenstockdat = rbindlist(lapply(chosenstocks, read_w_name))
@@ -31,8 +31,8 @@ chosenstockdat = prep_data(chosenstockdat,
                            test_start = "2020-04-15",
                            test_end = "2021-04-15",
                            oos_start = "2021-04-15",
-                           oos_end = "2021-05-15",
+                           oos_end = "2021-08-15",
                            rename_from="AdjClose",rename_to="AdjClose")
 
 results = strategy(params=c("minPerformance"=.02, "minAlpha"=.002), chosenstockdat, chosenstocks)
-results[,.(sum(CloseDiff),.N)]
+results[,.(sum(CloseDiff),.N),stock]

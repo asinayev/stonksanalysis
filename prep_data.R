@@ -9,8 +9,15 @@ prep_data = function(indat=allstocks,
                      rename_from = "Adj Close",
                      rename_to = "AdjClose",
                      train_end = test_start,
-                     test_end = oos_start){
+                     test_end = oos_start,
+                     future=F){
   setnames(indat, rename_from, rename_to)
+  if(future){
+    future_row = indat[, .SD[1], stock]
+    future_row[,Date:=oos_start]
+    future_row[,AdjClose:=NA]
+    indat=rbindlist(indat,future_row)
+  }
   indat=indat[order(stock,Date)]
   indat[,CloseDiff:=pct_diff(AdjClose,shift(AdjClose, n=1L, fill=NA, type='lag')), stock]
   indat[,CloseDiffLag1:=pct_diff(
