@@ -7,9 +7,6 @@ read_w_name = function(stockname){
   return(dt)
 }
 
-pct_diff = function(x,y){(x-y)/x}
-
-
 stocknames = list.files("data/stocks", pattern="*.csv", full.names=TRUE)
 chosenstocks = sample(stocknames,500)
 chosenstockdat = rbindlist(lapply(chosenstocks, read_w_name))
