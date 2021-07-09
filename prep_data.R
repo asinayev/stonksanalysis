@@ -1,0 +1,33 @@
+library(data.table)
+
+prep_data = function(indat=allstocks,
+                     train_start = "2017-01-01",
+                     test_start = "2018-01-01",
+                     oos_start = "2019-01-01",
+                     oos_end = "2020-01-01",
+                     rename_from = "Adj Close",
+                     rename_to = "AdjClose"){
+  setnames(indat, rename_from, rename_to)
+  indat=indat[order(stock,Date)]
+  indat[,CloseDiff:=pct_diff(AdjClose,shift(AdjClose, n=1L, fill=NA, type='lag')), stock]
+  indat[,CloseDiffLag1:=pct_diff(
+    shift(AdjClose, n=1L, fill=NA, type='lag'),
+    shift(AdjClose, n=2L, fill=NA, type='lag')),
+    stock]
+  indat[,CloseDiffLag2:=pct_diff(
+    shift(AdjClose, n=2L, fill=NA, type='lag'),
+    shift(AdjClose, n=3L, fill=NA, type='lag')),
+    stock]
+  indat[,CloseDiffLag3:=pct_diff(
+    shift(AdjClose, n=3L, fill=NA, type='lag'),
+    shift(AdjClose, n=4L, fill=NA, type='lag')),
+    stock]
+  indat[,CloseDiff7D:=
+          frollmean(CloseDiffLag1, 7, fill=NA, algo="exact", align="right", na.rm=FALSE),
+        stock]
+  indat[,sample:=ifelse(Date<test_start & Date>train_start,
+                        "train",
+                        ifelse(Date<oos_start & Date>test_start,
+                               "test",
+                               ifelse(Date<oos_end & Date>oos_start, "oos", "none")))]
+}
