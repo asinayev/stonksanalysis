@@ -15,9 +15,9 @@ prep_data = function(indat=allstocks,
   setnames(indat, rename_from, rename_to)
   if(future){
     future_row = indat[, .SD[1], stock]
-    future_row[,Date:=oos_end]
+    future_row[,Date:=as.Date(oos_end)]
     future_row[,AdjClose:=NA]
-    indat=rbindlist(indat,future_row)
+    indat=rbindlist(list(indat,future_row))
   }
   indat=indat[order(stock,Date)]
   indat[,CloseDiff:=pct_diff(AdjClose,shift(AdjClose, n=1L, fill=NA, type='lag')), stock]
