@@ -6,4 +6,4 @@ RUN install2.r --error \
     readxl \
     tidyquant
 
-RUN git pull https://github.com/asinayev/stonksanalysis.git
+RUN git clone https://github.com/asinayev/stonksanalysis.git
