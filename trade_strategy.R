@@ -1,5 +1,5 @@
 get_stock_model = function(stockdat,summary=F){
-  model = lm(CloseDiff~CloseDiffLag1+CloseDiffLag2+CloseDiffLag3+CloseDiff7D,
+  model = lm(future7d~CloseDiff+CloseDiffLag1+CloseDiffLag2+CloseDiffLag3+CloseDiff7D,
              data=stockdat, subset=sample=="train") 
   if(summary){
     return(summary(model))

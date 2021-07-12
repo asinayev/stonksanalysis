@@ -22,8 +22,7 @@ chosenstockdat = split(chosenstocks, ceiling(seq_along(chosenstocks)/chunksize))
 #system.time({tq_get(chosenstocks[1:500], from = train_start, to = tomorrow) %>% data.table}) #takes about a minute per 100 stonks
 
 stockdatPrepped = prep_data(chosenstockdat, 
-                            rename_from=c("symbol","date","adjusted"),rename_to=c("stock","Date","AdjClose"),
-                            future=tomorrow)
+                            rename_from=c("symbol","date","adjusted"),rename_to=c("stock","Date","AdjClose"))
 
 results = strategy(stockdatPrepped, chosenstocks,
                    train_start = train_start,
@@ -39,7 +38,7 @@ results[error_improvement>.015 & PredDiff>.01 & training_samples>100,
 results[error_improvement>.015 & PredDiff>.01 & training_samples>100, 
         .(sum(CloseDiff, na.rm=T),mean(CloseDiff, na.rm=T),.N),stock][order(stock)]
 
-strategy(stockdatPrepped, chosenstocks,
+trades = strategy(stockdatPrepped, chosenstocks,
          train_start = train_start,
          train_end = train_end,
          test_start = test_start,
