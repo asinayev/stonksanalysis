@@ -6,10 +6,11 @@ fillna = function(x, fill){
 pct_diff = function(x,y){(x-y)/x}
 prep_data = function(indat=allstocks,
                      rename_from = "AdjClose",
-                     rename_to = "AdjClose"
+                     rename_to = "AdjClose",
+                     target_range = 7
                      ){
 
-  setnames(indat, rename_from, rename_to)
+  setnames(indat, rename_from, rename_to, skip_absent=TRUE)
   all_combinations = expand.grid(
     Date = seq(min(indat$Date, na.rm = T),max(indat$Date, na.rm = T),1),
     stock = unique(indat$stock)
@@ -17,8 +18,7 @@ prep_data = function(indat=allstocks,
   indat=data.table(indat)[all_combinations, on = c('Date','stock')]
   indat=indat[order(stock,Date)]
   
-  indat[,future7d :=pct_diff(shift(AdjClose, n=7L, fill=NA, type='lead'), AdjClose), stock]
-  indat[,future14d:=pct_diff(shift(AdjClose, n=14L, fill=NA, type='lead'), AdjClose), stock]
+  indat[,target :=pct_diff(shift(AdjClose, n=target_range, fill=NA, type='lead'), AdjClose), stock]
   indat[,CloseDiff:=pct_diff(AdjClose,shift(AdjClose, n=1L, fill=NA, type='lag')), stock]
   indat[,CloseDiffLag1:=pct_diff(
     shift(AdjClose, n=1L, fill=NA, type='lag'),
@@ -31,6 +31,14 @@ prep_data = function(indat=allstocks,
   indat[,CloseDiffLag3:=pct_diff(
     shift(AdjClose, n=3L, fill=NA, type='lag'),
     shift(AdjClose, n=4L, fill=NA, type='lag')),
+    stock]
+  indat[,CloseDiffLag7:=pct_diff(
+    AdjClose,
+    shift(AdjClose, n=7L, fill=NA, type='lag')),
+    stock]
+  indat[,CloseDiffLag14:=pct_diff(
+    AdjClose,
+    shift(AdjClose, n=14L, fill=NA, type='lag')),
     stock]
   indat[,CloseDiff7D:=
           frollmean(CloseDiffLag1, 7, fill=NA, algo="exact", align="right", na.rm=T),

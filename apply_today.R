@@ -19,7 +19,7 @@ chosenstockdat = split(chosenstocks, ceiling(seq_along(chosenstocks)/chunksize))
   lapply(tq_get, from = train_start, to = tomorrow) %>% 
   rbindlist
 
-#system.time({tq_get(chosenstocks[1:500], from = train_start, to = tomorrow) %>% data.table}) #takes about a minute per 100 stonks
+system.time({chosenstockdat=tq_get(chosenstocks[1:chunksize], from = train_start, to = tomorrow) %>% data.table}) #takes about a minute per 100 stonks
 
 stockdatPrepped = prep_data(chosenstockdat, 
                             rename_from=c("symbol","date","adjusted"),rename_to=c("stock","Date","AdjClose"))

@@ -1,5 +1,5 @@
 get_stock_model = function(stockdat,summary=F){
-  model = lm(future7d~CloseDiff+CloseDiffLag1+CloseDiffLag2+CloseDiffLag3+CloseDiff7D,
+  model = lm(target~CloseDiff+CloseDiffLag1+CloseDiffLag2+CloseDiffLag3+CloseDiffLag7+CloseDiffLag14+CloseDiff7D,
              data=stockdat, subset=sample=="train") 
   if(summary){
     return(summary(model))
@@ -25,7 +25,8 @@ strategy = function(allstocks=allstocks, stocknames=stocknames,
     } else {
       x[,PredDiff:=NA]
     }
-    error_improvement = pct_diff(x[sample=='test',mean(abs(CloseDiff-mean(CloseDiff)))], x[sample=='test',mean(abs(PredDiff-CloseDiff))])
+    error_improvement = pct_diff(x[sample=='test',mean(abs(CloseDiff-mean(CloseDiff,na.rm=T)),na.rm=T)], 
+                                 x[sample=='test',mean(abs(PredDiff-CloseDiff),na.rm=T)])
     x[,training_samples:=unique_training_samples]
     x[,error_improvement:=error_improvement]
     return(x[sample=='oos'])
