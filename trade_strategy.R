@@ -1,5 +1,10 @@
-strategy = function(params, allstocks=allstocks, stocknames=stocknames, future=F){
-  # print(params)
+strategy = function(allstocks=allstocks, stocknames=stocknames,
+                    train_start, train_end, test_start, test_end, oos_start, oos_end){
+  allstocks[,sample:=ifelse(Date <= train_end & Date>train_start,
+                            "train",
+                            ifelse(Date <= test_end & Date>test_start,
+                                   "test",
+                                   ifelse(Date <= oos_end & Date>oos_start, "oos", "none")))]
   x = lapply(stocknames,function(stockname){
     x=allstocks[stock==stockname]
     unique_training_samples=length(unique(x[sample=='train']$AdjClose))
