@@ -5,3 +5,5 @@ RUN install2.r --error \
     data.table \
     readxl \
     tidyquant
+
+RUN git pull https://github.com/asinayev/stonksanalysis.git
