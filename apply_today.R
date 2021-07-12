@@ -9,8 +9,8 @@ train_end = "2020-02-01"
 test_start = "2020-05-01"
 test_end = "2021-05-01"
 oos_start = "2021-05-01"
-today = "2021-07-12"
-tomorrow = "2021-07-13"
+today = Sys.Date()
+tomorrow = Sys.Date()+1
 
 chosenstocks = TTR::stockSymbols()$Symbol
 chunksize = 500
@@ -19,7 +19,7 @@ chosenstockdat = split(chosenstocks, ceiling(seq_along(chosenstocks)/chunksize))
   lapply(tq_get, from = train_start, to = tomorrow) %>% 
   rbindlist
 
-system.time({chosenstockdat = tq_get(chosenstocks, from = train_start, to = tomorrow) %>% data.table}) #takes about a minute per 100 stonks
+#system.time({tq_get(chosenstocks[1:500], from = train_start, to = tomorrow) %>% data.table}) #takes about a minute per 100 stonks
 
 stockdatPrepped = prep_data(chosenstockdat, 
                             rename_from=c("symbol","date","adjusted"),rename_to=c("stock","Date","AdjClose"),
