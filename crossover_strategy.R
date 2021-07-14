@@ -20,15 +20,23 @@ crossover_strategy = function(indat,
                             ifelse(Date <= test_end & Date>test_start,
                                    "test", "none"))]
   
-  indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock,sample)]
-  indat[,Buy:=((shift(Crossover, n=1L, fill=NA, type='lag')<trigger_pct_diff) & (Crossover>trigger_pct_diff))/AdjCloseFilled,
+  indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
+  indat[,Buy:=((shift(Crossover, n=1L, fill=NA, type='lag')<trigger_pct_diff) & 
+                 (Crossover>trigger_pct_diff)),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
-  indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, Buy:=(Crossover>0)/AdjCloseFilled] #Buy on the first day if short window is larger
+  indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, 
+        Buy:=(Crossover>trigger_pct_diff)] #Buy on the first day if short window is larger
   indat[,Buy:=fillna(Buy,0)]
-  indat[,HasBought := Buy[1], .(cumsum(Buy != 0),stock,sample)]
-  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')>-trigger_pct_diff) & (Crossover< -trigger_pct_diff))*HasBought,
+  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')>-trigger_pct_diff) & 
+                  (Crossover< -trigger_pct_diff)),
         .(stock,sample)] #Sell when short window was larger than long window yesterday, but not today
-  indat[,Sell:=fillna(Sell,FALSE)]
+  indat[,Sell:=fillna(Sell,0)]
+  indat[,Buy:=ifelse(cumsum(Buy)>1,0,Buy*AdjCloseFilled),.(cumsum(Sell),stock,sample)] #do not buy again until you sell
+  indat[,Sell:=ifelse(cumsum(Sell)>1,0,Sell),.(stock,sample,cumsum(Buy))] #do not sell again until you buy
+  indat[,debug_cumsumbuy:=cumsum(Buy!=0),.(stock,sample)]
+  indat[,debug_lastbought:= Date[1], .(stock,sample,cumsum(Buy != 0))]
+  indat[,LastBought := Buy[1], .(stock,sample,cumsum(Buy != 0))]
+  indat[,Sell := fillna(Sell*LastBought,0)]
   indat[,Own:=cumsum(Buy-Sell),.(stock,sample)]
   indat[indat[,.I[Date==Date[.N]],.(stock,sample)]$V1, Sell:=Own] # Sell on the last day if you own
   indat
@@ -48,7 +56,7 @@ calcReturnsInPeriod=function(strat, period_label, transaction_fee=.01){
        .(stock)]
 }
 
-calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000){
+calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T){
   training_returns = calcReturnsInPeriod(strat, 
                                          'train', 
                                          transaction_fee=transaction_fee)
@@ -58,8 +66,11 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
   returns = calcReturnsInPeriod(strat[stocks_to_trade, on='stock'], 
                       'test', 
                       transaction_fee=transaction_fee)
-  returns[,.(absolute_profit = mean(absolute_profit),
-             stocks=.N,
-             trades = sum(trades) )]
+  if(summary){
+    return(returns[,.(absolute_profit = mean(absolute_profit),
+               stocks=.N,
+               trades = sum(trades) )])
+  } else {
+    return(strat[stocks_to_trade, on='stock'])
+  }
 }
-

@@ -26,15 +26,16 @@ system.time({chosenstockdat=tq_get(sample(chosenstocks,chunksize), from = train_
 
 test_start= as.Date("2020-04-04")
 
-chosenstockdat %>% 
+x = chosenstockdat %>% 
   basic_prep(
     rename_from=c("symbol","date","adjusted"),
     rename_to=c("stock","Date","AdjClose")
     ) %>% 
   crossover_prep(3,28) %>%
   crossover_strategy(train_start = test_start-365+28,
-                     train_end = test_start, test_start,test_start+365,trigger_pct_diff = .1) %>%
-  calcReturns(transaction_fee=.01, profit_cutoff=.01, volume_cutoff=100000)
+                     train_end = test_start, test_start,test_start+365, trigger_pct_diff = .1) %>%
+  calcReturns(transaction_fee=.01, profit_cutoff=.01, volume_cutoff=100000, summary=F)
+
 
 pct_diff(SPY[date %in% (as.Date(test_start)+(362:367)), mean(adjusted,na.rm=T)],
          SPY[date %in% (as.Date(test_start)+(-2:2)), mean(adjusted,na.rm=T)],
