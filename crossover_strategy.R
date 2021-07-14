@@ -1,6 +1,7 @@
 crossover_prep = function(indat,
                           short_range = 7,
-                          long_range = 28
+                          long_range = 28,
+                          very_long_range = 112
 ){
   indat=data.table(indat)
   indat[,Crossover:= pct_diff(
@@ -8,6 +9,11 @@ crossover_prep = function(indat,
           frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T),
           frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T)),
         stock]
+  indat[,CrossoverLong:= pct_diff(
+    frollmean(AdjClose, long_range, fill=NA, algo="exact", align="right", na.rm=T), 
+    frollmean(AdjClose, very_long_range,  fill=NA, algo="exact", align="right", na.rm=T),
+    frollmean(AdjClose, very_long_range,  fill=NA, algo="exact", align="right", na.rm=T)),
+    stock]
   indat
 }
 
@@ -19,8 +25,8 @@ crossover_strategy = function(indat,
                             "train",
                             ifelse(Date <= test_end & Date>test_start,
                                    "test", "none"))]
-  
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
+  indat = indat[sample!='none']
   indat[,Buy:=((shift(Crossover, n=1L, fill=NA, type='lag')<trigger_pct_diff) & 
                  (Crossover>trigger_pct_diff)),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
@@ -31,11 +37,12 @@ crossover_strategy = function(indat,
                   (Crossover< -trigger_pct_diff)),
         .(stock,sample)] #Sell when short window was larger than long window yesterday, but not today
   indat[,Sell:=fillna(Sell,0)]
-  indat[,Buy:=ifelse(cumsum(Buy)>1,0,Buy*AdjCloseFilled),.(cumsum(Sell),stock,sample)] #do not buy again until you sell
-  indat[,Sell:=ifelse(cumsum(Sell)>1,0,Sell),.(stock,sample,cumsum(Buy))] #do not sell again until you buy
-  indat[,debug_cumsumbuy:=cumsum(Buy!=0),.(stock,sample)]
-  indat[,debug_lastbought:= Date[1], .(stock,sample,cumsum(Buy != 0))]
-  indat[,LastBought := Buy[1], .(stock,sample,cumsum(Buy != 0))]
+  indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
+  indat[,sell_period:=cumsum(Sell!=0),.(stock,sample)]
+  indat[,Buy:=ifelse(cumsum(Buy)>1,0,Buy/AdjCloseFilled),.(stock,sample,sell_period)] #do not buy again until you sell
+  indat[,Sell:=ifelse(cumsum(Sell)>1,0,Sell),.(stock,sample,buy_period)] #do not sell again until you buy
+  indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)] #needs to be set again because some buys were deleted
+  indat[,LastBought := Buy[1], .(stock,sample,buy_period)]
   indat[,Sell := fillna(Sell*LastBought,0)]
   indat[,Own:=cumsum(Buy-Sell),.(stock,sample)]
   indat[indat[,.I[Date==Date[.N]],.(stock,sample)]$V1, Sell:=Own] # Sell on the last day if you own
@@ -51,7 +58,7 @@ calcReturnsInPeriod=function(strat, period_label, transaction_fee=.01){
          absolute_profit = 
            sum(fillna((Sell-Buy)*AdjCloseFilled,0))-
            .N*transaction_fee,
-         mean_volume = mean(volume,na.rm=T),
+         median_volume = median(volume,na.rm=T),
          trades = .N),
        .(stock)]
 }
@@ -61,7 +68,7 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
                                          'train', 
                                          transaction_fee=transaction_fee)
   stocks_to_trade = training_returns[profit_strat>profit_cutoff & 
-                                       mean_volume>volume_cutoff, 
+                                       median_volume>volume_cutoff, 
                                      .(stock)]
   returns = calcReturnsInPeriod(strat[stocks_to_trade, on='stock'], 
                       'test', 
