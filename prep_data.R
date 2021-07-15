@@ -8,7 +8,8 @@ pct_diff = function(x,y,of=x){(x-y)/of}
 basic_prep = function(indat,
                       rename_from = "AdjClose",
                       rename_to = "AdjClose",
-                      end_date = 0){
+                      end_date = 0,
+                      start_date = 0){
   setnames(indat, rename_from, rename_to, skip_absent=TRUE)
   indat$Date=as.Date(indat$Date)
   all_combinations = expand.grid(
@@ -19,6 +20,9 @@ basic_prep = function(indat,
   indat=data.table(indat)[all_combinations, on = c('Date','stock')]
   if (end_date!=0){
     indat=indat[Date<=end_date]
+  }
+  if (start_date!=0){
+    indat=indat[Date>=start_date]
   }
   indat[order(stock,Date)]
 }

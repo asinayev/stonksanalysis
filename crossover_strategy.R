@@ -1,25 +1,26 @@
 crossover_prep = function(indat,
                           short_range = 7,
-                          long_range = 28,
-                          very_long_range = 112
+                          mid_range = 28,
+                          long_range = 112
 ){
   indat=data.table(indat)
+  indat[,mid_range_mean:=frollmean(AdjClose, mid_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
+  indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,Crossover:= pct_diff(
           frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), 
-          frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T),
-          frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T)),
+          mid_range_mean,
+          mid_range_mean),
         stock]
-  indat[,CrossoverLong:= pct_diff(
-    frollmean(AdjClose, long_range, fill=NA, algo="exact", align="right", na.rm=T), 
-    frollmean(AdjClose, very_long_range,  fill=NA, algo="exact", align="right", na.rm=T),
-    frollmean(AdjClose, very_long_range,  fill=NA, algo="exact", align="right", na.rm=T)),
-    stock]
+  indat[,CrossoverLong:= pct_diff( mid_range_mean, long_range_mean, long_range_mean),
+        stock]
   indat
 }
 
 
 crossover_strategy = function(indat, 
-                               train_start, train_end, test_start, test_end, trigger_pct_diff=.05){
+                               train_start, train_end, test_start, test_end, 
+                              buy_trigger=.05, sell_trigger= -1*buy_trigger,
+                              deathcross = F){
   indat=data.table(indat)
   indat[,sample:=ifelse(Date <= train_end & Date>train_start,
                             "train",
@@ -27,14 +28,17 @@ crossover_strategy = function(indat,
                                    "test", "none"))]
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
   indat = indat[sample!='none']
-  indat[,Buy:=((shift(Crossover, n=1L, fill=NA, type='lag')<trigger_pct_diff) & 
-                 (Crossover>trigger_pct_diff)),
+  indat[,Buy:=(shift(Crossover, n=1L, fill=NA, type='lag')<buy_trigger) & 
+                 (Crossover>buy_trigger),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
-  indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, 
-        Buy:=(Crossover>trigger_pct_diff)] #Buy on the first day if short window is larger
+  if(deathcross){
+    indat[,Buy:=Buy&(CrossoverLong>0)]
+  }
+  # indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, 
+  #       Buy:=(Crossover>buy_trigger)] #Buy on the first day if short window is larger
   indat[,Buy:=fillna(Buy,0)]
-  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')>-trigger_pct_diff) & 
-                  (Crossover< -trigger_pct_diff)),
+  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')> sell_trigger) & 
+                  (Crossover< sell_trigger)),
         .(stock,sample)] #Sell when short window was larger than long window yesterday, but not today
   indat[,Sell:=fillna(Sell,0)]
   indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
