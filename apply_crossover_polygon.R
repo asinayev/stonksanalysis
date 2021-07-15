@@ -4,7 +4,7 @@ stocklist_from_polygon = function(key, exchange = 'XNYS', date = '2018-01-01'){
   last_examined=""
   while(go){
     response = "https://api.polygon.io/v3/reference/tickers?type=CS&market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
-      sprintf(exchange, date, , last_examined) %>%
+      sprintf(exchange, date, key, last_examined) %>%
       jsonlite::fromJSON()
     last_examined = response$results[nrow(response$results),]$ticker
     resultlist[last_examined]=response$results
