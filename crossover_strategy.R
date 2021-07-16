@@ -86,7 +86,8 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
   }
 }
 
-crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 'buy_trigger'=.05, 'sell_trigger'=-.05, 'deathcross'=F, 'profit'=-10), dat, date){
+crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 'buy_trigger'=.05, 'sell_trigger'=-.05, 'deathcross'=F, 'profit'=-10), 
+                          dat, date, summary_only=T){
   pars=as.list(pars)
   dat %>%
     crossover_prep(pars$short_range,pars$mid_range) %>%
@@ -94,5 +95,5 @@ crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 'buy_trigge
                        train_end = date, date, date+365, 
                        buy_trigger = pars$buy_trigger, sell_trigger = pars$sell_trigger,
                        deathcross=pars$deathcross) %>%
-    calcReturns(transaction_fee=.01, profit_cutoff=pars$profit, volume_cutoff=100000, summary=T)
+    calcReturns(transaction_fee=.01, profit_cutoff=pars$profit, volume_cutoff=100000, summary=summary_only)
 }

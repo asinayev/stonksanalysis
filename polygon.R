@@ -67,14 +67,15 @@ stock_history = function(stockname, start_date, end_date, key, print=F){
 }
 
 sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
-  stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%
+  stocklist = stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%
     dplyr::select('ticker') %>% unlist %>%
     unique %>% sample(nsample)  %>%
     parallel::mclapply(stock_history,
                        start_date = date-365*2, 
                        end_date = date+365, 
                        key = key,
-                       mc.cores = 16) %>%
+                       mc.cores = 16)
+  stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
     rbindlist
 }
 # stock_history('AI', as.Date('2017-01-01'),as.Date('2020-01-01'),POLYKEY)
