@@ -64,7 +64,7 @@ lapply(unique(inputs$date), function(test_start){
 
 #Manually examine
 date = as.Date('2020-06-01')
-x = chosenstockdat %>% 
+chosenstockdat %>% 
   crossover_prep(7,35) %>%
   crossover_strategy(train_start = date-365,
                      train_end = date, date, date+365, 
