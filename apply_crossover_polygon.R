@@ -5,7 +5,7 @@ source("crossover_strategy.R", local=T)
 
 library(tidyquant)
 
-today = as.Date('2019-01-01')
+today = as.Date('2018-01-01')
 
 chosenstocks = stocklist_from_polygon(POLYKEY, date=today, exchange = c('XNYS','XNAS','XASE'))
 
