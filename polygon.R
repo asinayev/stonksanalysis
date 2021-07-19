@@ -1,11 +1,11 @@
-stocklist_from_polygon = function(key, exchange = c('XNYS'), date = '2018-01-01'){
+stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', type='CS'){
   resultlist=list()
   for (ex in exchange){
     go=T
     last_examined=""
     while(go){
-      response = "https://api.polygon.io/v3/reference/tickers?type=CS&market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
-        sprintf(ex, date, key, last_examined) %>%
+      response = "https://api.polygon.io/v3/reference/tickers?type=%s&market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
+        sprintf(type, ex, date, key, last_examined) %>%
         jsonlite::fromJSON()
       if (!is.null(response$results)){
         last_examined = response$results$ticker[nrow(response$results)]
@@ -19,14 +19,18 @@ stocklist_from_polygon = function(key, exchange = c('XNYS'), date = '2018-01-01'
   resultlist %>% rbindlist(use.names=TRUE)
 }
 
+ticker_info_from_polygon = function( key, stockname, date ) {
+    "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
+      sprintf(stockname, date, key) %>%
+      jsonlite::fromJSON()
+}
+
 stock_history = function(stockname, start_date, end_date, key, print=F){
   description_start = description_end = list(results=list(cik='none'))
   
   while((description_start$results$cik != 'none')){
     description_start = tryCatch({
-      "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
-        sprintf(stockname, start_date, key) %>%
-        jsonlite::fromJSON()},
+      ticker_info_from_polygon(key, stockname, start_date)},
       error = {function(x){
         start_date = start_date+7
         description_start}})
@@ -35,9 +39,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F){
   while((description_start$results$cik != description_end$results$cik) & (end_date>start_date+360)){
     end_date = end_date-7
     description_end = tryCatch({
-      "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
-        sprintf(stockname, end_date, key) %>%
-        jsonlite::fromJSON()},
+      ticker_info_from_polygon(key, stockname, end_date)},
       error = {function(x){
         end_date = end_date-7
         description_end}})

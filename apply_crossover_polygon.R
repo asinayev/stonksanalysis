@@ -3,11 +3,11 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 source("prep_data.R", local=T)
 source("crossover_strategy.R", local=T)
 
-inputs = expand.grid(short_range=c(7), mid_range=c(35,56), 
-                     buy_trigger=c(0,.15), sell_trigger=c(0,-.15), 
-                     deathcross=c(T,F), profit=c(-10,-.2,0,.2)
+inputs = expand.grid(short_range=c(3,7,14), mid_range=c(49,84), 
+                     buy_trigger=c(0,.05), sell_trigger=c(-.05,-.15), 
+                     deathcross=c(T,F), profit=c(.1,.2,.3)
 )
-dates = seq(as.Date("2014-01-01"),as.Date("2020-01-01"),365)
+dates = seq(as.Date("2014-01-01"),as.Date("2020-01-01"),183)
 
 chosenstockdatraw=sampled_data(POLYKEY, as.Date('2020-01-01'), nsample=500, 
                                exchange = c('XNYS','XNAS','XASE'))
@@ -32,7 +32,7 @@ proc_date = function(date, ins, nsample, key=POLYKEY){
   outs
   }
 
+system.time({results = lapply(dates, proc_date, ins=inputs, nsample=1000)})
+lm(absolute_profit~short_range+mid_range+buy_trigger+sell_trigger+deathcross+profit, results%>%rbindlist)%>%summary
 
-system.time({results = lapply(dates, proc_date, ins=inputs, nsample=500)})
-
-proc_date(dates[1], ins=inputs, nsample=1000)
+proc_date(dates[1], ins=inputs, nsample=1000,)
