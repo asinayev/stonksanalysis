@@ -22,7 +22,7 @@ crossover_prep = function(indat,
 crossover_strategy = function(indat, 
                                train_start, train_end, test_start, test_end, 
                               buy_trigger=.05, sell_trigger= -1*buy_trigger,
-                              deathcross = F){
+                              deathcross = F, sell_last_day = T){
   indat=data.table(indat)
   indat[,sample:=ifelse(Date <= train_end & Date>train_start,
                             "train",
@@ -52,7 +52,9 @@ crossover_strategy = function(indat,
   indat[,LastBought := Buy[1], .(stock,sample,buy_period)]
   indat[,Sell := fillna(Sell*LastBought,0)]
   indat[,Own:=cumsum(Buy-Sell),.(stock,sample)]
-  indat[indat[,.I[Date==Date[.N]],.(stock,sample)]$V1, Sell:=Own] # Sell on the last day if you own
+  if(sell_last_day){
+    indat[indat[,.I[Date==Date[.N]],.(stock,sample)]$V1, Sell:=Own] # Sell on the last day if you own
+  }
   indat
 }
 

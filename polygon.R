@@ -1,11 +1,11 @@
-stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', type='CS'){
+stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01'){
   resultlist=list()
   for (ex in exchange){
     go=T
     last_examined=""
     while(go){
-      response = "https://api.polygon.io/v3/reference/tickers?type=%s&market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
-        sprintf(type, ex, date, key, last_examined) %>%
+      response = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
+        sprintf(ex, date, key, last_examined) %>%
         jsonlite::fromJSON()
       if (!is.null(response$results)){
         last_examined = response$results$ticker[nrow(response$results)]
@@ -16,33 +16,48 @@ stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018
       }
     }
   }
-  resultlist %>% rbindlist(use.names=TRUE)
+  resultlist %>% rbindlist(use.names=TRUE, fill = T)
 }
 
-ticker_info_from_polygon = function( key, stockname, date ) {
-    "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
-      sprintf(stockname, date, key) %>%
-      jsonlite::fromJSON()
+ticker_info_from_polygon = function( key, stockname, date, field=F, wait=F) {
+  response = 'none'
+  tries = 3
+  while(response == 'none' & tries>0){
+    response = tryCatch({
+      "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
+        sprintf(stockname, date, key) %>%
+        jsonlite::fromJSON()},
+      error = {function(x){
+        tries = tries-1
+        'none'}})
+  }
+  if(wait!=F){
+    Sys.sleep(wait)
+  }
+  if(field==F){
+    return(response)
+  } else {
+    return(response[['results']][[field]])
+  }
 }
 
 stock_history = function(stockname, start_date, end_date, key, print=F){
-  description_start = description_end = list(results=list(cik='none'))
-  
-  while((description_start$results$cik != 'none')){
-    description_start = tryCatch({
-      ticker_info_from_polygon(key, stockname, start_date)},
+  start_cik = end_cik = 'none'
+  while(start_cik == 'none'){
+    start_cik = tryCatch({
+      ticker_info_from_polygon(key, stockname, start_date, field = 'cik')},
       error = {function(x){
         start_date = start_date+7
-        description_start}})
+        start_cik}})
   }
   
-  while((description_start$results$cik != description_end$results$cik) & (end_date>start_date+360)){
+  while((start_cik != end_cik) & (end_date>start_date+360)){
     end_date = end_date-7
-    description_end = tryCatch({
-      ticker_info_from_polygon(key, stockname, end_date)},
+    end_cik = tryCatch({
+      ticker_info_from_polygon(key, stockname, end_date, field = 'cik')},
       error = {function(x){
         end_date = end_date-7
-        description_end}})
+        end_cik}})
   }
   
   tries=0
