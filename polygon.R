@@ -22,7 +22,7 @@ stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018
 ticker_info_from_polygon = function( key, stockname, date, field=F, wait=F) {
   response = 'none'
   tries = 3
-  while(response == 'none' & tries>0){
+  while(!is.list(response) & tries>0){
     response = tryCatch({
       "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
         sprintf(stockname, date, key) %>%
@@ -41,25 +41,26 @@ ticker_info_from_polygon = function( key, stockname, date, field=F, wait=F) {
   }
 }
 
-stock_history = function(stockname, start_date, end_date, key, print=F){
-  start_cik = end_cik = 'none'
-  while(start_cik == 'none'){
-    start_cik = tryCatch({
-      ticker_info_from_polygon(key, stockname, start_date, field = 'cik')},
-      error = {function(x){
-        start_date = start_date+7
-        start_cik}})
+stock_history = function(stockname, start_date, end_date, key, print=F, check_ticker=T){
+  if(check_ticker){
+    start_cik = end_cik = 'none'
+    while(start_cik == 'none'){
+      start_cik = tryCatch({
+        ticker_info_from_polygon(key, stockname, start_date, field = 'cik')},
+        error = {function(x){
+          start_date = start_date+7
+          start_cik}})
+    }
+    
+    while((start_cik != end_cik) & (end_date>start_date+360)){
+      end_date = end_date-7
+      end_cik = tryCatch({
+        ticker_info_from_polygon(key, stockname, end_date, field = 'cik')},
+        error = {function(x){
+          end_date = end_date-7
+          end_cik}})
+    }
   }
-  
-  while((start_cik != end_cik) & (end_date>start_date+360)){
-    end_date = end_date-7
-    end_cik = tryCatch({
-      ticker_info_from_polygon(key, stockname, end_date, field = 'cik')},
-      error = {function(x){
-        end_date = end_date-7
-        end_cik}})
-  }
-  
   tries=0
   while(tries<10){
     response = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&apiKey=%s" %>%

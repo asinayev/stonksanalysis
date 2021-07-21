@@ -5,14 +5,14 @@ crossover_prep = function(indat,
 ){
   indat=data.table(indat)
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
+  indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,mid_range_mean:=frollmean(AdjClose, mid_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,Crossover:= pct_diff(
-          frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), 
+  indat[,Crossover:= pct_diff(short_range_mean, 
           mid_range_mean,
           mid_range_mean),
         stock]
-  indat[,CrossoverLong:= pct_diff( mid_range_mean, long_range_mean, long_range_mean),
+  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
         stock]
   indat[frollsum(is.na(AdjCloseFilled),long_range)>0,c("Crossover", "CrossoverLong"):=NA,stock]
   indat
@@ -29,17 +29,20 @@ crossover_strategy = function(indat,
                             ifelse(Date <= test_end & Date>test_start,
                                    "test", "none"))]
   indat = indat[sample!='none']
-  indat[,Buy:=(shift(Crossover, n=1L, fill=NA, type='lag')<buy_trigger) & 
-                 (Crossover>buy_trigger),
+  indat[,Buy:=(shift(CrossoverLong, n=1L, fill=NA, type='lag')<buy_trigger) & 
+                 (CrossoverLong>buy_trigger),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
   if(deathcross){
     indat[,Buy:=(Buy&(CrossoverLong>0))*1]
   }
-  # indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, 
-  #       Buy:=(Crossover>buy_trigger)] #Buy on the first day if short window is larger
-  indat[,Buy:=fillna(Buy,0)]
-  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')> sell_trigger) & 
-                  (Crossover< sell_trigger)),
+  # indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1,
+  #       Buy:=(CrossoverLong>buy_trigger)] #Buy on the first day if short window is larger
+  if(buy_trigger==-1){
+    indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, Buy:=1] #Buy on the first day
+  }
+  indat[,Buy:=fillna(Buy*1,0)]
+  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')< sell_trigger) & 
+                  (Crossover> sell_trigger)),
         .(stock,sample)] #Sell when short window was larger than long window yesterday, but not today
   indat[,Sell:=fillna(Sell,0)]
   indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
@@ -72,14 +75,18 @@ stockAvgReturns=function(strat, period_label, transaction_fee=.01){
          .(stock)]
 }
 
-calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T){
-  training_returns = stockAvgReturns(strat, 
-                                         'train', 
-                                         transaction_fee=transaction_fee)
-  stocks_to_trade = training_returns[rel_profit>profit_cutoff & 
-                                       median_volume>volume_cutoff, 
-                                     .(stock)]
-  returns = calcReturnsInPeriod(strat[stocks_to_trade, on='stock'], 
+calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T, pick_stocks = F){
+  if(pick_stocks){
+    training_returns = stockAvgReturns(strat, 
+                                           'train', 
+                                           transaction_fee=transaction_fee)
+    stocks_to_trade = training_returns[rel_profit>profit_cutoff & 
+                                         median_volume>volume_cutoff, 
+                                       .(stock)]
+  } else {
+      stocks_to_trade = data.table(stock = unique(strat$stock))
+    }
+  returns = stockAvgReturns(strat[stocks_to_trade, on='stock'], 
                       'test', 
                       transaction_fee=transaction_fee)
   if(summary & nrow(returns)>0){
@@ -99,10 +106,10 @@ crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 'buy_trigge
                           dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
   pars=as.list(pars)
   dat %>%
-    crossover_prep(pars$short_range,pars$mid_range,long_range = 154) %>%
+    crossover_prep(pars$short_range,pars$mid_range,long_range = pars$long_range) %>%
     crossover_strategy(train_start = start_date,
                        train_end = date, date, end_date, 
                        buy_trigger = pars$buy_trigger, sell_trigger = pars$sell_trigger,
                        deathcross=pars$deathcross) %>%
-    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$profit, volume_cutoff=100000, summary=summary_only)
+    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$profit, volume_cutoff=10000, summary=summary_only)
 }
