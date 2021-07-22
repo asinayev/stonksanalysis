@@ -71,6 +71,8 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
       return(
         data.table(stock = stockname,
                    AdjClose = response$results$c, 
+                   high = response$results$h,
+                   low = response$results$l,
                    volume = response$results$v, 
                    Date= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
       )
@@ -79,6 +81,8 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
   return(
     data.table(stock = stockname,
                AdjClose = NA, 
+               high = NA, 
+               low = NA, 
                volume = NA, 
                Date= as.Date(start_date) )
   )

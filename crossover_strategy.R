@@ -38,15 +38,15 @@ crossover_strategy = function(indat,
     indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, Buy:=1] #Buy on the first day
   }
   indat[,Buy:=fillna(Buy*1,0)]
-  indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')< sell_trigger) & 
-                  (Crossover> sell_trigger)),
-        .(stock,sample)] #Sell when short window is larger than the sell window today, but wasn't yesterday
-  #Also sell if already gained at least the trigger amount today but not yesterday
+  # indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')< sell_trigger) & 
+  #                 (Crossover> sell_trigger)),
+  #       .(stock,sample)] #Sell when short window is larger than the sell window today, but wasn't yesterday
+  # #Also sell if gained or lost more than expected
   indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
   indat[,LastBought := AdjCloseFilled[1], .(stock,sample,buy_period)]
-  indat[AdjCloseFilled>(1+sell_trigger)*LastBought & 
-          shift(AdjCloseFilled<(1+sell_trigger)*LastBought, n=1L, type='lag'), Sell:=T ]
-  
+  indat[high>(1+sell_trigger)*LastBought, Sell:=T ]
+  indat[low<(1-sell_trigger)*LastBought, Sell:=T ]
+
   indat[,Sell:=fillna(Sell,0)]
   indat[Sell>0,Buy:=0] #Don't buy on days you sell
   indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
