@@ -1,18 +1,19 @@
 hit_polygon = function(link, tries = 3,results_contain=F){
-  response = 'none'
-  while(tries>0){
-    response = tryCatch({
-      x = link %>%jsonlite::fromJSON()
-      stopifnot(x$response$status=='OK') 
-      if(results_contain!=F){
-        stopifnot(results_contain %in% response$results)
-      }
-      return(x)},
-      error = {function(x){
-        tries = tries-1
-        'none'}})
+  counter = response = tries
+  while(is(response, 'numeric') && counter>0){
+    counter = tryCatch({
+        response = link %>%jsonlite::fromJSON()
+        stopifnot( response$status %in% c('OK', "DELAYED")  )
+        if(results_contain!=F){
+          stopifnot(results_contain %in% names(response$results))
+        }
+        return(response)
+      },
+      error = function(error){
+        return(counter-1) }
+    )
   }
-  return(response)
+  return(counter)
 }
 
 select_field = function(response, field){
@@ -38,9 +39,9 @@ stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018
     go=T
     last_examined=""
     while(go){
-      response = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
-        sprintf(ex, date, key, last_examined) %>%
-        hit_polygon
+      link = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
+        sprintf(ex, date, key, last_examined)
+      response = hit_polygon(link)
       if (!is.null(response$results)){
         last_examined = response$results$ticker[nrow(response$results)]
         resultlist[paste(ex, last_examined)]= list(response$results)
@@ -84,32 +85,28 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
       end_date = end_date-7
     }
   }
-  tries=0
-  while(tries<3){
-    response = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&apiKey=%s" %>%
-      sprintf(stockname, start_date, end_date, key) %>%
-      jsonlite::fromJSON() %>%
-      hit_polygon
-    tries = tries+1
-    if('results' %in% names(response) & 'c' %in% names(response$results)){
-      return(
-        data.table(stock = stockname,
-                   AdjClose = response$results$c, 
-                   high = response$results$h,
-                   low = response$results$l,
-                   volume = response$results$v, 
-                   Date= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
+  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&apiKey=%s" %>%
+    sprintf(stockname, start_date, end_date, key)
+  response = hit_polygon(link, tries = 3, results_contain = "c")
+  if (!is(response, 'numeric')){
+    return(
+      data.table(stock = stockname,
+                 AdjClose = response$results$c, 
+                 high = response$results$h,
+                 low = response$results$l,
+                 volume = response$results$v, 
+                 Date= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
       )
-    }
+  } else {
+    return(
+      data.table(stock = stockname,
+                 AdjClose = NA, 
+                 high = NA, 
+                 low = NA, 
+                 volume = NA, 
+                 Date= as.Date(start_date) )
+    )
   }
-  return(
-    data.table(stock = stockname,
-               AdjClose = NA, 
-               high = NA, 
-               low = NA, 
-               volume = NA, 
-               Date= as.Date(start_date) )
-  )
 }
 
 sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
