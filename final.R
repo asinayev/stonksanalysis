@@ -6,107 +6,10 @@ library(tidyquant)
 library(sendmailR)
 
 # From https://docs.google.com/spreadsheets/d/1XxQPrpZepdQteGU-LOzYAfPFDTU6E6vZwZfwgoxNVCA/edit#gid=0
-topcompanies = c('AAPLD', 
-'MSFTD',
-'AMZND',
-'GOOGD',
-'GOOGLD',
-'FBD',
-'BRK.BD',
-'BRK.AD',
-'TSLAD',
-'BABAD',
-'TSMD',
-'VD',
-'NVDAD',
-'JPMD',
-'JNJD',
-'WMTD',
-'UNHD',
-'MAD',
-'PYPLD',
-'HDD',
-'PGD',
-'BACD',
-'DISD',
-'ADBED',
-'ASMLD',
-'CMCSAD',
-'NKED',
-'ORCLD',
-'XOMD',
-'TMD',
-'KOD',
-'VZD',
-'PFED',
-'NFLXD',
-'LLYD',
-'CSCOD',
-'INTCD',
-'CRMD',
-'PEPD',
-'ABTD',
-'ABBVD',
-'TMOD',
-'NVSD',
-'DHRD',
-'TD',
-'ACND',
-'NVOD',
-'AVGOD',
-'SHOPD',
-'MRKD',
-'CVXD',
-'WFCD',
-'UPSD',
-'COSTD',
-'TMUSD',
-'TXND',
-'MCDD',
-'MSD',
-'MDTD',
-'BBLD',
-'BHPD',
-'SAPD',
-'HOND',
-'QCOMD',
-'ULD',
-'LIND',
-'AZND',
-'PMD',
-'BMYD',
-'NEED',
-'SED',
-'UNPD',
-'RYD',
-'RDS.BD',
-'RDS.AD',
-'AMGND',
-'INTUD',
-'SBUXD',
-'CD',
-'AXPD',
-'LOWD',
-'CHTRD',
-'BLKD',
-'RIOD',
-'BUDD',
-'SCHWD',
-'RTXD',
-'BAD',
-'MRNAD',
-'AMTD',
-'SNYD',
-'PDDD',
-'GSD',
-'TGTD',
-'IBMD',
-'PTRD',
-'AMATD',
-'BXD',
-'SONYD',
-'TDD')
-topcompanies = substr(topcompanies,1,nchar(topcompanies)-1)
+topcompanies = c('AAPL','MSFT','AMZN','GOOGL','FB','BRK.B','JPM','JNJ','BABA','V','MA','WMT','BAC','INTC','PG','UNH','T','DIS','TSM','KO','VZ','XOM','NVS','CVX','CSCO','PEP','MRK','CMCSA','HD','PFE','NVDA','ORCL','WFC','BA','TM','ADBE','C','MCD','SAP','ABT','BHP','NVO','CRM','NFLX','HSBC','TSLA','BMY','PYPL','ABBV','NEE','PM','RDS.A','NKE','RTX','LLY','AMGN','MDT','ASML','COST','HON','AVGO','UNP','SNY','IBM','AZN','LMT','TMO','TXN','ACN','GSK','RY','DHR','AMT','CHTR','AXP','DEO','LIN','HDB','GE','TD','SBUX','QCOM','FIS','MMM','CVS','GILD','UPS','ENB','MDLZ','USB','FOX','SYK','GS','MO','CAT','ANTM','BTI','INTU','DUK','FISV','SO','ADP','MS','SPGI','BLK','CME','EL','PLD','TMUS','BUD','BDX','BKNG','ZTS','BNS','CB','CI','ISRG','NOW','CCI','MUFG','TFC','D','JD','PTR','CL','WBK','NOC','UL','COP','VRTX','SHOP','SNP','CSX','GPN','CNI','LFC','ITW','RIO','TAK','MMC','BIIB','BMO','AMD','BP','PDD','TJX','UBER','EQIX','BSX','AMA',
+                 'VBR','VO','SPY',
+                 'CNBS','YOLO','THCX',
+                 'FVAL')
 
 fulldat = topcompanies %>% 
   tq_get %>% data.table %>%
@@ -115,16 +18,20 @@ fulldat = topcompanies %>%
     rename_to=c("stock","Date","AdjClose")
   )
 
-x = data.table(short_range=3, mid_range=7, long_range=150, buy_trigger=-.25, 
-               sell_trigger=.3,  profit=-10) %>% 
+
+x = data.table(short_range=3, mid_range=14, long_range=150, buy_trigger=c(0), sell_trigger=c(.2), 
+               cooloff=100, sell_after=365, sell_last_day=F) %>% 
   crossoverReturns( dat=fulldat, summary = F, 
-                    date = as.Date('2021-01-04'), 
+                    date = as.Date('2021-07-20'), 
                     end_date = Sys.Date()+1, 
                     transaction_fee=.0001)
-x[Date==Sys.Date()-1][Buy|Own]
 
-x[stock=='PDD'] %>% with(plot(Date, AdjCloseFilled, type='l'))
-x[stock=='PDD'] %>% with(points(Date, mid_range_mean, type='l'))
-x[stock=='PDD' & Buy!=Sell] %>% with(abline(v=Date))
-x[stock=='PDD'] %>% View()
-x[sample=='test',sum(Own>0),Date] %>% plot(type='l')
+x[Date == max(Date) & Own>0]
+x[Date > max(Date) & CrossoverLong<0][order(CrossoverLong, decreasing=T)][1:10]
+
+st = 'UNP'
+x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
+x[stock==st] %>% with(points(Date, mid_range_mean, type='l'))
+x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
+x[stock==st & BuySell<0] %>% with(abline(v=Date, col='blue'))
+x[stock==st & BuySell>0] %>% with(abline(v=Date))
