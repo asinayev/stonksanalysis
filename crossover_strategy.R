@@ -5,6 +5,8 @@ crossover_prep = function(indat,
 ){
   indat=data.table(indat)
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
+  indat[,hiFilled:=high[1], .(cumsum(!is.na(high)),stock)]
+  indat[,loFilled:=low[1], .(cumsum(!is.na(low)),stock)]
   indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,mid_range_mean:=frollmean(AdjClose, mid_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
@@ -18,10 +20,51 @@ crossover_prep = function(indat,
   indat
 }
 
+buySellSeq = function(los, his, closes, crosslong, buy_trigger, sell_trigger, cooloff, sell_after, sell_last, n){
+  out = rep(0,n)
+  lastBoughtPrice = -1
+  days_since_loss = cooloff
+  days_since_purchase = sell_after
+  crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
+  for (i in 1:(n-1)){
+    days_since_loss = days_since_loss + 1
+    days_since_purchase = days_since_purchase + 1
+    if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i])){
+      next
+    }
+    if(lastBoughtPrice==-1 && # Buy if not already holding
+       crosslong_lagged[i]<buy_trigger &&  # and the crossover was lower than cutoff yesterday
+       crosslong[i]>buy_trigger && # but is higher than cutoff today
+       days_since_loss>cooloff){ 
+      lastBoughtPrice = closes[i]
+      out[i]= -1/lastBoughtPrice
+      days_since_purchase=0
+    } else if (lastBoughtPrice>0) # Sell when you own
+      if(his[i]>lastBoughtPrice*(1+sell_trigger)){ #And the high is high enough
+        out[i]= 1/lastBoughtPrice
+        lastBoughtPrice=-1
+      } else if (los[i]<lastBoughtPrice*(1-sell_trigger)){ #Or low is low enough
+        out[i]= 1/lastBoughtPrice
+        lastBoughtPrice=-1
+        days_since_loss=0
+      } else if (days_since_purchase>sell_after){ # Or you held long enough
+        out[i]= 1/lastBoughtPrice
+        lastBoughtPrice=-1
+        if(closes[i]<lastBoughtPrice){
+          days_since_loss=0
+        }
+      }
+  }
+  if(lastBoughtPrice>0 && sell_last){
+    out[n]= 1/lastBoughtPrice
+  }
+  return(out)
+}
 
 crossover_strategy = function(indat, 
                                train_start, train_end, test_start, test_end, 
                               buy_trigger=.05, sell_trigger= -1*buy_trigger,
+                              cooloff=365, sell_after=180,
                               sell_last_day = T){
   indat=data.table(indat)
   indat[,sample:=ifelse(Date <= train_end & Date>train_start,
@@ -29,50 +72,21 @@ crossover_strategy = function(indat,
                             ifelse(Date <= test_end & Date>test_start,
                                    "test", "none"))]
   indat = indat[sample!='none']
-  indat[,Buy:=(shift(CrossoverLong, n=1L, fill=NA, type='lag')<buy_trigger) & 
-                 (CrossoverLong>buy_trigger),
+  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, buy_trigger, sell_trigger, cooloff,sell_after, sell_last_day, .N),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
-  # indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1,
-  #       Buy:=(CrossoverLong>buy_trigger)] #Buy on the first day if short window is larger
-  if(buy_trigger==-1){
-    indat[indat[,.I[Date==Date[1]],.(stock,sample)]$V1, Buy:=1] #Buy on the first day
-  }
-  indat[,Buy:=fillna(Buy*1,0)]
-  # indat[,Sell:=((shift(Crossover, n=1L, fill=NA, type='lag')< sell_trigger) & 
-  #                 (Crossover> sell_trigger)),
-  #       .(stock,sample)] #Sell when short window is larger than the sell window today, but wasn't yesterday
-  # #Also sell if gained or lost more than expected
-  indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
-  indat[,LastBought := AdjCloseFilled[1], .(stock,sample,buy_period)]
-  indat[high>(1+sell_trigger)*LastBought, Sell:=T ]
-  indat[low<(1-sell_trigger)*LastBought, Sell:=T ]
-
-  indat[,Sell:=fillna(Sell,0)]
-  indat[Sell>0,Buy:=0] #Don't buy on days you sell
-  indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)]
-  indat[,sell_period:=cumsum(Sell!=0),.(stock,sample)]
-  indat[!is.na(AdjCloseFilled),
-        Buy:=ifelse(cumsum(Buy)>1,0,Buy/AdjCloseFilled),
-        .(stock,sample,sell_period)] #do not buy again until you sell
-  indat[,Sell:=ifelse(cumsum(Sell)>1,0,Sell),.(stock,sample,buy_period)] #do not sell again until you buy
-  indat[,buy_period:=cumsum(Buy!=0),.(stock,sample)] #needs to be set again because some buys were deleted
-  indat[,LastBought := Buy[1], .(stock,sample,buy_period)]
-  indat[,Sell := fillna(Sell*LastBought,0)]
-  indat[,Own:=cumsum(Buy-Sell),.(stock,sample)]
-  if(sell_last_day){
-    indat[indat[,.I[Date==Date[.N]],.(stock,sample)]$V1, Sell:=Own] # Sell on the last day if you own
-  }
+  indat[,Own:=cumsum(-1*BuySell),.(stock,sample)]
+  indat[,LastBought:=AdjCloseFilled[1],.(Own, stock, sample)]
   indat
 }
 
 stockAvgReturns=function(strat, period_label, transaction_fee=.01){
-    strat[(Sell-Buy)!=0 & sample==period_label,
+    strat[BuySell!=0 & sample==period_label,
          .(rel_profit=
-             (abs(cumprod((Sell-Buy)*AdjCloseFilled)[.N])-1) - 
+             (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1) - 
              pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
              .N*transaction_fee,
            absolute_profit = 
-             (abs(cumprod((Sell-Buy)*AdjCloseFilled)[.N])-1)-
+             (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1)-
              .N*transaction_fee,
            median_volume = median(volume,na.rm=T),
            trades = .N),
@@ -106,13 +120,16 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
   }
 }
 
-crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 'buy_trigger'=.05, 'sell_trigger'=-.05, 'profit'=-10), 
+crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 
+                                    'buy_trigger'=.05, 'sell_trigger'=-.05, 
+                                    'cooloff'=180,), 
                           dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
   pars=as.list(pars)
   dat %>%
     crossover_prep(pars$short_range,pars$mid_range,long_range = pars$long_range) %>%
     crossover_strategy(train_start = start_date,
                        train_end = date, date, end_date, 
-                       buy_trigger = pars$buy_trigger, sell_trigger = pars$sell_trigger) %>%
+                       buy_trigger = pars$buy_trigger, sell_trigger = pars$sell_trigger,
+                       cooloff = pars$cooloff, sell_after=pars$sell_after, sell_last_day = pars$sell_last_day) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$profit, volume_cutoff=10000, summary=summary_only)
 }
