@@ -90,6 +90,7 @@ stockAvgReturns=function(strat, period_label, transaction_fee=.01){
              (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1)-
              .N*transaction_fee,
            median_volume = median(volume,na.rm=T),
+           days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
            trades = .N),
          .(stock)]
 }
@@ -109,13 +110,21 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
                       'test', 
                       transaction_fee=transaction_fee)
   if(summary & nrow(returns)>0){
-    return(returns[,.(absolute_profit = mean(absolute_profit),
-               stocks=.N,
-               trades = sum(trades) )])
+    return(returns[,.(avg_profit = mean(absolute_profit),
+                      median_profit = median(absolute_profit),
+                      median_margin = median(rel_profit),
+                      avg_days_held=mean(days_held), 
+                      stocks=.N,
+                      DaysHeldPerPurchase = sum(days_held)/sum(trades/2),
+                      trades = sum(trades) )])
   } else if (summary) {
-    return(returns[,.(absolute_profit = 0,
+    return(returns[,.(avg_profit = 0,
+                      median_profit = 0,
+                      median_margin = -.08,
+                      avg_days_held=0, 
                       stocks=0,
-                      trades =0 )])
+                      DaysHeldPerPurchase = 0,
+                      trades = 0 )])
   } else {
     return(strat[stocks_to_trade, on='stock'])
   }

@@ -24,8 +24,8 @@ financials_from_polygon = function( key, stockname, date, field=F){
   response = "https://api.polygon.io/v2/reference/financials/%s?type=Y&sort=-reportPeriod&apiKey=%s" %>%
     sprintf(stockname, key) %>%
     hit_polygon
-  results = data.table(response$results)
-  if('dateKey' %in% names(results)){
+  if('results' %in% names(response) && 'dateKey' %in% names(response$results)){
+    results = data.table(response$results)
     results[dateKey<date][order(dateKey, decreasing = T)][1,]
   } else {
       return(data.table(ticker=stockname))
@@ -53,6 +53,7 @@ stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018
   }
   out = resultlist %>% 
     rbindlist(use.names=TRUE, fill = T)
+  out = out[,.SD[.N],ticker]
   if(financials){
     out$ticker %>% unlist %>%
       unique %>%
