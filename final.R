@@ -26,8 +26,11 @@ x = data.table(short_range=3, mid_range=14, long_range=150, buy_trigger=c(0), se
                     end_date = Sys.Date()+1, 
                     transaction_fee=.0001)
 
-x[Date == max(Date) & Own>0]
-x[Date > max(Date) & CrossoverLong<0][order(CrossoverLong, decreasing=T)][1:10]
+x[Date == max(Date) & Own>0] # Should own
+x[Date == max(Date) & CrossoverLong<0][order(CrossoverLong, decreasing=T), .(stock,long_range_mean)][1:10] # Maybe buy?
+x[Date == max(Date) & Own>0][order(abs(LastBought-AdjClose), decreasing=T), # Maybe sell?
+                             .(stock,AdjClose,LastBought, pct_diff(AdjClose, LastBought, LastBought))][1:10]
+
 
 st = 'UNP'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))

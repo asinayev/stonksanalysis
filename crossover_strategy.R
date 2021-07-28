@@ -26,7 +26,7 @@ buySellSeq = function(los, his, closes, crosslong, buy_trigger, sell_trigger, co
   days_since_loss = cooloff
   days_since_purchase = sell_after
   crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
-  for (i in 1:(n-1)){
+  for (i in 1:n){
     days_since_loss = days_since_loss + 1
     days_since_purchase = days_since_purchase + 1
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i])){
@@ -54,10 +54,11 @@ buySellSeq = function(los, his, closes, crosslong, buy_trigger, sell_trigger, co
           days_since_loss=0
         }
       }
+    if(i==n && lastBoughtPrice>0 && sell_last){
+      out[i]= 1/lastBoughtPrice
+    }
   }
-  if(lastBoughtPrice>0 && sell_last){
-    out[n]= 1/lastBoughtPrice
-  }
+  
   return(out)
 }
 
