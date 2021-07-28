@@ -6,19 +6,19 @@ source("crossover_strategy.R", local=T)
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-parameterset = expand.grid(short_range=c(3,7,14), mid_range=c(56), long_range=c(100,150,200),
-                           buy_trigger=c(-.1,-.05,0,.05,.1), sell_trigger=c(.1,.2,.3), 
-                           cooloff=c(25,75,150), sell_after=c(180,365,550), sell_last_day=c(T)
+parameterset = expand.grid(short_range=c(3,14,28), mid_range=c(56), long_range=c(100,200,400),
+                           buy_trigger=c(0), sell_trigger=c(.2,.25,.3), 
+                           cooloff=c(0,100,365), sell_after=c(365,10000), sell_last_day=c(T)
 ) %>% data.table
 # -.1 for buy and -.15 for sell and 7/98 for 2015 stocks
 
 test_date = seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365)
 
-proc_date = function(date, ins){
+proc_date = function(date, ins, key, sample_size = nrow(ins)){
   
   print(date)
-  ins = ins[sample(.N, size=10)]
-  financials = stocklist_from_polygon(key = POLYKEY, date = date, financials = T)
+  ins = ins[sample(.N, size=sample_size)]
+  financials = stocklist_from_polygon(key = key, date = date, financials = T)
   
   target_companies = financials[!is.na(marketCapitalization)][order(marketCapitalization, decreasing = T)]$ticker[1:150]
   
@@ -44,23 +44,62 @@ proc_date = function(date, ins){
   outs
 }
 
-system.time({results = lapply(test_date[12:13], proc_date, ins=parameterset)})
+results = list()
+for(date in seq(as.Date('2005-08-01'), 
+                as.Date('2019-08-01'), 365)){
+  date=as.Date(date)
+  system.time({ results[[date]]=proc_date(date, parameterset, POLYKEY) })
+}
+results = rbindlist(results)
+results = rbind(results, results1)
 
-with(results, tapply(absolute_profit, list(short_range, mid_range), mean))
-with(results, tapply(absolute_profit, list(buy_trigger, sell_trigger), mean))
-lm(absolute_profit~short_range+mid_range+buy_trigger+sell_trigger,results)%>%summary
+with(results, tapply(median_profit, list(buy_trigger, sell_trigger), mean))
+with(results, tapply(DaysHeldPerPurchase, list(buy_trigger, sell_trigger), mean))
+lm(median_profit~
+     as.factor(short_range)+
+     as.factor(long_range)+
+     as.factor(buy_trigger)+
+     as.factor(sell_trigger)+
+     as.factor(cooloff)+
+     as.factor(sell_after)+
+     as.factor(Date)
+     ,
+   results)%>%summary
+# The best for earnings seems to be "buy at 0 crossover and at least 25 days after loss, sell at +/- .3 or after 550 days.
+# The length of the range doesn't matter for the median, but having a shorter long range appears to improve the average
+# Expected profit over 2 years of 3% per stock plus 4% if selling at .3 after 550 days
+lm(avg_days_held~
+     as.factor(short_range)+
+     as.factor(long_range)+
+     as.factor(buy_trigger)+
+     as.factor(sell_trigger)+
+     as.factor(cooloff)+
+     as.factor(sell_after)+
+     as.factor(Date)
+   ,
+   results)%>%summary
+# But waiting until .3 unduly increases days held unless holding a maximum of 365 days. 
+# Also, having the short window at 14days results in less days held, as does having a longer cooloff
+lm(trades~
+     as.factor(short_range)+
+     as.factor(long_range)+
+     as.factor(buy_trigger)+
+     as.factor(sell_trigger)+
+     as.factor(cooloff)+
+     as.factor(sell_after)+
+     as.factor(Date)
+   ,
+   results)%>%summary
+# Having the longer crossover windows also reduces the number of transactions, 
+# as does a longer cooloff
+
+# So, overall optimal seems to be buying a 14/200 window at 0 crossover, holding 
+# until a .3 change or 365 days pass, and in case of a loss, not buying for 150 days
 
 x = data.table(short_range=3, mid_range=14, long_range=150, buy_trigger=c(0), sell_trigger=c(.2), 
                cooloff=0, sell_after=10000, sell_last_day=F) %>%
   crossoverReturns(dat=fulldat[stock %in% target_companies[1:150]], summary = F, date = as.Date('2015-01-01'), 
                    end_date = as.Date('2019-01-01'), transaction_fee=.0001)
-
-x[,nextClose:=shift(AdjClose, 1, type='lead'), stock]
-x[,prevClose:=shift(AdjClose, 1, type='lag'), stock]
-
-x[BuySell<0 & !is.na(nextClose) & !is.na(AdjClose), .(mean( pct_diff(nextClose, AdjClose, AdjClose)) ,.N )]
-x[BuySell<0 & !is.na(nextClose) & !is.na(AdjClose), .(mean( pct_diff(nextClose, AdjClose, AdjClose)>0) ,.N )]
-
 
 x[BuySell!=0 & sample=='test',
   .(returns = abs(cumprod(BuySell*AdjCloseFilled))[.N],
