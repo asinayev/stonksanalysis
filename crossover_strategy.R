@@ -30,6 +30,9 @@ buySellSeq = function(los, his, closes, crosslong, buy_trigger, sell_trigger, co
     days_since_loss = days_since_loss + 1
     days_since_purchase = days_since_purchase + 1
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i])){
+      if(i==n && lastBoughtPrice>0 && sell_last){
+        out[i]=1/lastBoughtPrice
+      }
       next
     }
     if(lastBoughtPrice==-1 && # Buy if not already holding
