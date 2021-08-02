@@ -48,7 +48,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
       if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
-      } else if (los[i]<min(periodMax*(1-buysell_pars$sell_lo), 
+      } else if (los[i]<max(periodMax*(1-buysell_pars$sell_lo), 
                             periodMax-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
