@@ -18,17 +18,19 @@ crossover_prep = function(indat,
 }
 
 buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
-  out = rep(0,n)
+  
+  shares_sold = rep(0,n) #or negative when bought
+  crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
+  
   lastBoughtPrice = -1
   periodMax = -1
-  days_since_loss = buysell_pars$cooloff
-  days_since_purchase = buysell_pars$sell_days
-  crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
+  daysSinceLoss = buysell_pars$cooloff
+  daysSincePurchase = buysell_pars$sell_days
   for (i in 1:n){
-    days_since_loss = days_since_loss + 1
-    days_since_purchase = days_since_purchase + 1
+    daysSinceLoss = daysSinceLoss + 1
+    daysSincePurchase = daysSincePurchase + 1
     if(i==n && lastBoughtPrice>0 && buysell_pars$sell_last){
-      out[i]= 1/lastBoughtPrice
+      shares_sold[i]= 1/lastBoughtPrice
       next
     }
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
@@ -37,35 +39,28 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
     if(lastBoughtPrice==-1 && # Buy if not already holding
        crosslong_lagged[i]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
-       days_since_loss>buysell_pars$cooloff){ 
-      lastBoughtPrice = closes[i]
-      periodMax = closes[i]
-      out[i]= -1/lastBoughtPrice
-      days_since_purchase=0
-    } else if (lastBoughtPrice>0){ # Sell when you own
+       daysSinceLoss>buysell_pars$cooloff){ # and enough days have passed since the last loss
+      lastBoughtPrice = periodMax = closes[i]
+      shares_sold[i]= -1/lastBoughtPrice
+      daysSincePurchase=0
+    } else if (lastBoughtPrice>0){ # When you own
       periodMax = max(periodMax, closes[i])
-      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_prop)){ #And the high is high enough
-        out[i]= 1/lastBoughtPrice
-        lastBoughtPrice=-1
-        periodMax = -1
-      } else if (los[i]<min(periodMax*(1-buysell_pars$sell_prop), 
+      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
+        shares_sold[i]= 1/lastBoughtPrice
+        lastBoughtPrice = periodMax = -1
+      } else if (los[i]<min(periodMax*(1-buysell_pars$sell_lo), 
                             periodMax-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
-        out[i]= 1/lastBoughtPrice
-        lastBoughtPrice=-1
-        days_since_loss=0
-        periodMax = -1
-      } else if (days_since_purchase>buysell_pars$sell_days){ # Or you held long enough
-        out[i]= 1/lastBoughtPrice
-        lastBoughtPrice=-1
-        periodMax = -1
-        if(closes[i]<lastBoughtPrice){
-          days_since_loss=0
-        }
+        shares_sold[i]= 1/lastBoughtPrice
+        lastBoughtPrice = periodMax = -1
+        daysSinceLoss=0
+      } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
+        shares_sold[i]= 1/lastBoughtPrice
+        lastBoughtPrice = periodMax = -1
       }
     }
   }
   
-  return(out)
+  return(shares_sold)
 }
 
 crossover_strategy = function(indat, 
@@ -134,11 +129,13 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
   }
 }
 
-crossoverReturns=function(pars=list('short_range'=3, 'mid_range'=28, 
-                                    'buy_trigger'=.05, 'sell_prop'=-.05, 
-                                    'cooloff'=180,), 
+crossoverReturns=function(pars=list(), 
                           dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
   pars=as.list(pars)
+  required_pars = c('buy_trigger', 'cooloff', 
+                      'sell_days', 'sell_lo', 'sell_hi', 'sell_last')
+  (required_pars %in% names(pars)) %>% all %>% stopifnot
+  
   dat %>%
     crossover_prep(pars$short_range,pars$mid_range,long_range = pars$long_range) %>%
     crossover_strategy(train_start = start_date,
