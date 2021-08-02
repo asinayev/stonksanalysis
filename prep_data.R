@@ -25,4 +25,9 @@ basic_prep = function(indat,
     indat=indat[Date>=start_date]
   }
   indat[order(stock,Date)]
+  indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
+  indat[,hiFilled:=high[1], .(cumsum(!is.na(high)),stock)]
+  indat[,loFilled:=low[1], .(cumsum(!is.na(low)),stock)]
+  indat[,atr:=pmax(abs(high-low),abs(high-lag(AdjCloseFilled,1)),abs(low-lag(AdjCloseFilled,1))), .(stock)]
+  indat[,atr:=frollmean(atr, 14, algo = 'exact',align='right',na.rm=T), stock]
 }

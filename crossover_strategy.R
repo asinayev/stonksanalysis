@@ -4,11 +4,6 @@ crossover_prep = function(indat,
                           long_range = 112
 ){
   indat=data.table(indat)
-  indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
-  indat[,hiFilled:=high[1], .(cumsum(!is.na(high)),stock)]
-  indat[,loFilled:=low[1], .(cumsum(!is.na(low)),stock)]
-  indat[,atr:=pmax(abs(high-low),abs(high-lag(AdjCloseFilled,1)),abs(low-lag(AdjCloseFilled,1))), .(stock)]
-  indat[,atr:=frollmean(atr, 14, algo = 'exact',align='right',na.rm=T), stock]
   indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,mid_range_mean:=frollmean(AdjClose, mid_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
