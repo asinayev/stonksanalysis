@@ -33,7 +33,7 @@ financials_from_polygon = function( key, stockname, date, field=F){
 }
 
 
-stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', financials=F){
+stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', financials=F, cores=16){
   resultlist=list()
   for (ex in exchange){
     go=T
@@ -57,7 +57,7 @@ stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018
   if(financials){
     out$ticker %>% unlist %>%
       unique %>%
-      parallel::mclapply(financials_from_polygon, key=key, date=date, field=F, mc.cores = 16) %>%
+      parallel::mclapply(financials_from_polygon, key=key, date=date, field=F, mc.cores = cores) %>%
       rbindlist(fill=TRUE, use.names = T) %>%
       cbind(out) %>%
       return
