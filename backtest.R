@@ -5,22 +5,24 @@ source("crossover_strategy.R", local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
+cores = 24
+poly_cores=min(cores*8,48)
 
 choose_tickers = function(date, key, top_n){
-  financials = stocklist_from_polygon(key = key, date = date, financials = T)
+  financials = stocklist_from_polygon(key = key, date = date, financials = T, cores = poly_cores)
   financials[!is.na(marketCapitalization)][order(marketCapitalization, decreasing = T)]$ticker[1:top_n]
 }
 
 date_returns = function(date, params, fulldat, stocklist){
   
-  print(paste("Gettin returns for", date , now(tzone = 'ET')))
+  print(paste("Gettin returns for", date , now(tzone = 'America/New_York')))
   
   date_dat = fulldat[Date>date-365*2.1 & Date<date+365*2.1 & (stock %in% stocklist[[as.character(date)]])]
-
+  
   outs = params %>% 
     apply(1, as.list) %>%
     parallel::mclapply(crossoverReturns, dat=date_dat, summary=T, date = date, 
-                      end_date=date+365*2, start_date=date-365*2, transaction_fee=.0001, mc.cores = 2) %>%
+                       end_date=date+365*2, start_date=date-365*2, transaction_fee=.0001, mc.cores = cores) %>%
     rbindlist %>%
     cbind(params)
   outs$Date = date
@@ -29,9 +31,11 @@ date_returns = function(date, params, fulldat, stocklist){
 
 backtest = function(dates, parameters, key){
   
+  print(paste("Starting. " , now(tzone = 'America/New_York')))
   target_companies = lapply(dates, choose_tickers, key=key, top_n=150)
   names(target_companies)=dates
   
+  print(paste("Got the company names for each year " , now(tzone = 'America/New_York')))
   fulldat = target_companies %>% 
     unlist %>% unique %>%
     # tq_get %>% data.table %>%
@@ -39,34 +43,35 @@ backtest = function(dates, parameters, key){
                        start_date = min(dates)-2.1*365,
                        end_date = max(dates)+2.1*365,
                        key = key, check_ticker=F,
-                       mc.cores = 8) %>% rbindlist %>%
+                       mc.cores = poly_cores) %>% rbindlist %>%
     basic_prep(
       rename_from=c("symbol","date","adjusted"),
       rename_to=c("stock","Date","AdjClose")
     )
-  
-  print(paste("Done getting data. " , now(tzone = 'ET')))
+  print(paste("Got the data for all the companies. " , now(tzone = 'America/New_York')))
   
   results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
   rbindlist(results)
 }
 
-results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
-  expand.grid(short_range=c(7,49,84), mid_range=c(56), long_range=c(250,500,720),
-                           buy_trigger=c(-.1,-.05,0), cooloff=c(0,30), 
-                           sell_hi=c(.1,.15,.2), sell_lo=c(.1,.15,.2), sell_atr = c(4,100),
-                           sell_days=c(70,140,10000), sell_last=c(T)
-        ), POLYKEY)
+
+parameterset = expand.grid(short_range=c(56), mid_range=c(56), long_range=c(500),
+                           buy_trigger=c(-.1,0), cooloff=c(0), 
+                           sell_hi=c(.1,.2), sell_lo=c(.1,.2), sell_atr = c(4,100),
+                           sell_days=c(70,10000), sell_last=c(T)
+)
+
+results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
 
 
 
 
 
 results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_profit),
-           median_profit = mean(median_profit), median_profit_sd = sd(median_profit),
-           avg_days_held = mean(avg_days_held), stocks = mean(stocks), 
-           DaysHeldPerPurchase = mean(DaysHeldPerPurchase), trades = mean(trades)),
-        names(parameterset)]
+                         median_profit = mean(median_profit), median_profit_sd = sd(median_profit),
+                         avg_days_held = mean(avg_days_held), stocks = mean(stocks), 
+                         DaysHeldPerPurchase = mean(DaysHeldPerPurchase), trades = mean(trades)),
+                      names(parameterset)]
 results_agg[order(median_profit/(avg_days_held+10*trades))] # in terms of profit per day, long ranges with low sell condition are best
 
 
