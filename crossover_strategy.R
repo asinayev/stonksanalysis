@@ -1,145 +1,122 @@
-crossover_prep = function(indat,
-                          short_range = 7,
-                          mid_range = 28,
-                          long_range = 112
-){
-  indat=data.table(indat)
-  indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,mid_range_mean:=frollmean(AdjClose, mid_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,Crossover:= pct_diff(short_range_mean, 
-          mid_range_mean,
-          mid_range_mean),
-        stock]
-  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
-        stock]
-  indat[frollsum(is.na(AdjCloseFilled),long_range)>0,c("Crossover", "CrossoverLong"):=NA,stock]
-  indat
+setwd("stonksanalysis")
+source("prep_data.R", local=T)
+source("polygon.R", local=T)
+source("crossover_strategy.R", local=T)
+
+library(tidyquant)
+POLYKEY = Sys.getenv('POLYGONKEY')
+true_cores = 24
+poly_cores = min(true_cores*8,48)
+
+choose_tickers = function(date, key, top_n){
+  financials = stocklist_from_polygon(key = key, date = date, financials = T, cores=poly_cores)
+  financials[!is.na(marketCapitalization)][order(marketCapitalization, decreasing = T)]$ticker[1:top_n]
 }
 
-buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
+date_returns = function(date, params, fulldat, stocklist){
   
-  shares_sold = rep(0,n) #or negative when bought
-  crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
+  print(paste("Gettin returns for", date , now(tzone = 'ET')))
   
-  lastBoughtPrice = -1
-  periodMax = -1
-  daysSinceLoss = buysell_pars$cooloff
-  daysSincePurchase = buysell_pars$sell_days
-  for (i in 1:n){
-    daysSinceLoss = daysSinceLoss + 1
-    daysSincePurchase = daysSincePurchase + 1
-    if(i==n && lastBoughtPrice>0 && buysell_pars$sell_last){
-      shares_sold[i]= 1/lastBoughtPrice
-      next
-    }
-    if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
-      next
-    }
-    if(lastBoughtPrice==-1 && # Buy if not already holding
-       crosslong_lagged[i]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
-       crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
-       daysSinceLoss>buysell_pars$cooloff){ # and enough days have passed since the last loss
-      lastBoughtPrice = periodMax = closes[i]
-      shares_sold[i]= -1/lastBoughtPrice
-      daysSincePurchase=0
-    } else if (lastBoughtPrice>0){ # When you own
-      periodMax = max(periodMax, closes[i])
-      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
-        shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
-      } else if (los[i]<max(periodMax*(1-buysell_pars$sell_lo), 
-                            periodMax-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
-        shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
-        daysSinceLoss=0
-      } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
-        shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
-      }
-    }
-  }
+  date_dat = fulldat[Date>date-365*2.1 & Date<date+365*2.1 & (stock %in% stocklist[[as.character(date)]])]
+
+  outs = params %>% 
+    apply(1, as.list) %>%
+    parallel::mclapply(crossoverReturns, dat=date_dat, summary=T, date = date, 
+                      end_date=date+365*2, start_date=date-365*2, transaction_fee=.0001, mc.cores = true_cores) %>%
+    rbindlist %>%
+    cbind(params)
+  outs$Date = date
+  outs
+}
+
+backtest = function(dates, parameters, key){
   
-  return(shares_sold)
-}
-
-crossover_strategy = function(indat, 
-                               train_start, train_end, test_start, test_end, 
-                              buysell_pars){
-  indat=data.table(indat)
-  indat[,sample:=ifelse(Date <= train_end & Date>train_start,
-                            "train",
-                            ifelse(Date <= test_end & Date>test_start,
-                                   "test", "none"))]
-  indat = indat[sample!='none']
-  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, buysell_pars, .N),
-        .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
-  indat[,Own:=cumsum(-1*BuySell),.(stock,sample)]
-  indat[,LastBought:=AdjCloseFilled[1],.(Own, stock, sample)]
-  indat
-}
-
-stockAvgReturns=function(strat, period_label, transaction_fee=.01){
-    strat[BuySell!=0 & sample==period_label,
-         .(rel_profit=
-             (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1) - 
-             pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
-             .N*transaction_fee,
-           absolute_profit = 
-             (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1)-
-             .N*transaction_fee,
-           median_volume = median(volume,na.rm=T),
-           days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
-           trades = .N),
-         .(stock)]
-}
-
-calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T, pick_stocks = F){
-  if(pick_stocks){
-    training_returns = stockAvgReturns(strat, 
-                                           'train', 
-                                           transaction_fee=transaction_fee)
-    stocks_to_trade = training_returns[rel_profit>profit_cutoff & 
-                                         median_volume>volume_cutoff, 
-                                       .(stock)]
-  } else {
-      stocks_to_trade = data.table(stock = unique(strat$stock))
-    }
-  returns = stockAvgReturns(strat[stocks_to_trade, on='stock'], 
-                      'test', 
-                      transaction_fee=transaction_fee)
-  if(summary & nrow(returns)>0){
-    return(returns[,.(avg_profit = mean(absolute_profit),
-                      median_profit = median(absolute_profit),
-                      median_margin = median(rel_profit),
-                      avg_days_held=mean(days_held), 
-                      stocks=.N,
-                      DaysHeldPerPurchase = sum(days_held)/sum(trades/2),
-                      trades = sum(trades) )])
-  } else if (summary) {
-    return(returns[,.(avg_profit = 0,
-                      median_profit = 0,
-                      median_margin = -.08,
-                      avg_days_held=0, 
-                      stocks=0,
-                      DaysHeldPerPurchase = 0,
-                      trades = 0 )])
-  } else {
-    return(strat[stocks_to_trade, on='stock'])
-  }
-}
-
-crossoverReturns=function(pars=list(), 
-                          dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
-  pars=as.list(pars)
-  required_pars = c('buy_trigger', 'cooloff', 
-                      'sell_days', 'sell_lo', 'sell_hi', 'sell_atr', 'sell_last')
-  (required_pars %in% names(pars)) %>% all %>% stopifnot
+  target_companies = lapply(dates, choose_tickers, key=key, top_n=150)
+  names(target_companies)=dates
   
-  dat %>%
-    crossover_prep(pars$short_range,pars$mid_range,long_range = pars$long_range) %>%
-    crossover_strategy(train_start = start_date,
-                       train_end = date, date, end_date, 
-                       buysell_pars = pars) %>%
-    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$profit, volume_cutoff=10000, summary=summary_only)
+  fulldat = target_companies %>% 
+    unlist %>% unique %>%
+    # tq_get %>% data.table %>%
+    parallel::mclapply(stock_history,
+                       start_date = min(dates)-2.1*365,
+                       end_date = max(dates)+2.1*365,
+                       key = key, check_ticker=F,
+                       mc.cores = poly_cores) %>% rbindlist %>%
+    basic_prep(
+      rename_from=c("symbol","date","adjusted"),
+      rename_to=c("stock","Date","AdjClose")
+    )
+  
+  print(paste("Done getting data. " , now(tzone = 'ET')))
+  
+  results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
+  rbindlist(results)
 }
+
+parameterset = expand.grid(short_range=c(7,84), mid_range=c(56), long_range=c(250,500,720),
+                           buy_trigger=c(-.1,0), cooloff=c(0), 
+                           sell_hi=c(.1,.2,.3), sell_lo=c(.1,.2), sell_atr = c(4,100),
+                           sell_days=c(70,140,10000))
+
+results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
+                    parameterset, POLYKEY)
+
+
+
+
+
+results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_profit),
+           median_profit = mean(median_profit), median_profit_sd = sd(median_profit),
+           avg_days_held = mean(avg_days_held), stocks = mean(stocks), 
+           DaysHeldPerPurchase = mean(DaysHeldPerPurchase), trades = mean(trades)),
+        names(parameterset)]
+results_agg[order(median_profit/(avg_days_held+10*trades))] # in terms of profit per day, long ranges with low sell condition are best
+
+
+
+#Examine a single date
+x = data.table(short_range=49, mid_range=14, long_range=720, 
+               buy_trigger=c(0), sell_trigger=c(.15), 
+               cooloff=100, sell_after=100000, sell_last_day=T) %>%
+  crossoverReturns(dat=fulldat[stock %in% target_companies[1:150]], summary = F, date = date, 
+                   end_date = date+365*2, start_date=date-2*365, transaction_fee=.0001)
+
+x[BuySell!=0 & sample=='test',
+  .(returns = abs(cumprod(BuySell*AdjCloseFilled))[.N],
+    days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
+    purchases = .N/2)
+  ,stock][order(returns)][,.(PctPos=mean(returns>1),
+                             AvgStockReturn=median(returns), 
+                             AvgStockDaysHeld=mean(days_held), 
+                             DaysHeldPerPurchase = sum(days_held)/sum(purchases),
+                             TotalPurchases=sum(purchases))]
+
+st = 'BIIB'
+x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
+x[stock==st] %>% with(points(Date, mid_range_mean, type='l'))
+x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
+x[stock==st & BuySell<0] %>% with(abline(v=Date, col='blue'))
+x[stock==st & BuySell>0] %>% with(abline(v=Date))
+x[stock==st] %>% View()
+x[stock==st & BuySell!=0]
+
+aggregates = x[sample=='test' & Own, .(prop_losing = mean(AdjCloseFilled<LastBought),
+                                       owned = sum(Own>0),
+                                       total = .N ),Date][order(Date)]
+aggregates[,prop_losing_roll := frollmean(fillna(prop_losing, .5), 365, fill=NA, algo="exact", align="right", na.rm=T)] 
+aggregates[,owned:=owned/max(owned)]
+with(aggregates, plot(Date, prop_losing, type='l'))
+with(aggregates, points(Date, owned, type='l', col='gray'))
+with(aggregates, points(Date, prop_losing_roll, type='l', col='red'))
+abline(h=.5)
+
+x[Date=='2005-10-01' & Own>0,stock]
+
+SPY = data.table(tq_get("SVSPX"))
+lapply(test_date, function(test_start){
+  data.frame(date = test_start,
+             market = pct_diff(SPY[date %in% (test_start+(362:367)), mean(adjusted,na.rm=T)],
+                               SPY[date %in% (test_start+(-2:2)), mean(adjusted,na.rm=T)],
+                               of=SPY[date %in% (test_start+(-2:2)), mean(adjusted,na.rm=T)])
+  )}) %>% rbindlist
+
