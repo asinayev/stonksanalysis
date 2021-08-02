@@ -11,15 +11,18 @@ choose_tickers = function(date, key, top_n){
   financials[!is.na(marketCapitalization)][order(marketCapitalization, decreasing = T)]$ticker[1:top_n]
 }
 
-date_returns = function(date, params, fulldat, stocklist, key){
-  date_dat = fulldat[Date>date-365*2.1 && Date<date+365*2.1 && stock %in% stocklist[[as.character(date)]]]
+date_returns = function(date, params, fulldat, stocklist){
+  
+  print(paste("Gettin returns for", date , now(tzone = 'ET')))
+  
+  date_dat = fulldat[Date>date-365*2.1 & Date<date+365*2.1 & (stock %in% stocklist[[as.character(date)]])]
 
   outs = params %>% 
     apply(1, as.list) %>%
     parallel::mclapply(crossoverReturns, dat=date_dat, summary=T, date = date, 
                       end_date=date+365*2, start_date=date-365*2, transaction_fee=.0001, mc.cores = 2) %>%
     rbindlist %>%
-    cbind(ins)
+    cbind(params)
   outs$Date = date
   outs
 }
@@ -42,17 +45,20 @@ backtest = function(dates, parameters, key){
       rename_to=c("stock","Date","AdjClose")
     )
   
-  results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies, key=key)
+  print(paste("Done getting data. " , now(tzone = 'ET')))
+  
+  results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
   rbindlist(results)
 }
 
-parameterset = expand.grid(short_range=c(7,28,49), mid_range=c(56), long_range=c(250,500,720),
-                           buy_trigger=c(0), cooloff=c(0,100), 
-                           sell_hi=c(.1,.15,.2), sell_lo=c(.1,.15,.2), 
-                           sell_after=c(35,150,10000), sell_last_day=c(T)
-) %>% data.table
+results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
+  expand.grid(short_range=c(7,49,84), mid_range=c(56), long_range=c(250,500,720),
+                           buy_trigger=c(-.1,-.05,0), cooloff=c(0,30), 
+                           sell_hi=c(.1,.15,.2), sell_lo=c(.1,.15,.2), sell_atr = c(4,100),
+                           sell_days=c(70,140,10000), sell_last=c(T)
+        ), POLYKEY)
 
-test_dates = seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365)
+
 
 
 
