@@ -29,6 +29,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
     days_since_purchase = days_since_purchase + 1
     if(i==n && lastBoughtPrice>0 && buysell_pars$sell_last){
       out[i]= 1/lastBoughtPrice
+      next
     }
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
       next
