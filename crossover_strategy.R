@@ -133,7 +133,7 @@ crossoverReturns=function(pars=list(),
                           dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
   pars=as.list(pars)
   required_pars = c('buy_trigger', 'cooloff', 
-                      'sell_days', 'sell_lo', 'sell_hi', 'sell_last')
+                      'sell_days', 'sell_lo', 'sell_hi', 'sell_atr', 'sell_last')
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
