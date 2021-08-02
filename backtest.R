@@ -55,11 +55,13 @@ backtest = function(dates, parameters, key){
 }
 
 
-parameterset = expand.grid(short_range=c(56), mid_range=c(56), long_range=c(500),
-                           buy_trigger=c(-.1,0), cooloff=c(0), 
-                           sell_hi=c(.1,.2), sell_lo=c(.1,.2), sell_atr = c(4,100),
-                           sell_days=c(70,10000), sell_last=c(T)
+parameterset = expand.grid(short_range=c(7,56,98), mid_range=c(56), long_range=c(300,500,700),
+                           buy_trigger=c(-.1, 0), cooloff=c(0), 
+                           sell_hi=c(.15,.25), sell_lo=c(.15,.2,.25,.35), sell_atr = c(16,100),
+                           sell_days=c(75,10000), sell_last=c(T)
 )
+98/500/-.1/.15/.35/?/10k
+
 
 results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
 
