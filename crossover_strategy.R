@@ -81,14 +81,14 @@ crossover_strategy = function(indat,
   indat
 }
 
-stockAvgReturns=function(strat, period_label, transaction_fee=.01){
+stockAvgReturns=function(strat, period_label, transaction_fee=.01, profit_cutoff){
   strat[BuySell!=0 & sample==period_label,
         .(rel_profit=
             (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1) - 
             pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
             .N*transaction_fee,
           absolute_profit = 
-            (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1)-
+            min((abs(cumprod( pmin(1,BuySell*AdjCloseFilled) )[.N])-1),profit_cutoff)-
             .N*transaction_fee,
           median_volume = median(volume,na.rm=T),
           days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
@@ -96,20 +96,21 @@ stockAvgReturns=function(strat, period_label, transaction_fee=.01){
         .(stock)]
 }
 
-calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T, pick_stocks = F){
-  if(pick_stocks){
-    training_returns = stockAvgReturns(strat, 
-                                       'train', 
-                                       transaction_fee=transaction_fee)
-    stocks_to_trade = training_returns[rel_profit>profit_cutoff & 
-                                         median_volume>volume_cutoff, 
-                                       .(stock)]
-  } else {
+calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T){
+  # if(pick_stocks){
+  #   training_returns = stockAvgReturns(strat, 
+  #                                      'train', 
+  #                                      transaction_fee=transaction_fee)
+  #   stocks_to_trade = training_returns[rel_profit>profit_cutoff & 
+  #                                        median_volume>volume_cutoff, 
+  #                                      .(stock)]
+  # } else {
     stocks_to_trade = data.table(stock = unique(strat$stock))
-  }
-  returns = stockAvgReturns(strat[stocks_to_trade, on='stock'], 
+  # }
+  returns = stockAvgReturns(strat,#[stocks_to_trade, on='stock'], 
                             'test', 
-                            transaction_fee=transaction_fee)
+                            transaction_fee=transaction_fee,
+                            profit_cutoff=profit_cutoff+.1)
   if(summary & nrow(returns)>0){
     return(returns[,.(avg_profit = mean(absolute_profit),
                       median_profit = median(absolute_profit),
@@ -127,7 +128,8 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
                       DaysHeldPerPurchase = 0,
                       trades = 0 )])
   } else {
-    return(strat[stocks_to_trade, on='stock'])
+    # return(strat[stocks_to_trade, on='stock'])
+    return(strat)
   }
 }
 
@@ -143,5 +145,5 @@ crossoverReturns=function(pars=list(),
     crossover_strategy(train_start = start_date,
                        train_end = date, date, end_date, 
                        buysell_pars = pars) %>%
-    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$profit, volume_cutoff=10000, summary=summary_only)
+    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$sell_hi, volume_cutoff=10000, summary=summary_only)
 }
