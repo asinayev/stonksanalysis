@@ -56,10 +56,10 @@ backtest = function(dates, parameters, key){
 }
 
 
-parameterset = expand.grid(short_range=c(56,98,150), mid_range=c(56), long_range=c(500),
-                           buy_trigger=c(-.1,-.05,-.15), cooloff=c(90), buy_trigger_days = c(0,14,50,90),
-                           sell_hi=c(.25), sell_lo=c(.15), sell_atr = c(15),
-                           sell_days=c(110), sell_last=c(T)
+parameterset = expand.grid(short_range=c(98), mid_range=c(56), long_range=c(300,500),
+                           buy_trigger=c(-.1,-.15), cooloff=c(50,90), buy_trigger_days = c(50,75,25),
+                           sell_hi=c(.2), sell_lo=c(.15), sell_atr = c(12),
+                           sell_days=c(100), sell_last=c(T)
 )
 
 results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
@@ -73,7 +73,7 @@ results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_p
                          avg_days_held = mean(avg_days_held+10*trades/stocks), stocks = mean(stocks), 
                          DaysHeldPerPurchase = mean(DaysHeldPerPurchase), trades = mean(trades)),
                       names(parameterset)]
-results_agg[order(avg_profit/avg_days_held)] # in terms of profit per day, long ranges with low sell condition are best
+results_agg[order(avg_profit/avg_days_held, decreasing=T)] # in terms of profit per day, long ranges with low sell condition are best
 
 
 
