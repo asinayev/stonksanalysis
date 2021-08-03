@@ -39,7 +39,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
       next
     }
-    if(crosslong[i]<buysell_pars$buy_trigger){
+    if(crosslong_lagged[i]<buysell_pars$buy_trigger){
       daysCrossed = daysCrossed + 1
     } else { 
       daysCrossed=0 
@@ -89,18 +89,21 @@ crossover_strategy = function(indat,
 }
 
 stockAvgReturns=function(strat, period_label, transaction_fee=.01, profit_cutoff){
-  strat[BuySell!=0 & sample==period_label,
-        .(rel_profit=
-            (abs(cumprod(BuySell*AdjCloseFilled)[.N])-1) - 
-            pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
-            .N*transaction_fee,
-          absolute_profit = 
-            min((cumprod( pmin(1,BuySell*AdjCloseFilled) )[.N]-1),profit_cutoff)-
-            .N*transaction_fee,
-          median_volume = median(volume,na.rm=T),
+  sale_profits = strat[BuySell>0 & sample==period_label,
+                  .(rel_profit=
+                      min((cumprod( BuySell*AdjCloseFilled )[.N]-1),profit_cutoff) - 
+                      pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
+                      .N*transaction_fee,
+                    absolute_profit = 
+                      min((cumprod( BuySell*AdjCloseFilled )[.N]-1),profit_cutoff)-
+                      .N*transaction_fee),
+                  .(stock)]
+  counts = strat[BuySell!=0 & sample==period_label,
+        .(median_volume = median(volume,na.rm=T),
           days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
           trades = .N),
         .(stock)]
+  sale_profits[counts, on='stock']
 }
 
 calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=10000, summary=T){

@@ -56,10 +56,10 @@ backtest = function(dates, parameters, key){
 }
 
 
-parameterset = expand.grid(short_range=c(7,56,98,150), mid_range=c(56), long_range=c(400,500,600),
-                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days = c(0,14,50,90),
-                           sell_hi=c(.15), sell_lo=c(.35), sell_atr = c(16,100),
-                           sell_days=c(100,10000), sell_last=c(T)
+parameterset = expand.grid(short_range=c(56,98,150), mid_range=c(56), long_range=c(500),
+                           buy_trigger=c(-.1,-.05,-.15), cooloff=c(90), buy_trigger_days = c(0,14,50,90),
+                           sell_hi=c(.25), sell_lo=c(.15), sell_atr = c(15),
+                           sell_days=c(110), sell_last=c(T)
 )
 
 results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
@@ -67,7 +67,7 @@ results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), para
 
 
 
-
+results=lapply(dates, date_returns, params = parameterset, fulldat = fulldat, stocklist=target_companies) %>% rbindlist
 results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_profit),
                          median_profit = mean(median_profit), median_profit_sd = sd(median_profit),
                          avg_days_held = mean(avg_days_held+10*trades/stocks), stocks = mean(stocks), 
@@ -78,6 +78,7 @@ results_agg[order(avg_profit/avg_days_held)] # in terms of profit per day, long 
 
 
 #Examine a single date
+date = dates[5]
 x = data.table(short_range=150, mid_range=14, long_range=500, 
                buy_trigger=-.1, buy_trigger_days=0,
                sell_hi=c(.15),sell_lo=c(.35),  
