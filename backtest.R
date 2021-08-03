@@ -57,7 +57,7 @@ backtest = function(dates, parameters, key){
 
 
 parameterset = expand.grid(short_range=c(7,56,98,150), mid_range=c(56), long_range=c(400,500,600),
-                           buy_trigger=c(-.1), cooloff=c(0), 
+                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days = c(0,14,50,90),
                            sell_hi=c(.15), sell_lo=c(.35), sell_atr = c(16,100),
                            sell_days=c(100,10000), sell_last=c(T)
 )
@@ -79,7 +79,8 @@ results_agg[order(avg_profit/avg_days_held)] # in terms of profit per day, long 
 
 #Examine a single date
 x = data.table(short_range=150, mid_range=14, long_range=500, 
-               buy_trigger=-.1, sell_hi=c(.15),sell_lo=c(.35),  
+               buy_trigger=-.1, buy_trigger_days=0,
+               sell_hi=c(.15),sell_lo=c(.35),  
                cooloff=0, sell_days=100, sell_last=T, sell_atr=16) %>%
   crossoverReturns(dat=fulldat[stock %in% target_companies[[as.character(date)]]], summary = F, date = date, 
                    end_date = date+365*2, start_date=date-2*365, transaction_fee=.0001)
@@ -122,4 +123,3 @@ lapply(test_date, function(test_start){
                                SPY[date %in% (test_start+(-2:2)), mean(adjusted,na.rm=T)],
                                of=SPY[date %in% (test_start+(-2:2)), mean(adjusted,na.rm=T)])
   )}) %>% rbindlist
-

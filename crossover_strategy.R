@@ -26,6 +26,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
   periodMax = -1
   daysSinceLoss = buysell_pars$cooloff
   daysSincePurchase = buysell_pars$sell_days
+  daysCrossed = 0
   for (i in 1:n){
     daysSinceLoss = daysSinceLoss + 1
     daysSincePurchase = daysSincePurchase + 1
@@ -38,10 +39,16 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
     if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
       next
     }
+    if(crosslong[i]<buysell_pars$buy_trigger){
+      daysCrossed = daysCrossed + 1
+    } else { 
+      daysCrossed=0 
+    }
     if(lastBoughtPrice==-1 && # Buy if not already holding
        crosslong_lagged[i]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
-       daysSinceLoss>buysell_pars$cooloff){ # and enough days have passed since the last loss
+       daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
+       daysCrossed>buysell_pars$buy_trigger_days){ # and the lines have been crossed long enough
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
@@ -105,7 +112,7 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
   #                                        median_volume>volume_cutoff, 
   #                                      .(stock)]
   # } else {
-    stocks_to_trade = data.table(stock = unique(strat$stock))
+  stocks_to_trade = data.table(stock = unique(strat$stock))
   # }
   returns = stockAvgReturns(strat,#[stocks_to_trade, on='stock'], 
                             'test', 
@@ -136,7 +143,7 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, volume_cutoff=
 crossoverReturns=function(pars=list(), 
                           dat, date, end_date=date+365, start_date=date-365, summary_only=T, transaction_fee=.01, stock_avg=T){
   pars=as.list(pars)
-  required_pars = c('buy_trigger', 'cooloff', 
+  required_pars = c('buy_trigger', 'cooloff', 'buy_trigger_days',
                     'sell_days', 'sell_lo', 'sell_hi', 'sell_atr', 'sell_last')
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
