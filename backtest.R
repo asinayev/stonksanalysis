@@ -51,7 +51,8 @@ backtest = function(dates, parameters, key){
   print(paste("Got the data for all the companies. " , now(tzone = 'America/New_York')))
   
   results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
-  rbindlist(results)
+  results = rbindlist(results)
+  results
 }
 
 
@@ -77,10 +78,10 @@ results_agg[order(avg_profit/avg_days_held)] # in terms of profit per day, long 
 
 
 #Examine a single date
-x = data.table(short_range=49, mid_range=14, long_range=720, 
-               buy_trigger=c(0), sell_trigger=c(.15), 
-               cooloff=100, sell_after=100000, sell_last_day=T) %>%
-  crossoverReturns(dat=fulldat[stock %in% target_companies[1:150]], summary = F, date = date, 
+x = data.table(short_range=150, mid_range=14, long_range=500, 
+               buy_trigger=-.1, sell_hi=c(.15),sell_lo=c(.35),  
+               cooloff=0, sell_days=100, sell_last=T, sell_atr=16) %>%
+  crossoverReturns(dat=fulldat[stock %in% target_companies[[as.character(date)]]], summary = F, date = date, 
                    end_date = date+365*2, start_date=date-2*365, transaction_fee=.0001)
 
 x[BuySell!=0 & sample=='test',
@@ -93,7 +94,7 @@ x[BuySell!=0 & sample=='test',
                              DaysHeldPerPurchase = sum(days_held)/sum(purchases),
                              TotalPurchases=sum(purchases))]
 
-st = 'BIIB'
+st = 'TGT'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
 x[stock==st] %>% with(points(Date, mid_range_mean, type='l'))
 x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
