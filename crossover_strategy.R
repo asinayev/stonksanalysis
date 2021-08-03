@@ -88,7 +88,7 @@ stockAvgReturns=function(strat, period_label, transaction_fee=.01, profit_cutoff
             pct_diff(AdjCloseFilled[.N],AdjCloseFilled[1],of=AdjCloseFilled[1]) - 
             .N*transaction_fee,
           absolute_profit = 
-            min((abs(cumprod( pmin(1,BuySell*AdjCloseFilled) )[.N])-1),profit_cutoff)-
+            min((cumprod( pmin(1,BuySell*AdjCloseFilled) )[.N]-1),profit_cutoff)-
             .N*transaction_fee,
           median_volume = median(volume,na.rm=T),
           days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
