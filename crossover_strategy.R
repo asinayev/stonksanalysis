@@ -17,7 +17,7 @@ crossover_prep = function(indat,
   indat
 }
 
-buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
+buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
   
   shares_sold = rep(0,n) #or negative when bought
   crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
@@ -44,7 +44,8 @@ buySellSeq = function(los, his, closes, crosslong, atr, buysell_pars, n){
     } else { 
       daysCrossed=0 
     }
-    if(lastBoughtPrice==-1 && # Buy if not already holding
+    if(!is.na(valid[i]) &&
+       lastBoughtPrice==-1 && # Buy if not already holding
        crosslong_lagged[i]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
@@ -81,7 +82,7 @@ crossover_strategy = function(indat,
                         ifelse(Date <= test_end & Date>test_start,
                                "test", "none"))]
   indat = indat[sample!='none']
-  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, buysell_pars, .N),
+  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, valid, buysell_pars, .N),
         .(stock,sample)] #Buy when short window is larger than long window today, but not yesterday
   indat[,Own:=cumsum(-1*BuySell),.(stock,sample)]
   indat[,LastBought:=AdjCloseFilled[1],.(Own, stock, sample)]

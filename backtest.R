@@ -5,24 +5,26 @@ source("crossover_strategy.R", local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
-cores = 24
+cores = 4
 poly_cores=min(cores*8,48)
 
 choose_tickers = function(date, key, top_n){
   financials = stocklist_from_polygon(key = key, date = date, financials = T, cores = poly_cores)
-  financials[!is.na(marketCapitalization)][order(marketCapitalization, decreasing = T)]$ticker[1:top_n]
+  financials = financials[!is.na(marketCapitalization)]
+  financials[order(marketCapitalization, decreasing = T), 
+             .(ticker, ticker_valid_start=date, ticket_valid_end=date+365)][1:top_n]
 }
 
-date_returns = function(date, params, fulldat, stocklist){
+date_returns = function(date, params, fulldat, stocklist, years_forward=2){
   
   print(paste("Gettin returns for", date , now(tzone = 'America/New_York')))
   
-  date_dat = fulldat[Date>date-365*2.1 & Date<date+365*2.1 & (stock %in% stocklist[[as.character(date)]])]
+  date_dat = fulldat[Date>date-365*2.1 & Date<date+365*years_forward & (stock %in% stocklist[[as.character(date)]])]
   
   outs = params %>% 
     apply(1, as.list) %>%
     parallel::mclapply(crossoverReturns, dat=date_dat, summary=T, date = date, 
-                       end_date=date+365*2, start_date=date-365*2, transaction_fee=.0001, mc.cores = cores) %>%
+                       end_date=date+years_forward, start_date=date-365*2, transaction_fee=.0001, mc.cores = cores) %>%
     rbindlist %>%
     cbind(params)
   outs$Date = date
@@ -32,11 +34,11 @@ date_returns = function(date, params, fulldat, stocklist){
 backtest = function(dates, parameters, key){
   
   print(paste("Starting. " , now(tzone = 'America/New_York')))
-  target_companies = lapply(dates, choose_tickers, key=key, top_n=150)
-  names(target_companies)=dates
+  target_companies = lapply(dates, choose_tickers, key=key, top_n=150) %>% rbindlist
+  
   
   print(paste("Got the company names for each year " , now(tzone = 'America/New_York')))
-  fulldat = target_companies %>% 
+  fulldat = target_companies$ticker %>% 
     unlist %>% unique %>%
     # tq_get %>% data.table %>%
     parallel::mclapply(stock_history,
@@ -48,6 +50,12 @@ backtest = function(dates, parameters, key){
       rename_from=c("symbol","date","adjusted"),
       rename_to=c("stock","Date","AdjClose")
     )
+  fulldat[,stockdate:=Date]
+  validdat = fulldat[target_companies, 
+                    .(stock, Date=stockdate, valid=TRUE),
+                    on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
+  fulldat = merge(fulldat, validdat, all.x=T, on=c('stock','Date')) 
+  
   print(paste("Got the data for all the companies. " , now(tzone = 'America/New_York')))
   
   results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
@@ -56,16 +64,21 @@ backtest = function(dates, parameters, key){
 }
 
 
-parameterset = expand.grid(short_range=c(98), mid_range=c(56), long_range=c(300,500),
-                           buy_trigger=c(-.1,-.15), cooloff=c(50,90), buy_trigger_days = c(50,75,25),
-                           sell_hi=c(.2), sell_lo=c(.15), sell_atr = c(12),
-                           sell_days=c(100), sell_last=c(T)
+parameterset = expand.grid(short_range=c(7), mid_range=c(56), long_range=c(500),
+                           buy_trigger=c(-.15,-.1), cooloff=c(30,60), buy_trigger_days = c(20),
+                           sell_hi=c(.25,.2), sell_lo=c(.225,.15), sell_atr = c(9,10,11),
+                           sell_days=c(100,120,140), sell_last=c(T)
 )
 
-results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
+# results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
 
 
-
+results = parameterset %>% 
+  apply(1, as.list) %>%
+  parallel::mclapply(crossoverReturns, dat=fulldat, summary=T, date = dates[1], 
+                     end_date=dates[length(dates)]+2.1*365, start_date=dates[1]-365*2, transaction_fee=.0001, mc.cores = cores) %>%
+  rbindlist %>%
+  cbind(parameterset)
 
 results=lapply(dates, date_returns, params = parameterset, fulldat = fulldat, stocklist=target_companies) %>% rbindlist
 results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_profit),
@@ -78,13 +91,13 @@ results_agg[order(avg_profit/avg_days_held, decreasing=T)] # in terms of profit 
 
 
 #Examine a single date
-date = dates[5]
-x = data.table(short_range=150, mid_range=14, long_range=500, 
-               buy_trigger=-.1, buy_trigger_days=0,
-               sell_hi=c(.15),sell_lo=c(.35),  
-               cooloff=0, sell_days=100, sell_last=T, sell_atr=16) %>%
-  crossoverReturns(dat=fulldat[stock %in% target_companies[[as.character(date)]]], summary = F, date = date, 
-                   end_date = date+365*2, start_date=date-2*365, transaction_fee=.0001)
+date = dates[1]
+x = data.table(short_range=7, mid_range=14, long_range=500, 
+               buy_trigger=-.15, buy_trigger_days=17,
+               sell_hi=.275,sell_lo=.225,  
+               cooloff=0, sell_days=120, sell_last=T, sell_atr=10) %>%
+  crossoverReturns(dat=fulldat[stock %in% target_companies3[[as.character(date)]]], summary = F, date = date, 
+                   end_date = date+365*15, start_date=date-2*365, transaction_fee=.0001)
 
 x[BuySell!=0 & sample=='test',
   .(returns = abs(cumprod(BuySell*AdjCloseFilled))[.N],
@@ -96,7 +109,7 @@ x[BuySell!=0 & sample=='test',
                              DaysHeldPerPurchase = sum(days_held)/sum(purchases),
                              TotalPurchases=sum(purchases))]
 
-st = 'TGT'
+st = 'JCP'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
 x[stock==st] %>% with(points(Date, mid_range_mean, type='l'))
 x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
