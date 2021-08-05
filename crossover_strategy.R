@@ -81,10 +81,10 @@ crossover_strategy = function(indat,
 saleReturns=function(strat, transaction_fee=.01, profit_cutoff){
   transactions = strat[BuySell!=0]
   transactions[, buyperiod:= cumsum(BuySell<0)]
-  transactions[, days_held := cumsum(BuySell/abs(BuySell)*as.integer(Date)), buyperiod]
+  transactions[, days_held := cumsum(as.integer(Date)*BuySell/abs(BuySell)), buyperiod]
   transactions[BuySell>0,
         .(stock, Date,
-          absolute_profit = min(BuySell*AdjCloseFilled-1,profit_cutoff)-transaction_fee,
+          absolute_profit = pmin(BuySell*AdjCloseFilled-1,profit_cutoff)-transaction_fee,
           days_held)]
 }
 

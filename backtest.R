@@ -54,24 +54,24 @@ backtest_dat = function(dates, key){
   fulldat
 }
 
-
-parameterset = expand.grid(short_range=c(7), mid_range=c(56), long_range=c(500),
-                           buy_trigger=c(-.15,-.1), cooloff=c(60), buy_trigger_days = c(20),
-                           sell_hi=c(.25), sell_lo=c(.225), sell_atr = c(10),
-                           sell_days=c(100,120), sell_last=c(T)
-)
-
 fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
                        POLYKEY)
 
+parameterset = expand.grid(short_range=c(7), long_range=c(500),
+                           buy_trigger=c(-.15), cooloff=c(0), buy_trigger_days = c(17),
+                           sell_hi=c(.275), sell_lo=c(.225), sell_atr = c(10),
+                           sell_days=c(100,120), sell_last=c(T)
+)
+
+
 results = parameterset %>% 
   apply(1, as.list) %>%
-  parallel::mclapply(crossoverReturns, dat=fulldat, summary=T, 
+  parallel::mclapply(crossoverReturns, dat=fulldat, summary_only=T, 
                      transaction_fee=.0001, mc.cores = cores) %>%
   rbindlist %>%
   cbind(parameterset)
 
-results[order(avg_profit/(avg_days_held+10*purchases/stocks), decreasing=T)] # in terms of profit per day, long ranges with low sell condition are best
+results[order(avg_profit/(days_held_per_purchase+10), decreasing=T)]
 
 
 
@@ -81,18 +81,11 @@ x = data.table(short_range=7, mid_range=14, long_range=500,
                buy_trigger=-.15, buy_trigger_days=17,
                sell_hi=.275,sell_lo=.225,  
                cooloff=0, sell_days=120, sell_last=T, sell_atr=10) %>%
-  crossoverReturns(dat=fulldat[stock %in% target_companies3[[as.character(date)]]], summary = F, date = date, 
-                   end_date = date+365*15, start_date=date-2*365, transaction_fee=.0001)
+  crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
 
-x[BuySell!=0 & sample=='test',
-  .(returns = abs(cumprod(BuySell*AdjCloseFilled))[.N],
-    days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N],
-    purchases = .N/2)
-  ,stock][order(returns)][,.(PctPos=mean(returns>1),
-                             AvgStockReturn=median(returns), 
-                             AvgStockDaysHeld=mean(days_held), 
-                             DaysHeldPerPurchase = sum(days_held)/sum(purchases),
-                             TotalPurchases=sum(purchases))]
+x[BuySell>0,.(PctPos=mean(BuySell*AdjCloseFilled>1),
+                             AvgStockReturn=median(BuySell*AdjCloseFilled), 
+                             TotalPurchases=.N)]
 
 st = 'JCP'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
