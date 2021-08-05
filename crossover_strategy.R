@@ -25,7 +25,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
     # increment the counters
     daysSinceLoss = daysSinceLoss + 1
     daysSincePurchase = daysSincePurchase + 1
-    if(crosslong_lagged[i]<buysell_pars$buy_trigger){
+    if(!is.na(crosslong_lagged[i]) && crosslong_lagged[i]<buysell_pars$buy_trigger){
       daysCrossed = daysCrossed + 1
     } else { 
       daysCrossed=0 
@@ -78,36 +78,29 @@ crossover_strategy = function(indat,
   indat
 }
 
-stockAvgReturns=function(strat, transaction_fee=.01, profit_cutoff){
-  sale_profits = strat[BuySell>0,
-                  .(absolute_profit = 
-                      min((cumprod( BuySell*AdjCloseFilled )[.N]-1),profit_cutoff)-
-                      .N*transaction_fee,
-                    purchases = .N),
-                  .(stock)]
-  counts = strat[BuySell!=0,
-        .(days_held = cumsum(BuySell/abs(BuySell)*as.integer(Date))[.N]),
-        .(stock)]
-  sale_profits[counts, on='stock']
+saleReturns=function(strat, transaction_fee=.01, profit_cutoff){
+  transactions = strat[BuySell!=0]
+  transactions[, buyperiod:= cumsum(BuySell<0)]
+  transactions[, days_held := cumsum(BuySell/abs(BuySell)*as.integer(Date)), buyperiod]
+  transactions[BuySell>0,
+        .(stock, Date,
+          absolute_profit = min(BuySell*AdjCloseFilled-1,profit_cutoff)-transaction_fee,
+          days_held)]
 }
 
 calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
   if(summary){
-    returns = stockAvgReturns(strat,
-                              transaction_fee=transaction_fee,
-                              profit_cutoff=profit_cutoff)
+    returns = saleReturns(strat,
+                          transaction_fee=transaction_fee,
+                          profit_cutoff=profit_cutoff)
     if(nrow(returns)>0){
       return(returns[,.(avg_profit = mean(absolute_profit),
                         median_profit = median(absolute_profit),
-                        days_held_per_stock=mean(days_held), 
-                        stocks=.N,
-                        days_held_per_purchase = sum(days_held)/sum(purchases),
-                        purchases = sum(purchases) )])
+                        days_held_per_purchase = mean(days_held),
+                        purchases = .N )])
       } else {
         return(returns[,.(avg_profit = 0,
                           median_profit = 0,
-                          days_held_per_stock=0, 
-                          stocks=0,
                           days_held_per_purchase = 0,
                           purchases = 0 )])
         } 
