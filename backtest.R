@@ -15,23 +15,20 @@ choose_tickers = function(date, key, top_n){
              .(ticker, ticker_valid_start=date, ticker_valid_end=date+365)][1:top_n]
 }
 
-date_returns = function(date, params, fulldat, stocklist, years_forward=2){
-  
-  print(paste("Gettin returns for", date , now(tzone = 'America/New_York')))
-  
-  date_dat = fulldat[Date>date-365*2.1 & Date<date+365*years_forward & (stock %in% stocklist[[as.character(date)]])]
-  
-  outs = params %>% 
-    apply(1, as.list) %>%
-    parallel::mclapply(crossoverReturns, dat=date_dat, summary=T, date = date, 
-                       end_date=date+years_forward, start_date=date-365*2, transaction_fee=.0001, mc.cores = cores) %>%
-    rbindlist %>%
-    cbind(params)
-  outs$Date = date
-  outs
+filter_range(fulldat, company_dates){
+  fulldat[,stockdate:=Date]
+  validrange = fulldat[company_dates, 
+                     .(stock, Date=stockdate, valid=TRUE),
+                     on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
+  fulldat = merge(fulldat, validrange, all.x=T, on=c('stock','Date')) 
+  fulldat[,valid:=!is.na(valid)]
+  fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
+  fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T),stock]
+  fulldat[Date>=minValid & Date<=maxValid,
+          .(stock,Date,AdjClose,high,low,volume,AdjCloseFilled,hiFilled,loFilled,atr, valid)]
 }
 
-backtest = function(dates, parameters, key){
+backtest_dat = function(dates, key){
   
   print(paste("Starting. " , now(tzone = 'America/New_York')))
   target_companies = lapply(dates, choose_tickers, key=key, top_n=150) %>% rbindlist
@@ -48,26 +45,10 @@ backtest = function(dates, parameters, key){
     basic_prep(
       rename_from=c("symbol","date","adjusted"),
       rename_to=c("stock","Date","AdjClose")
-    )
-  fulldat[,stockdate:=Date]
-  validdat = fulldat[target_companies, 
-                    .(stock, Date=stockdate, valid=TRUE),
-                    on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
-  fulldat = merge(fulldat, validdat, all.x=T, on=c('stock','Date')) 
-  fulldat[,valid:=!is.na(valid)]
-  fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
-  fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T),stock]
-  fulldat=fulldat[Date>=minValid & Date<=maxValid,
-                  .(stock,Date,AdjClose,high,low,volume,AdjCloseFilled,hiFilled,loFilled,atr, valid)]
-  
-  rm(validdat)
-  gc()
-  
+    ) %>%
+    filter_range(target_companies)
   print(paste("Got the data for all the companies. " , now(tzone = 'America/New_York')))
-  
-  results=lapply(dates, date_returns, params = parameters, fulldat = fulldat, stocklist=target_companies)
-  results = rbindlist(results)
-  results
+  fulldat
 }
 
 
@@ -77,23 +58,17 @@ parameterset = expand.grid(short_range=c(7), mid_range=c(56), long_range=c(500),
                            sell_days=c(100,120), sell_last=c(T)
 )
 
-# results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
-
+fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
+                       POLYKEY)
 
 results = parameterset %>% 
   apply(1, as.list) %>%
-  parallel::mclapply(crossoverReturns, dat=fulldat, summary=T, date = dates[1], 
-                     end_date=dates[length(dates)]+2.1*365, start_date=dates[1]-365*2, transaction_fee=.0001, mc.cores = cores) %>%
+  parallel::mclapply(crossoverReturns, dat=fulldat, summary=T, 
+                     transaction_fee=.0001, mc.cores = cores) %>%
   rbindlist %>%
   cbind(parameterset)
 
-results=lapply(dates, date_returns, params = parameterset, fulldat = fulldat, stocklist=target_companies) %>% rbindlist
-results_agg = results[,.(avg_profit = mean(avg_profit), avg_profit_sd = sd(avg_profit),
-                         median_profit = mean(median_profit), median_profit_sd = sd(median_profit),
-                         avg_days_held = mean(avg_days_held+10*trades/stocks), stocks = mean(stocks), 
-                         DaysHeldPerPurchase = mean(DaysHeldPerPurchase), trades = mean(trades)),
-                      names(parameterset)]
-results_agg[order(avg_profit/avg_days_held, decreasing=T)] # in terms of profit per day, long ranges with low sell condition are best
+results[order(avg_profit/(avg_days_held+10*purchases/stocks), decreasing=T)] # in terms of profit per day, long ranges with low sell condition are best
 
 
 
