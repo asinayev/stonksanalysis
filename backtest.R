@@ -12,7 +12,7 @@ choose_tickers = function(date, key, top_n){
   financials = stocklist_from_polygon(key = key, date = date, financials = T, cores = poly_cores)
   financials = financials[!is.na(marketCapitalization)]
   financials[order(marketCapitalization, decreasing = T), 
-             .(ticker, ticker_valid_start=date, ticket_valid_end=date+365)][1:top_n]
+             .(ticker, ticker_valid_start=date, ticker_valid_end=date+365)][1:top_n]
 }
 
 date_returns = function(date, params, fulldat, stocklist, years_forward=2){
@@ -36,7 +36,6 @@ backtest = function(dates, parameters, key){
   print(paste("Starting. " , now(tzone = 'America/New_York')))
   target_companies = lapply(dates, choose_tickers, key=key, top_n=150) %>% rbindlist
   
-  
   print(paste("Got the company names for each year " , now(tzone = 'America/New_York')))
   fulldat = target_companies$ticker %>% 
     unlist %>% unique %>%
@@ -55,6 +54,14 @@ backtest = function(dates, parameters, key){
                     .(stock, Date=stockdate, valid=TRUE),
                     on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
   fulldat = merge(fulldat, validdat, all.x=T, on=c('stock','Date')) 
+  fulldat[,valid:=!is.na(valid)]
+  fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
+  fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T),stock]
+  fulldat=fulldat[Date>=minValid & Date<=maxValid,
+                  .(stock,Date,AdjClose,high,low,volume,AdjCloseFilled,hiFilled,loFilled,atr, valid)]
+  
+  rm(validdat)
+  gc()
   
   print(paste("Got the data for all the companies. " , now(tzone = 'America/New_York')))
   
@@ -65,9 +72,9 @@ backtest = function(dates, parameters, key){
 
 
 parameterset = expand.grid(short_range=c(7), mid_range=c(56), long_range=c(500),
-                           buy_trigger=c(-.15,-.1), cooloff=c(30,60), buy_trigger_days = c(20),
-                           sell_hi=c(.25,.2), sell_lo=c(.225,.15), sell_atr = c(9,10,11),
-                           sell_days=c(100,120,140), sell_last=c(T)
+                           buy_trigger=c(-.15,-.1), cooloff=c(60), buy_trigger_days = c(20),
+                           sell_hi=c(.25), sell_lo=c(.225), sell_atr = c(10),
+                           sell_days=c(100,120), sell_last=c(T)
 )
 
 # results = backtest( seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365), parameterset, POLYKEY)
