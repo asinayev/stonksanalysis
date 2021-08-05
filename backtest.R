@@ -8,18 +8,18 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 cores = 4
 poly_cores=min(cores*8,48)
 
-choose_tickers = function(date, key, top_n){
+get_financials = function(date, key){
+  print(paste('getting date', date))
   financials = stocklist_from_polygon(key = key, date = date, financials = T, cores = poly_cores)
-  financials = financials[!is.na(marketCapitalization)]
-  financials[order(marketCapitalization, decreasing = T), 
-             .(ticker, ticker_valid_start=date, ticker_valid_end=date+365)][1:top_n]
+  financials[!is.na(marketCapitalization),
+             .(ticker, ticker_valid_start=date, ticker_valid_end=date+365, marketCapitalization)]
 }
 
-filter_range(fulldat, company_dates){
+filter_range = function(fulldat, company_dates){
   fulldat[,stockdate:=Date]
   validrange = fulldat[company_dates, 
-                     .(stock, Date=stockdate, valid=TRUE),
-                     on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
+                       .(stock, Date=stockdate, valid=TRUE),
+                       on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
   fulldat = merge(fulldat, validrange, all.x=T, on=c('stock','Date')) 
   fulldat[,valid:=!is.na(valid)]
   fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
@@ -31,9 +31,12 @@ filter_range(fulldat, company_dates){
 backtest_dat = function(dates, key){
   
   print(paste("Starting. " , now(tzone = 'America/New_York')))
-  target_companies = lapply(dates, choose_tickers, key=key, top_n=150) %>% rbindlist
-  
+  financials = lapply(dates, get_financials, key=key) %>% rbindlist
   print(paste("Got the company names for each year " , now(tzone = 'America/New_York')))
+  
+  financials[,cap_order := order(marketCapitalization, decreasing = T),ticker_valid_start]
+  target_companies=financials[cap_order<250]
+  
   fulldat = target_companies$ticker %>% 
     unlist %>% unique %>%
     # tq_get %>% data.table %>%
