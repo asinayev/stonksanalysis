@@ -83,9 +83,9 @@ saleReturns=function(strat, transaction_fee=.01, profit_cutoff){
   transactions[, buyperiod:= cumsum(BuySell<0)]
   transactions[, days_held := cumsum(as.integer(Date)*BuySell/abs(BuySell)), buyperiod]
   transactions[BuySell>0,
-        .(stock, Date,
-          absolute_profit = pmin(BuySell*AdjCloseFilled-1,profit_cutoff)-transaction_fee,
-          days_held)]
+               .(stock, Date,
+                 absolute_profit = ifelse((BuySell*AdjCloseFilled-1)>profit_cutoff,0,BuySell*AdjCloseFilled-1-transaction_fee),
+                 days_held)]
 }
 
 calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
@@ -98,16 +98,16 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
                         median_profit = median(absolute_profit),
                         days_held_per_purchase = mean(days_held),
                         purchases = .N )])
-      } else {
-        return(returns[,.(avg_profit = 0,
-                          median_profit = 0,
-                          days_held_per_purchase = 0,
-                          purchases = 0 )])
-        } 
     } else {
-      return(strat)
-    }
+      return(returns[,.(avg_profit = 0,
+                        median_profit = 0,
+                        days_held_per_purchase = 0,
+                        purchases = 0 )])
+    } 
+  } else {
+    return(strat)
   }
+}
 
 crossoverReturns=function(pars=list(), 
                           dat, summary_only=T, transaction_fee=.01){
@@ -121,6 +121,6 @@ crossoverReturns=function(pars=list(),
   dat %>%
     crossover_prep(short_range = pars$short_range,long_range = pars$long_range) %>%
     crossover_strategy(buysell_pars = pars) %>%
-    calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$sell_hi+.1, 
+    calcReturns(transaction_fee=transaction_fee, profit_cutoff=.5, 
                 summary=summary_only)
 }
