@@ -117,7 +117,7 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
   }
 
 crossoverReturns=function(pars=list(), 
-                          dat, summary_only=T, transaction_fee=.01, stock_avg=T){
+                          dat, summary_only=T, transaction_fee=.01){
   pars=as.list(pars)
   required_pars = c("short_range",      "long_range",       
                     "buy_trigger",      "cooloff",          "buy_trigger_days", 
@@ -126,7 +126,7 @@ crossoverReturns=function(pars=list(),
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
-    crossover_prep(pars$short_range,pars$mid_range,long_range = pars$long_range) %>%
+    crossover_prep(short_range = pars$short_range,long_range = pars$long_range) %>%
     crossover_strategy(buysell_pars = pars) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=pars$sell_hi+.1, 
                 summary=summary_only)
