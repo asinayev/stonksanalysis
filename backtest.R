@@ -34,7 +34,7 @@ backtest_dat = function(dates, key){
   print(paste("Starting. " , now(tzone = 'America/New_York')))
   financials = lapply(dates, get_financials, key=key) %>% rbindlist
   print(paste("Got the company names for each year " , now(tzone = 'America/New_York')))
-  
+  financials=financials[order(ticker_valid_start, marketCapitalization, decreasing=T)]
   financials[,cap_order := order(marketCapitalization, decreasing = T),ticker_valid_start]
   target_companies=financials[cap_order<250]
   
@@ -57,22 +57,22 @@ backtest_dat = function(dates, key){
 
 fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
                        POLYKEY)
-
-parameterset = expand.grid(short_range=c(7), long_range=c(650),
-                           buy_trigger=c(0,-.175), cooloff=c(400), buy_trigger_days = c(17,300),
-                           sell_hi=c(.275,.2), sell_lo=c(.25,.15), sell_atr = c(3,10,100),
-                           sell_days=c(120), sell_last=c(T)
+gc()
+parameterset = expand.grid(short_range=c(3,7,49,100,150), long_range=c(250,350,500,650),
+                           buy_trigger=c(0,-.1,-.15), cooloff=c(100,400), buy_trigger_days = c(14,21,35,300),
+                           sell_hi=c(.3,.15), sell_lo=c(.15,.3), sell_atr = c(7,10,15,100),
+                           sell_days=c(70,120,365,365*2), sell_last=c(T)
 )
 
 
 results = parameterset %>% 
   apply(1, as.list) %>%
   parallel::mclapply(crossoverReturns, dat=fulldat, summary_only=T, 
-                     transaction_fee=.0001, mc.cores = 4) %>%
+                     transaction_fee=.0001, mc.cores = cores) %>%
   rbindlist %>%
   cbind(parameterset)
 
-results[order(avg_profit/(days_held_per_purchase+10), decreasing=T)]
+results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 
 

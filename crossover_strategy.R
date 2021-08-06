@@ -96,11 +96,13 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
     if(nrow(returns)>0){
       return(returns[,.(avg_profit = mean(absolute_profit),
                         median_profit = median(absolute_profit),
+                        sd_profit = sd(absolute_profit),
                         days_held_per_purchase = mean(days_held),
                         purchases = .N )])
     } else {
       return(returns[,.(avg_profit = 0,
                         median_profit = 0,
+                        sd_profit = 0,
                         days_held_per_purchase = 0,
                         purchases = 0 )])
     } 
