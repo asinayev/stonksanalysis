@@ -58,9 +58,9 @@ backtest_dat = function(dates, key){
 fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
                        POLYKEY)
 gc()
-parameterset = expand.grid(short_range=c(49,75,98), long_range=c(250,300,350),
-                           buy_trigger=c(-.1), cooloff=c(400), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-                           sell_hi=c(.25), sell_lo=c(.25), sell_atr = c(100),
+parameterset = expand.grid(short_range=c(75), long_range=c(300),
+                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15,100),
                            sell_days=c(365), sell_last=c(T)
 )
 
@@ -75,10 +75,10 @@ results = parameterset %>%
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-x = data.table(short_range=75, long_range=300, 
-               buy_trigger=-.1, cooloff=400, buy_trigger_days_max=100, buy_trigger_days_min=28,
-               sell_hi=.25,sell_lo=.25,  
-               sell_atr=100, sell_days=365, sell_last=T) %>%
+x = data.table(short_range=c(75), long_range=c(300),
+               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+               sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15),
+               sell_days=c(365), sell_last=c(T)) %>%
   crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
 
 x[order(sample(nrow(x)))][BuySell>0, .(stock,Date,BuySell*AdjCloseFilled)][order(V3)]
@@ -86,7 +86,7 @@ x[BuySell>0,.(PctPos=mean(BuySell*AdjCloseFilled>1),
               AvgStockReturn=median(BuySell*AdjCloseFilled), 
               TotalPurchases=.N)]
 
-st = 'MMM'
+st = 'VZ'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
 x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
 x[stock==st & BuySell<0] %>% with(abline(v=Date, col='blue'))
