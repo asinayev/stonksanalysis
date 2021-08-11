@@ -126,7 +126,7 @@ crossoverReturns=function(pars=list(),
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
-    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, agg_func = pars$long_range_op[[1]]) %>%
+    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, agg_func = pars$long_range_op) %>%
     crossover_strategy(buysell_pars = pars) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=.5, 
                 summary=summary_only)

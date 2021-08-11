@@ -7,7 +7,7 @@ source("store_data.R",local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
-cores = 4
+cores = 8
 poly_cores=min(cores*4)
 
 get_financials = function(date, key){
@@ -61,7 +61,7 @@ backtest_dat = function(dates, key){
 fulldat = get_dt(name = 'fulldat')
 
 gc()
-parameterset = expand.grid(short_range=c(75), long_range=c(100,200,300,400,500), long_range_op=c(max),
+parameterset = expand.grid(short_range=c(3), long_range=c(100,200,300,400,500), long_range_op=c(max),
                            buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
                            sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15,100),
                            sell_days=c(365), sell_last=c(T)
@@ -78,7 +78,7 @@ results = parameterset %>%
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-x = data.table(short_range=c(3), long_range=c(90), long_range_op=c(max),
+x = list(short_range=c(3), long_range=c(90), long_range_op=c(max),
                buy_trigger=c(-.01), cooloff=c(0), buy_trigger_days_max = c(1000), buy_trigger_days_min = c(0),
                sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15),
                sell_days=c(365), sell_last=c(F)) %>%
