@@ -5,7 +5,7 @@ crossover_prep = function(indat,
                           
 ){
   indat=data.table(indat)
-  indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
+  indat[,short_range_mean:=frollapply(x=AdjClose, n=short_range, FUN = agg_func, fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,long_range_agg:=frollapply(x=AdjClose, n=long_range, FUN = agg_func, fill=NA, align="right", na.rm=T), stock]
   indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
         stock]
