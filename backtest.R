@@ -3,6 +3,7 @@ setwd("stonksanalysis")
 source("prep_data.R", local=T)
 source("polygon.R", local=T)
 source("crossover_strategy.R", local=T)
+source("store_data.R",local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
@@ -55,10 +56,12 @@ backtest_dat = function(dates, key){
   fulldat
 }
 
-fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
-                       POLYKEY)
+# fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
+#                        POLYKEY)
+fulldat = get_dt(name = 'fulldat')
+
 gc()
-parameterset = expand.grid(short_range=c(75), long_range=c(300),
+parameterset = expand.grid(short_range=c(75), long_range=c(100,200,300,400,500), long_range_op=c(max),
                            buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
                            sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15,100),
                            sell_days=c(365), sell_last=c(T)
@@ -75,15 +78,15 @@ results = parameterset %>%
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-x = data.table(short_range=c(75), long_range=c(300),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+x = data.table(short_range=c(3), long_range=c(90), long_range_op=c(max),
+               buy_trigger=c(-.01), cooloff=c(0), buy_trigger_days_max = c(1000), buy_trigger_days_min = c(0),
                sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15),
-               sell_days=c(365), sell_last=c(T)) %>%
+               sell_days=c(365), sell_last=c(F)) %>%
   crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
 
 x[order(sample(nrow(x)))][BuySell>0, .(stock,Date,BuySell*AdjCloseFilled)][order(V3)]
 x[BuySell>0,.(PctPos=mean(BuySell*AdjCloseFilled>1),
-              AvgStockReturn=median(BuySell*AdjCloseFilled), 
+              AvgStockReturn=mean(BuySell*AdjCloseFilled), 
               TotalPurchases=.N)]
 
 st = 'VZ'

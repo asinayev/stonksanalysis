@@ -5,9 +5,9 @@ crossover_prep = function(indat,
                           
 ){
   indat=data.table(indat)
-  indat[,short_range_mean:=frollapply(x=AdjClose, n=short_range, FUN = agg_func, fill=NA, algo="exact", align="right", na.rm=T), stock]
+  indat[,short_range_mean:=frollapply(x=AdjClose, n=short_range, FUN = agg_func, fill=NA, align="right", na.rm=T), stock]
   indat[,long_range_agg:=frollapply(x=AdjClose, n=long_range, FUN = agg_func, fill=NA, align="right", na.rm=T), stock]
-  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
+  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_agg, long_range_agg),
         stock]
   indat[frollsum(is.na(AdjCloseFilled),long_range)>0,c("CrossoverLong"):=NA,stock]
   indat
@@ -126,7 +126,7 @@ crossoverReturns=function(pars=list(),
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
-    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, agg_func = pars$long_range_op) %>%
+    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, agg_func = pars$long_range_op[[1]]) %>%
     crossover_strategy(buysell_pars = pars) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=.5, 
                 summary=summary_only)
