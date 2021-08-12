@@ -3,6 +3,7 @@ setwd("stonksanalysis")
 source("prep_data.R", local=T)
 source("polygon.R", local=T)
 source("crossover_strategy.R", local=T)
+source("store_data.R",local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
@@ -55,8 +56,10 @@ backtest_dat = function(dates, key){
   fulldat
 }
 
-fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
-                       POLYKEY)
+# fulldat = backtest_dat(seq(as.Date('2005-08-01'), as.Date('2019-08-01'), 365),
+#                        POLYKEY)
+fulldat = get_dt(name = 'fulldat')
+
 gc()
 parameterset = expand.grid(short_range=c(75), long_range=c(300),
                            buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
