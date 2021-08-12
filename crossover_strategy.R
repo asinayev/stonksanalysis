@@ -48,7 +48,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
        daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
-       closes[i+buysell_pars$option_days]<closes[i] ){ # and the price at option exercise is lower
+       closes[i+buysell_pars$option_days]<=closes[i] ){ # and the price at option exercise is lower
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
