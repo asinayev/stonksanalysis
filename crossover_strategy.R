@@ -16,12 +16,14 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
   shares_sold = rep(0,n) #or negative when bought
   crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
   
+  maxValidi = max(which(!is.na(atr)))
+  
   lastBoughtPrice = -1
   periodMax = -1
   daysSinceLoss = buysell_pars$cooloff
   daysSincePurchase = buysell_pars$sell_days
   daysCrossed = 0
-  for (i in 1:n){
+  for (i in 1:maxValidi){
     # increment the counters
     daysSinceLoss = daysSinceLoss + 1
     daysSincePurchase = daysSincePurchase + 1
@@ -30,13 +32,14 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
     } else { 
       daysCrossed=0 
     }
-    if(i==n){ # on the last day
+    if(i==maxValidi){ # on the last day
       if(lastBoughtPrice>0 && buysell_pars$sell_last){
         shares_sold[i]= 1/lastBoughtPrice   # sell if you own
       }
       next # and then quit
     }
-    if(is.na(closes[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) || is.na(atr[i])){
+    
+    if(is.na(rsi[i]) || is.na(atr[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) ){
       next # skip if necessary values are missing
     }
     if(valid[i] && # Buy if in the valid period

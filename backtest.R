@@ -62,9 +62,9 @@ fulldat = get_dt(name = 'fulldat')
 
 gc()
 parameterset = expand.grid(short_range=c(75), long_range=c(300),
-                           buy_trigger=c(0), cooloff=c(0,400), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
-                           buy_atr_min=c(0,.02), buy_atr_max=c(1,.06),
-                           sell_hi=c(.225), sell_lo=c(.225), sell_atr = c(10),
+                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+                           buy_atr_min=c(0,.02), buy_rsi_max=c(1,.7), sell_rsi_min=c(1,.7),
+                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
                            sell_days=c(365), sell_last=c(T)
 )
 
@@ -80,8 +80,9 @@ results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
 x = data.table(short_range=c(75), long_range=c(300),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-               sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15),
+               buy_trigger=c(0), cooloff=c(0), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
+               buy_atr_min=c(0), buy_rsi_max=c(1), sell_rsi_min=c(0),
+               sell_hi=c(.225), sell_lo=c(.225), sell_atr = c(10),
                sell_days=c(365), sell_last=c(T)) %>%
   crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
 
