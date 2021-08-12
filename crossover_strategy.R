@@ -14,20 +14,19 @@ crossover_prep = function(indat,
 buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars, n){
   
   shares_sold = rep(0,n) #or negative when bought
-  crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
-  
+
   maxValidi = max(which(!is.na(atr)))
   
-  lastBoughtPrice = -1
-  periodMax = -1
+  lastBoughtPrice = buySignal = periodMax = -1
   daysSinceLoss = buysell_pars$cooloff
   daysSincePurchase = buysell_pars$sell_days
   daysCrossed = 0
-  for (i in 1:maxValidi){
+  for (i in 2:maxValidi){
     # increment the counters
     daysSinceLoss = daysSinceLoss + 1
     daysSincePurchase = daysSincePurchase + 1
-    if(!is.na(crosslong_lagged[i]) && crosslong_lagged[i]<buysell_pars$buy_trigger){
+    buySignal = buySignal - 1
+    if(!is.na(crosslong[i-1]) && crosslong[i-1]<buysell_pars$buy_trigger){
       daysCrossed = daysCrossed + 1
     } else { 
       daysCrossed=0 
@@ -39,16 +38,21 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
       next # and then quit
     }
     
-    if(is.na(rsi[i]) || is.na(atr[i]) || is.na(crosslong_lagged[i]) || is.na(crosslong[i]) ){
+    if(is.na(rsi[i]) || is.na(atr[i]) || is.na(crosslong[i-1]) || is.na(crosslong[i]) ){
       next # skip if necessary values are missing
     }
-    if(valid[i] && # Buy if in the valid period
-       lastBoughtPrice==-1 && # and not already holding
-       crosslong_lagged[i]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
+    
+    if(crosslong[i-1]<buysell_pars$buy_trigger &&  # and the crossover was lower than cutoff yesterday
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
-       daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
-       daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
+       daysCrossed<buysell_pars$buy_trigger_days_max # but not too long
+    ){
+      buySignal=buysell_pars$cooloff
+      }
+    if(buySignal>0 &&
+       valid[i] && # Buy if in the valid period
+       lastBoughtPrice==-1 && # and not already holding
+       daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        atr[i]/closes[i]>buysell_pars$buy_atr_min &&
        rsi[i]<buysell_pars$buy_rsi_max){ 
       lastBoughtPrice = periodMax = closes[i]
