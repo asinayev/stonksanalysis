@@ -47,13 +47,17 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
-       daysCrossed<buysell_pars$buy_trigger_days_max ){ # but not too long
+       daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
+       closes[i+buysell_pars$option_days]<closes[i] ){ # and the price at option exercise is lower
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
     } else if (lastBoughtPrice>0){ # When you own
       periodMax = max(periodMax, closes[i])
-      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
+      if(daysSincePurchase<buysell_pars$option_days){ #before the option date, can't sell
+        next
+      }
+      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #If the high is high enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
       } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
@@ -122,7 +126,7 @@ crossoverReturns=function(pars=list(),
   required_pars = c("short_range",      "long_range",       "long_range_op",
                     "buy_trigger",      "cooloff",          "buy_trigger_days_max",     "buy_trigger_days_min",  
                     "sell_hi",          "sell_lo",          "sell_atr",         
-                    "sell_days",        "sell_last")
+                    "sell_days",        "sell_last",        "option_days")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
