@@ -3,7 +3,7 @@ library(data.table)
 fillna = function(x, fill){
   ifelse(is.na(x),fill,x)
 }
-pct_diff = function(x,y,pct_of=x){(x-y)/pct_of}
+pct_diff = function(x,y,of=x){(x-y)/of}
 
 basic_prep = function(indat,
                       rename_from = "AdjClose",
