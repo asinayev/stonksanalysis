@@ -61,8 +61,8 @@ fulldat = get_dt(name = 'fulldat')
 
 gc()
 parameterset = expand.grid(short_range=c(75), long_range=c(300), long_range_op=c(mean),
-                           buy_trigger=c(0), cooloff=c(400), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
-                           sell_hi=c(.225), sell_lo=c(.225), sell_atr = c(10),
+                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
                            sell_days=c(365), sell_last=c(T), option_days=c(0,1,2,7,14,21)
 )
 
@@ -78,14 +78,12 @@ system.time({
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-# 75	300	0	400	600	0	0.225	0.225	10	365
+# 75	300	-0.1	0	100	28	0.225	0.275	100	365
 x = list(short_range=c(75), long_range=c(300), long_range_op=mean,
          buy_trigger=c(0), cooloff=c(400), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
-         sell_hi=c(.225), sell_lo=c(.225), sell_atr = c(10),
-         sell_days=c(365), sell_last=c(T), option_days=0) %>%
+         sell_hi=c(.25), sell_lo=c(.15), sell_atr = c(10),
+         sell_days=c(110), sell_last=c(T), option_days=14) %>%
   crossoverReturns(dat=fulldat, summary = T, transaction_fee=.0001)
-
-saleReturns(x, transaction_fee = .001, profit_cutoff = 1)[days_held<14,mean(absolute_profit>0)]
 
 x[order(sample(nrow(x)))][BuySell>0, .(stock,Date,BuySell*AdjCloseFilled)]
 x[BuySell>0,.(PctPos=mean(BuySell*AdjCloseFilled>1),
