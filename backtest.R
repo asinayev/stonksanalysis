@@ -1,4 +1,3 @@
-
 setwd("stonksanalysis")
 source("prep_data.R", local=T)
 source("polygon.R", local=T)
@@ -7,7 +6,7 @@ source("store_data.R",local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
-cores = 4
+cores = 2
 poly_cores=min(cores*4)
 
 get_financials = function(date, key){
@@ -61,37 +60,39 @@ backtest_dat = function(dates, key){
 fulldat = get_dt(name = 'fulldat')
 
 gc()
-parameterset = expand.grid(short_range=c(75), long_range=c(300),
+parameterset = expand.grid(short_range=c(75), long_range=c(300), long_range_op=c(mean),
                            buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15,100),
-                           sell_days=c(365), sell_last=c(T)
+                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
+                           sell_days=c(365), sell_last=c(T), option_days=c(0,1,2,7,14,21)
 )
 
-
-results = parameterset %>% 
-  apply(1, as.list) %>%
-  parallel::mclapply(crossoverReturns, dat=fulldat, summary_only=T, 
-                     transaction_fee=.0001, mc.cores = cores) %>%
-  rbindlist %>%
-  cbind(parameterset)
+system.time({
+  results = parameterset %>% 
+    apply(1, as.list) %>%
+    parallel::mclapply(crossoverReturns, dat=fulldat, summary_only=T, 
+                       transaction_fee=.0001, mc.cores = cores) %>%
+    rbindlist %>%
+    cbind(parameterset)
+})
 
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-x = data.table(short_range=c(75), long_range=c(300),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-               sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15),
-               sell_days=c(365), sell_last=c(T)) %>%
-  crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
+# 75	300	-0.1	0	100	28	0.225	0.275	100	365
+x = list(short_range=c(75), long_range=c(300), long_range_op=mean,
+         buy_trigger=c(0), cooloff=c(400), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
+         sell_hi=c(.25), sell_lo=c(.15), sell_atr = c(10),
+         sell_days=c(110), sell_last=c(T), option_days=14) %>%
+  crossoverReturns(dat=fulldat, summary = T, transaction_fee=.0001)
 
-x[order(sample(nrow(x)))][BuySell>0, .(stock,Date,BuySell*AdjCloseFilled)][order(V3)]
+x[order(sample(nrow(x)))][BuySell>0, .(stock,Date,BuySell*AdjCloseFilled)]
 x[BuySell>0,.(PctPos=mean(BuySell*AdjCloseFilled>1),
-              AvgStockReturn=median(BuySell*AdjCloseFilled), 
+              AvgStockReturn=mean(BuySell*AdjCloseFilled), 
               TotalPurchases=.N)]
 
-st = 'VZ'
+st = 'BLK'
 x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
-x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
+x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue', cex=.01))
 x[stock==st & BuySell<0] %>% with(abline(v=Date, col='blue'))
 x[stock==st & BuySell>0] %>% with(abline(v=Date))
 x[stock==st & BuySell!=0]

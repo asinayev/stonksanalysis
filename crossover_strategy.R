@@ -1,11 +1,13 @@
 crossover_prep = function(indat,
-                          short_range = 7,
-                          long_range = 112
+                          short_range,
+                          long_range,
+                          agg_func
+                          
 ){
   indat=data.table(indat)
-  indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
+  indat[,short_range_mean:=frollapply(x=AdjClose, n=short_range, FUN = agg_func, fill=NA, align="right", na.rm=T), stock]
+  indat[,long_range_agg:=frollapply(x=AdjClose, n=long_range, FUN = agg_func, fill=NA, align="right", na.rm=T), stock]
+  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_agg, long_range_agg),
         stock]
   indat[frollsum(is.na(AdjCloseFilled),long_range)>0,c("CrossoverLong"):=NA,stock]
   indat
@@ -45,13 +47,17 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
-       daysCrossed<buysell_pars$buy_trigger_days_max ){ # but not too long
+       daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
+       closes[i+buysell_pars$option_days]<=closes[i] ){ # and the price at option exercise is lower
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
     } else if (lastBoughtPrice>0){ # When you own
       periodMax = max(periodMax, closes[i])
-      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
+      if(daysSincePurchase<buysell_pars$option_days){ #before the option date, can't sell
+        next
+      }
+      if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #If the high is high enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
       } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
@@ -117,14 +123,14 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
 crossoverReturns=function(pars=list(), 
                           dat, summary_only=T, transaction_fee=.01){
   pars=as.list(pars)
-  required_pars = c("short_range",      "long_range",       
+  required_pars = c("short_range",      "long_range",       "long_range_op",
                     "buy_trigger",      "cooloff",          "buy_trigger_days_max",     "buy_trigger_days_min",  
                     "sell_hi",          "sell_lo",          "sell_atr",         
-                    "sell_days",        "sell_last")
+                    "sell_days",        "sell_last",        "option_days")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
-    crossover_prep(short_range = pars$short_range,long_range = pars$long_range) %>%
+    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, agg_func = pars$long_range_op) %>%
     crossover_strategy(buysell_pars = pars) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=.5, 
                 summary=summary_only)
