@@ -62,8 +62,9 @@ fulldat = get_dt(name = 'fulldat')
 
 gc()
 parameterset = expand.grid(short_range=c(75), long_range=c(300),
-                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(15,100),
+                           buy_trigger=c(0), cooloff=c(0,400), buy_trigger_days_max = c(600), buy_trigger_days_min = c(0),
+                           buy_atr_min=c(0,.02), buy_atr_max=c(1,.06),
+                           sell_hi=c(.225), sell_lo=c(.225), sell_atr = c(10),
                            sell_days=c(365), sell_last=c(T)
 )
 

@@ -45,7 +45,9 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
        crosslong[i]>buysell_pars$buy_trigger && # but is higher than cutoff today
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
-       daysCrossed<buysell_pars$buy_trigger_days_max ){ # but not too long
+       daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
+       atr[i]/closes[i]>buysell_pars$buy_atr_min &&
+       atr[i]/closes[i]<buysell_pars$buy_atr_max){ 
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
