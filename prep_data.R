@@ -28,6 +28,9 @@ basic_prep = function(indat,
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
   indat[,hiFilled:=high[1], .(cumsum(!is.na(high)),stock)]
   indat[,loFilled:=low[1], .(cumsum(!is.na(low)),stock)]
-  indat[,atr:=pmax(abs(high-low),abs(high-lag(AdjCloseFilled,1)),abs(low-lag(AdjCloseFilled,1))), .(stock)]
-  indat[,atr:=frollmean(lag(atr), 14, algo = 'exact',align='right',na.rm=T), stock]
+  indat[,atr:=pmax(abs(high-low),abs(high-shift(AdjCloseFilled)),abs(low-shift(AdjCloseFilled))), .(stock)]
+  indat[,atr:=frollmean(shift(atr,1), 14, algo = 'exact',align='right',na.rm=T), stock]
+  indat[,rsi:=1-(1/(1+frollmean(pmax(0, AdjClose - shift(AdjClose)), 14, algo = 'exact',align='right',na.rm=T)/
+                      frollmean(pmax(0, shift(AdjClose) - AdjClose), 14, algo = 'exact',align='right',na.rm=T) 
+                    )), stock ]
 }

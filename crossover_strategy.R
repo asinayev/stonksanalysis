@@ -11,7 +11,7 @@ crossover_prep = function(indat,
   indat
 }
 
-buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
+buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars, n){
   
   shares_sold = rep(0,n) #or negative when bought
   crosslong_lagged = shift(crosslong, n=1L, fill=NA, type='lag')
@@ -47,7 +47,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
        daysCrossed<buysell_pars$buy_trigger_days_max && # but not too long
        atr[i]/closes[i]>buysell_pars$buy_atr_min &&
-       atr[i]/closes[i]<buysell_pars$buy_atr_max){ 
+       rsi[i]<buysell_pars$buy_rsi_max){ 
       lastBoughtPrice = periodMax = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
@@ -57,6 +57,9 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
       } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
+        shares_sold[i]= 1/lastBoughtPrice
+        lastBoughtPrice = periodMax = -1
+      } else if (rsi[i]>buysell_pars$sell_rsi_min){ # Or the RSI is too high
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMax = -1
       } else if (los[i]<max(periodMax*(1-buysell_pars$sell_lo), 
@@ -74,7 +77,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, valid, buysell_pars, n){
 crossover_strategy = function(indat, 
                               buysell_pars){
   indat=data.table(indat)
-  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, valid, buysell_pars, .N),
+  indat[,BuySell:= buySellSeq(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, rsi, valid, buysell_pars, .N),
         .(stock)] #Buy when short window is larger than long window today, but not yesterday
   indat[,Own:=cumsum(-1*BuySell),.(stock)]
   indat[,LastBought:=AdjCloseFilled[1],.(Own, stock)]
