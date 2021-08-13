@@ -16,6 +16,9 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
   shares_sold = rep(0,n) #or negative when bought
   
   maxValidi = max(which(!is.na(atr)))
+  if(maxValidi<0){
+    return(shares_sold)
+  }
   
   lastBoughtPrice = buySignal = periodMaxPrice = -1
   daysSinceLoss = buysell_pars$cooloff

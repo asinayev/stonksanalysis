@@ -33,4 +33,18 @@ basic_prep = function(indat,
   indat[,rsi:=1-(1/(1+frollmean(pmax(0, AdjClose - shift(AdjClose)), 14, algo = 'exact',align='right',na.rm=T)/
                       frollmean(pmax(0, shift(AdjClose) - AdjClose), 14, algo = 'exact',align='right',na.rm=T) 
                     )), stock ]
+  indat
+}
+
+filter_range = function(fulldat, company_dates){
+  fulldat[,stockdate:=Date]
+  validrange = fulldat[company_dates, 
+                       .(stock, Date=stockdate, valid=TRUE),
+                       on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
+  fulldat = merge(fulldat, validrange, all.x=T, on=c('stock','Date')) 
+  fulldat[,valid:=!is.na(valid)]
+  fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
+  fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T)+365,stock]
+  fulldat[Date>=minValid & Date<=maxValid,
+          .(stock,Date,AdjClose,high,low,volume,AdjCloseFilled,hiFilled,loFilled,atr, rsi, valid)]
 }

@@ -16,19 +16,6 @@ get_financials = function(date, key){
              .(ticker, ticker_valid_start=date, ticker_valid_end=date+365, marketCapitalization)]
 }
 
-filter_range = function(fulldat, company_dates){
-  fulldat[,stockdate:=Date]
-  validrange = fulldat[company_dates, 
-                       .(stock, Date=stockdate, valid=TRUE),
-                       on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
-  fulldat = merge(fulldat, validrange, all.x=T, on=c('stock','Date')) 
-  fulldat[,valid:=!is.na(valid)]
-  fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
-  fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T)+365,stock]
-  fulldat[Date>=minValid & Date<=maxValid,
-          .(stock,Date,AdjClose,high,low,volume,AdjCloseFilled,hiFilled,loFilled,atr, valid)]
-}
-
 backtest_dat = function(dates, key){
   
   print(paste("Starting. " , now(tzone = 'America/New_York')))
