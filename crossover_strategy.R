@@ -48,7 +48,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
        daysCrossed<buysell_pars$buy_trigger_days_max # but not too long
     ){
-      buySignal=2
+      buySignal=1
     }
     if(buySignal>0 &&
        valid[i] && # Buy if in the valid period

@@ -1,4 +1,3 @@
-
 setwd("stonksanalysis")
 source("prep_data.R", local=T)
 source("polygon.R", local=T)
@@ -7,7 +6,7 @@ source("store_data.R",local=T)
 
 library(tidyquant)
 POLYKEY = Sys.getenv('POLYGONKEY')
-cores = 4
+cores = 2
 poly_cores=min(cores*4)
 
 get_financials = function(date, key){
@@ -61,11 +60,11 @@ backtest_dat = function(dates, key){
 fulldat = get_dt(name = 'fulldat')
 
 gc()
-parameterset = expand.grid(short_range=c(56), long_range=c(250),
-                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(7),
-                           buy_atr_min=c(.02), buy_rsi_max=c(.5), sell_rsi_min=c(1),
-                           sell_hi=c(.2), sell_lo=c(.25), sell_atr = c(100),
-                           sell_days=c(365,180), sell_last=c(T)
+parameterset = expand.grid(short_range=c(75), long_range=c(300),
+                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
+                           buy_atr_min=c(0), buy_rsi_max=c(1), sell_rsi_min=c(1),
+                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
+                           sell_days=c(365), sell_last=c(T)
 )
 
 
@@ -80,7 +79,7 @@ results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
 x = data.table(short_range=c(56), long_range=c(250),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(7),
+               buy_trigger=c(-.15), cooloff=c(0), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
                buy_atr_min=c(.02), buy_rsi_max=c(.5), sell_rsi_min=c(1),
                sell_hi=c(.2), sell_lo=c(.25), sell_atr = c(100),
                sell_days=c(180), sell_last=c(T)) %>%
