@@ -14,13 +14,14 @@ crossover_prep = function(indat,
 buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars, n){
   
   shares_sold = rep(0,n) #or negative when bought
-
+  
   maxValidi = max(which(!is.na(atr)))
   
-  lastBoughtPrice = buySignal = periodMax = -1
+  lastBoughtPrice = buySignal = periodMaxPrice = -1
   daysSinceLoss = buysell_pars$cooloff
   daysSincePurchase = buysell_pars$sell_days
   daysCrossed = 0
+  
   for (i in 2:maxValidi){
     # increment the counters
     daysSinceLoss = daysSinceLoss + 1
@@ -47,32 +48,32 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
        daysCrossed>buysell_pars$buy_trigger_days_min && # and the lines have been crossed long enough
        daysCrossed<buysell_pars$buy_trigger_days_max # but not too long
     ){
-      buySignal=buysell_pars$cooloff
-      }
+      buySignal=2
+    }
     if(buySignal>0 &&
        valid[i] && # Buy if in the valid period
        lastBoughtPrice==-1 && # and not already holding
        daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        atr[i]/closes[i]>buysell_pars$buy_atr_min &&
        rsi[i]<buysell_pars$buy_rsi_max){ 
-      lastBoughtPrice = periodMax = closes[i]
+      lastBoughtPrice = periodMaxPrice = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
     } else if (lastBoughtPrice>0){ # When you own
-      periodMax = max(periodMax, closes[i])
+      periodMaxPrice = max(periodMaxPrice, closes[i])
       if(his[i]>lastBoughtPrice*(1+buysell_pars$sell_hi)){ #And the high is high enough
         shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
+        lastBoughtPrice = periodMaxPrice = -1
       } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
         shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
+        lastBoughtPrice = periodMaxPrice = -1
       } else if (rsi[i]>buysell_pars$sell_rsi_min){ # Or the RSI is too high
         shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
-      } else if (los[i]<max(periodMax*(1-buysell_pars$sell_lo), 
-                            periodMax-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
+        lastBoughtPrice = periodMaxPrice = -1
+      } else if (los[i]<max(periodMaxPrice*(1-buysell_pars$sell_lo), 
+                            periodMaxPrice-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
         shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMax = -1
+        lastBoughtPrice = periodMaxPrice = -1
         daysSinceLoss=0
       }
     }
