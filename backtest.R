@@ -60,11 +60,11 @@ backtest_dat = function(dates, key){
 fulldat = get_dt(name = 'fulldat')
 
 gc()
-parameterset = expand.grid(short_range=c(75), long_range=c(300),
-                           buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-                           buy_atr_min=c(0), buy_rsi_max=c(1), sell_rsi_min=c(1),
-                           sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
-                           sell_days=c(365), sell_last=c(T)
+parameterset = expand.grid(short_range=c(28), long_range=c(250),
+                           buy_trigger=c(-.05), cooloff=c(0), buy_trigger_days_max = c(150), buy_trigger_days_min = c(70),
+                           buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
+                           sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
+                           sell_days=c(180), sell_last=c(T)
 )
 
 
@@ -78,10 +78,10 @@ results = parameterset %>%
 results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
-x = data.table(short_range=c(56), long_range=c(250),
-               buy_trigger=c(-.15), cooloff=c(0), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
-               buy_atr_min=c(.02), buy_rsi_max=c(.5), sell_rsi_min=c(1),
-               sell_hi=c(.2), sell_lo=c(.25), sell_atr = c(100),
+x1 = data.table(short_range=c(50), long_range=c(250),
+               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
+               buy_atr_min=c(.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
+               sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                sell_days=c(180), sell_last=c(T)) %>%
   crossoverReturns(dat=fulldat, summary = F, transaction_fee=.0001)
 

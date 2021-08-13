@@ -20,10 +20,10 @@ fulldat = topcompanies$ticker %>%
   filter_range(topcompanies)
 
 
-x = data.table(short_range=c(75), long_range=c(300),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(28),
-               sell_hi=c(.225), sell_lo=c(.275), sell_atr = c(100),
-               sell_days=c(365), sell_last=c(F)) %>% 
+x = data.table(short_range=c(50), long_range=c(250),
+               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(14),
+               sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
+               sell_days=c(180), sell_last=c(F)) %>% 
   crossoverReturns( dat=fulldat, summary = F, transaction_fee=.0001)
 
 x[Date == max(Date) & Own>0] # Should own
