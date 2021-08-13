@@ -20,22 +20,39 @@ fulldat = topcompanies$ticker %>%
   filter_range(topcompanies)
 
 
-x = data.table(short_range=c(50), long_range=c(250),
-               buy_trigger=c(-.1), cooloff=c(0), buy_trigger_days_max = c(100), buy_trigger_days_min = c(14),
+params = data.table(short_range=c(50,50,28), long_range=c(250),
+               buy_trigger=c(-.15,-.1,-.05), cooloff=c(0), buy_trigger_days_max = c(50,100,150), buy_trigger_days_min = c(0,14,70),
+               buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
                sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
-               sell_days=c(180), sell_last=c(F)) %>% 
-  crossoverReturns( dat=fulldat, summary = F, transaction_fee=.0001)
+               sell_days=c(180), sell_last=c(T))
+
+thisparam=params[3,]
+x = crossoverReturns( thisparam, dat=fulldat, summary = F, transaction_fee=.0001)
 
 x[Date == max(Date) & Own>0] # Should own
-x[Date == max(Date) & CrossoverLong< -.1 & Own==0][order(CrossoverLong, decreasing=T), .(stock,long_range_mean)][1:10] # Maybe buy?
+
 x[Date == max(Date) & Own>0][order(abs(pct_diff(LastBought,AdjClose,LastBought)), decreasing=T), # Maybe sell?
                              .(stock,AdjClose,LastBought, pct_diff(AdjClose, LastBought, LastBought))][1:10]
 
 
-st = 'BABA'
-x[stock==st & CrossoverLong< -.1]
-x[stock==st] %>% with(plot(Date, AdjCloseFilled, type='l'))
-x[stock==st] %>% with(points(Date, mid_range_mean, type='l'))
-x[stock==st & Own] %>% with(points(Date, LastBought, type='p', col='blue'))
-x[stock==st & BuySell<0] %>% with(abline(v=Date, col='blue'))
-x[stock==st & BuySell>0] %>% with(abline(v=Date))
+plot(x=Sys.Date()-(1:(thisparam$buy_trigger_days_max+50)), 
+     y=seq(-.2,.2, length.out=thisparam$buy_trigger_days_max+50), col='white')
+abline(h=thisparam$buy_trigger)
+abline(v=Sys.Date()-thisparam$buy_trigger_days_min)
+abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
+
+for (st in
+x[Date == max(Date) & 
+    CrossoverLong<thisparam$buy_trigger & 
+    CrossoverLong>thisparam$buy_trigger-.075 & 
+    Own==0, stock  ]){
+  plot(x=Sys.Date()-(1:(thisparam$buy_trigger_days_max+50)), 
+       y=seq(-.2,.2, length.out=thisparam$buy_trigger_days_max+50), col='white')
+  abline(h=thisparam$buy_trigger)
+  abline(v=Sys.Date()-thisparam$buy_trigger_days_min)
+  abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
+  
+  x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
+  print(st)
+  Sys.sleep(3)
+}
