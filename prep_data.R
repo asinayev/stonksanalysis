@@ -14,17 +14,17 @@ basic_prep = function(indat,
   indat$Date=as.Date(indat$Date)
   all_combinations = expand.grid(
     Date = seq(min(indat$Date, na.rm = T),
-               max(indat$Date, na.rm = T),1 ),
+               max(indat$Date, na.rm = T)+1,1 ),
     stock = unique(indat$stock)
   )
-  indat=data.table(indat)[all_combinations, on = c('Date','stock')]
+  indat=merge(all_combinations, indat, on=c("Date","stock"), all.x=T) %>% data.table
   if (end_date!=0){
     indat=indat[Date<=end_date]
   }
   if (start_date!=0){
     indat=indat[Date>=start_date]
   }
-  indat[order(stock,Date)]
+  indat = indat[order(stock,Date)]
   indat[,AdjCloseFilled:=AdjClose[1], .(cumsum(!is.na(AdjClose)),stock)]
   indat[,hiFilled:=high[1], .(cumsum(!is.na(high)),stock)]
   indat[,loFilled:=low[1], .(cumsum(!is.na(low)),stock)]
@@ -42,6 +42,7 @@ filter_range = function(fulldat, company_dates){
                        .(stock, Date=stockdate, valid=TRUE),
                        on=.(stock==ticker, Date>=ticker_valid_start, Date<ticker_valid_end)]
   fulldat = merge(fulldat, validrange, all.x=T, on=c('stock','Date')) 
+  fulldat = fulldat[order(stock, Date)]
   fulldat[,valid:=!is.na(valid)]
   fulldat=fulldat[,minValid:=min(ifelse(valid,Date,NA),na.rm=T)-365*2,stock]
   fulldat=fulldat[,maxValid:=max(ifelse(valid,Date,NA),na.rm=T)+365,stock]
