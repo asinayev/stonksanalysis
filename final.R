@@ -2,7 +2,6 @@ setwd("stonksanalysis")
 source("prep_data.R", local=T)
 source("crossover_strategy.R", local=T)
 source("polygon.R", local=T)
-setDTthreads(threads = 2)
 
 library(tidyquant)
 
@@ -29,13 +28,13 @@ fulldat = topcompanies$ticker %>%
   filter_range(topcompanies)
 
 
-params = data.table(short_range=c(50,50,50,28), long_range=c(250),
-               buy_trigger=c(-.15,-.1,-.1,-.05), cooloff=c(0), buy_trigger_days_max = c(50,50, 100,150), buy_trigger_days_min = c(0,0,14,70),
+params = data.table(short_range=c(50,50,50,28,14), long_range=c(250,250,250,250,200), crossover_units=c('','','','','atr'),
+               buy_trigger=c(-.15,-.1,-.1,-.05,1.75), cooloff=c(0), buy_trigger_days_max = c(50,50, 100,150,50), buy_trigger_days_min = c(0,0,14,70,0),
                buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
-               sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
-               sell_days=c(180), sell_last=c(T))
+               sell_hi=c(.15,.15,.15,.15,.2), sell_lo=c(.25,.25,.25,.25,.125), sell_atr = c(100,5),
+               sell_days=c(180,180,180,180,110), sell_last=c(F))
 
-thisparam=params[3,]
+thisparam=params[5,]
 x = crossoverReturns( thisparam, dat=fulldat, summary = F, transaction_fee=.0001)
 
 x[Date == max(Date) & Own>0] # Should own
@@ -47,19 +46,39 @@ x[Date==max(Date)& CrossoverLong<thisparam$buy_trigger+.01 &
     CrossoverLong>thisparam$buy_trigger-.1 & 
     Own==0, .(Date, stock, rel_ati = atr/AdjClose, rsi, CrossoverLong)]
 
-for (st in
-x[Date == max(Date) & 
-    CrossoverLong<thisparam$buy_trigger+.01 & 
-    CrossoverLong>thisparam$buy_trigger-.1 & 
-    Own==0, stock  ]){
-  plot(x=Sys.Date()-(1:(thisparam$buy_trigger_days_max+50)), 
-       y=seq(-.2,.2, length.out=thisparam$buy_trigger_days_max+50), col='white',
-       main = st)
-  abline(h=thisparam$buy_trigger)
-  abline(v=Sys.Date()-thisparam$buy_trigger_days_min)
-  abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
-
-  x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
-  print(x[Date==max(Date) & stock==st, .(Date, stock, atr/AdjClose, rsi)])
-  Sys.sleep(3)
+if(thisparam$crossover_units=='atr'){
+  for (st in
+       x[Date == max(Date) & 
+         CrossoverLong<thisparam$buy_trigger+.5 & 
+         CrossoverLong>thisparam$buy_trigger-.5, stock  ]){
+    plot(x=Sys.Date()-(1:(thisparam$buy_trigger_days_max+50)), 
+         y=seq(thisparam$buy_trigger-1,thisparam$buy_trigger+1, length.out=thisparam$buy_trigger_days_max+50), col='white',
+         main = st)
+    abline(h=thisparam$buy_trigger)
+    abline(v=Sys.Date()-thisparam$buy_trigger_days_min)
+    abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
+    
+    x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
+    print(x[Date==max(Date) & stock==st, .(Date, stock, atr/AdjClose, rsi)])
+    Sys.sleep(3)
+  }
+  
+} else {
+  for (st in
+       x[Date == max(Date) & 
+         CrossoverLong<thisparam$buy_trigger+.01 & 
+         CrossoverLong>thisparam$buy_trigger-.1, stock  ]){
+    plot(x=Sys.Date()-(1:(thisparam$buy_trigger_days_max+50)), 
+         y=seq(-.2,.2, length.out=thisparam$buy_trigger_days_max+50), col='white',
+         main = st)
+    abline(h=thisparam$buy_trigger)
+    abline(v=Sys.Date()-thisparam$buy_trigger_days_min)
+    abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
+    
+    x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
+    print(x[Date==max(Date) & stock==st, .(Date, stock, atr/AdjClose, rsi)])
+    Sys.sleep(3)
+  }
 }
+
+

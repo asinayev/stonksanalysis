@@ -1,7 +1,7 @@
 crossover_prep = function(indat,
                           short_range = 7,
                           long_range = 112,
-                          crossover_units = "long_range_mean",
+                          crossover_units = "long_range_mean"
 ){
   indat=data.table(indat)
   indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
