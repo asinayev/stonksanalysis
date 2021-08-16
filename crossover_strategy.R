@@ -1,12 +1,18 @@
 crossover_prep = function(indat,
                           short_range = 7,
-                          long_range = 112
+                          long_range = 112,
+                          crossover_units = "long_range_mean",
 ){
   indat=data.table(indat)
   indat[,short_range_mean:=frollmean(AdjClose, short_range, fill=NA, algo="exact", align="right", na.rm=T), stock]
   indat[,long_range_mean:=frollmean(AdjClose, long_range,  fill=NA, algo="exact", align="right", na.rm=T), stock]
-  indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
-        stock]
+  if(crossover_units=='atr'){
+    indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, atr),
+          stock]
+  } else {
+    indat[,CrossoverLong:= pct_diff( short_range_mean, long_range_mean, long_range_mean),
+          stock]
+  }
   indat[frollsum(is.na(AdjCloseFilled),long_range)>0,c("CrossoverLong"):=NA,stock]
   indat
 }
@@ -133,14 +139,14 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
 crossoverReturns=function(pars=list(), 
                           dat, summary_only=T, transaction_fee=.01){
   pars=as.list(pars)
-  required_pars = c("short_range",      "long_range",       
+  required_pars = c("short_range",      "long_range",       'crossover_units',
                     "buy_trigger",      "cooloff",          "buy_trigger_days_max",     "buy_trigger_days_min",  
                     "sell_hi",          "sell_lo",          "sell_atr",         
                     "sell_days",        "sell_last")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat %>%
-    crossover_prep(short_range = pars$short_range,long_range = pars$long_range) %>%
+    crossover_prep(short_range = pars$short_range,long_range = pars$long_range, crossover_units = pars$crossover_units) %>%
     crossover_strategy(buysell_pars = pars) %>%
     calcReturns(transaction_fee=transaction_fee, profit_cutoff=.5, 
                 summary=summary_only)
