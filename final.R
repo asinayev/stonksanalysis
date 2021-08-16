@@ -29,8 +29,8 @@ fulldat = topcompanies$ticker %>%
   filter_range(topcompanies)
 
 
-params = data.table(short_range=c(50,50,28), long_range=c(250),
-               buy_trigger=c(-.15,-.1,-.05), cooloff=c(0), buy_trigger_days_max = c(50,100,150), buy_trigger_days_min = c(0,14,70),
+params = data.table(short_range=c(50,50,50,28), long_range=c(250),
+               buy_trigger=c(-.15,-.1,-.1,-.05), cooloff=c(0), buy_trigger_days_max = c(50,50, 100,150), buy_trigger_days_min = c(0,0,14,70),
                buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
                sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                sell_days=c(180), sell_last=c(T))
