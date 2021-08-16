@@ -3,7 +3,7 @@ library("googledrive")
 
 store_dt = function(dtable){
   localpath = paste0('~/',deparse(substitute(dtable)),'.csv')
-  fwrite(dtable)
+  fwrite(dtable, localpath)
   drive_put(localpath)
 }
 
