@@ -31,7 +31,7 @@ fulldat = topcompanies$ticker %>%
 params = data.table(short_range=c(50,50,50,28,14), long_range=c(250,250,250,250,200), crossover_units=c('','','','','atr'),
                buy_trigger=c(-.15,-.1,-.1,-.05,1.75), cooloff=c(0), buy_trigger_days_max = c(50,50, 100,150,50), buy_trigger_days_min = c(0,0,14,70,0),
                buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
-               sell_hi=c(.15,.15,.15,.15,.2), sell_lo=c(.25,.25,.25,.25,.125), sell_atr = c(100,5),
+               sell_hi=c(.15,.15,.15,.15,.2), sell_lo=c(.25,.25,.25,.25,.125), sell_atr = c(100,100,100,100,5),
                sell_days=c(180,180,180,180,110), sell_last=c(F))
 
 thisparam=params[5,]
@@ -42,9 +42,10 @@ x[Date == max(Date) & Own>0] # Should own
 x[Date == max(Date) & Own>0][order(abs(pct_diff(LastBought,AdjClose,LastBought)), decreasing=T), # Maybe sell?
                              .(stock,AdjClose,LastBought, pct_diff(AdjClose, LastBought, LastBought))][1:10]
 
-x[Date==max(Date)& CrossoverLong<thisparam$buy_trigger+.01 & 
-    CrossoverLong>thisparam$buy_trigger-.1 & 
-    Own==0, .(Date, stock, rel_ati = atr/AdjClose, rsi, CrossoverLong)]
+x[Date==max(Date)& CrossoverLong<thisparam$buy_trigger*1.1 & 
+    CrossoverLong>thisparam$buy_trigger*.8 & 
+    rsi<thisparam$buy_rsi_max*1.1 &
+    rsi>thisparam$buy_atr_min*.9, .(Date, stock, rel_ati = atr/AdjClose, rsi, CrossoverLong)]
 
 if(thisparam$crossover_units=='atr'){
   for (st in
@@ -59,7 +60,7 @@ if(thisparam$crossover_units=='atr'){
     abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
     
     x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
-    print(x[Date==max(Date) & stock==st, .(Date, stock, atr/AdjClose, rsi)])
+    print(x[Date>max(Date)-7 & stock==st, .(Date, stock, atr/AdjClose, rsi,CrossoverLong)])
     Sys.sleep(3)
   }
   
@@ -76,9 +77,7 @@ if(thisparam$crossover_units=='atr'){
     abline(v=Sys.Date()-thisparam$buy_trigger_days_max)
     
     x[stock==st & CrossoverLong] %>% with(points(Date,CrossoverLong, type='l'))
-    print(x[Date==max(Date) & stock==st, .(Date, stock, atr/AdjClose, rsi)])
+    print(x[Date>max(Date)-7 & stock==st, .(Date, stock, atr/AdjClose, rsi,CrossoverLong)])
     Sys.sleep(3)
   }
 }
-
-
