@@ -29,6 +29,7 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
   lastBoughtPrice = buySignal = periodMaxPrice = -1
   daysSincePurchase = buysell_pars$sell_days
   daysCrossed = 0
+  maxDip = 0
   
   for (i in 2:maxValidi){
     # increment the counters
@@ -36,8 +37,9 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
     buySignal = buySignal - 1
     if(!is.na(crosslong[i-1]) && crosslong[i-1]<buysell_pars$buy_trigger){
       daysCrossed = daysCrossed + 1
+      maxDip = max(maxDip, buysell_pars$buy_trigger-crosslong[i-1])
     } else { 
-      daysCrossed=0 
+      daysCrossed=maxDip=0 
     }
     if(i==maxValidi){ # on the last day
       if(lastBoughtPrice>0 && buysell_pars$sell_last){
@@ -60,8 +62,9 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
     if(buySignal>0 &&
        valid[i] && # Buy if in the valid period
        lastBoughtPrice==-1 && # and not already holding
-       atr[i]/closes[i]>buysell_pars$buy_atr_min &&
-       rsi[i]<buysell_pars$buy_rsi_max){ 
+       maxDip>buysell_pars$min_dip && # and the max dip is big enough
+       atr[i]/closes[i]>buysell_pars$buy_atr_min && # and the ATR is high enough
+       rsi[i]<buysell_pars$buy_rsi_max){  # and the RSI is low enough
       lastBoughtPrice = periodMaxPrice = closes[i]
       shares_sold[i]= -1/lastBoughtPrice
       daysSincePurchase=0
@@ -133,7 +136,7 @@ crossoverReturns=function(pars=list(),
                           dat, summary_only=T, transaction_fee=.01){
   pars=as.list(pars)
   required_pars = c("short_range",      "long_range",               'crossover_units',
-                    "buy_trigger",      "buy_trigger_days_max",     "buy_trigger_days_min",  
+                    "buy_trigger",      "min_dip",                  "buy_trigger_days_max",     "buy_trigger_days_min",  
                     "sell_hi",          "sell_lo",                  "sell_atr",         
                     "sell_days",        "sell_last")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
