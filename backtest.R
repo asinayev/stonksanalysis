@@ -49,8 +49,8 @@ fulldat = get_dt(name = 'fulldat')
 
 gc()
 parameterset = expand.grid(short_range=c(50), long_range=c(250),
-                           buy_trigger=c(-.15), cooloff=c(0), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
-                           buy_atr_min=c(0.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
+                           buy_trigger=c(-.15), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
+                           buy_atr_min=c(0.02), buy_rsi_max=c(.5),
                            sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                            sell_days=c(180), sell_last=c(T)
 )
@@ -67,7 +67,7 @@ results[order(avg_profit/(days_held_per_purchase+30), decreasing=T)]
 
 #Examine a single date
 x2 = data.table(short_range=c(50), long_range=c(250),
-               buy_trigger=c(-.15), cooloff=c(0), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
+               buy_trigger=c(-.15), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
                buy_atr_min=c(.02), buy_rsi_max=c(.5), sell_rsi_min=c(1.1),
                sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                sell_days=c(180), sell_last=c(T)) %>%

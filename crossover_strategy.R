@@ -27,13 +27,11 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
   }
   
   lastBoughtPrice = buySignal = periodMaxPrice = -1
-  daysSinceLoss = buysell_pars$cooloff
   daysSincePurchase = buysell_pars$sell_days
   daysCrossed = 0
   
   for (i in 2:maxValidi){
     # increment the counters
-    daysSinceLoss = daysSinceLoss + 1
     daysSincePurchase = daysSincePurchase + 1
     buySignal = buySignal - 1
     if(!is.na(crosslong[i-1]) && crosslong[i-1]<buysell_pars$buy_trigger){
@@ -62,7 +60,6 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
     if(buySignal>0 &&
        valid[i] && # Buy if in the valid period
        lastBoughtPrice==-1 && # and not already holding
-       daysSinceLoss>buysell_pars$cooloff && # and enough days have passed since the last loss
        atr[i]/closes[i]>buysell_pars$buy_atr_min &&
        rsi[i]<buysell_pars$buy_rsi_max){ 
       lastBoughtPrice = periodMaxPrice = closes[i]
@@ -76,14 +73,10 @@ buySellSeq = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars
       } else if (daysSincePurchase>buysell_pars$sell_days){ # Or you held long enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMaxPrice = -1
-      } else if (rsi[i]>buysell_pars$sell_rsi_min){ # Or the RSI is too high
-        shares_sold[i]= 1/lastBoughtPrice
-        lastBoughtPrice = periodMaxPrice = -1
       } else if (los[i]<max(periodMaxPrice*(1-buysell_pars$sell_lo), 
                             periodMaxPrice-buysell_pars$sell_atr*atr[i]) ){ #Or low is low enough
         shares_sold[i]= 1/lastBoughtPrice
         lastBoughtPrice = periodMaxPrice = -1
-        daysSinceLoss=0
       }
     }
   }
@@ -139,9 +132,9 @@ calcReturns=function(strat, transaction_fee=.01, profit_cutoff=1, summary=T){
 crossoverReturns=function(pars=list(), 
                           dat, summary_only=T, transaction_fee=.01){
   pars=as.list(pars)
-  required_pars = c("short_range",      "long_range",       'crossover_units',
-                    "buy_trigger",      "cooloff",          "buy_trigger_days_max",     "buy_trigger_days_min",  
-                    "sell_hi",          "sell_lo",          "sell_atr",         
+  required_pars = c("short_range",      "long_range",               'crossover_units',
+                    "buy_trigger",      "buy_trigger_days_max",     "buy_trigger_days_min",  
+                    "sell_hi",          "sell_lo",                  "sell_atr",         
                     "sell_days",        "sell_last")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
