@@ -29,7 +29,7 @@ fulldat = topcompanies$ticker %>%
 
 
 params = data.table(short_range=c(50,50,50,28,14), long_range=c(250,250,250,250,200), crossover_units=c('','','','','atr'), 
-               max_dip=c(0),
+               min_dip=c(0),
                buy_trigger=c(-.15,-.1,-.1,-.05,1.75), buy_trigger_days_max = c(50,50, 100,150,50), buy_trigger_days_min = c(0,0,14,70,0),
                buy_atr_min=c(0.02), buy_rsi_max=c(.5),
                sell_hi=c(.15,.15,.15,.15,.2), sell_lo=c(.25,.25,.25,.25,.125), sell_atr = c(100,100,100,100,5),

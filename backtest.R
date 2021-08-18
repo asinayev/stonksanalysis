@@ -48,7 +48,7 @@ backtest_dat = function(dates, key){
 fulldat = get_dt(name = 'fulldat')
 
 gc()
-parameterset = expand.grid(short_range=c(50), long_range=c(250), max_dip=c(0),
+parameterset = expand.grid(short_range=c(50), long_range=c(250), min_dip=c(0),
                            buy_trigger=c(-.15), buy_trigger_days_max = c(50), buy_trigger_days_min = c(0),
                            buy_atr_min=c(0.02), buy_rsi_max=c(.5),
                            sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
