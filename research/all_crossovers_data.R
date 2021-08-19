@@ -62,10 +62,8 @@ crossover_research=function(pars=list(), dat){
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat = crossover_prep(dat, short_range = pars$short_range,long_range = pars$long_range, crossover_units = pars$crossover_units)
-  dat[,c('i_bought', 'buy_price', 'sell_price', 'rsi', 
-         'rel_atr', 'maxDip', 'daysCrossed') := buySellResearch(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, rsi, valid, pars, .N),
+  dat[, buySellResearch(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, rsi, valid, pars, .N),
       .(stock)] 
-  dat
 }
 
 parameterset = expand.grid(short_range=c(50), long_range=c(250), crossover_units=c(''),
