@@ -89,4 +89,5 @@ myxgb = xgboost(data = predictors %>% as.matrix,
 preds_table = data.table(output=output, predictions = predict(myxgb, predictors%>%as.matrix))
 preds_table[,.(.N,mean(output.profit)),round(predictions,2)] %>% with(plot(x=round, y=V2, cex=sqrt(N/10))) 
 
+abline(a = 0, b=1)
                                                                                                                                           
