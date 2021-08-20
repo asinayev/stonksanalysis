@@ -1,6 +1,9 @@
-source('crossover_strategy.R')
+setwd("stonksanalysis")
+source("prep_data.R")
+source("store_data.R")
+source("crossover_strategy.R")
 
-buySellResearch = function(los, his, closes, crosslong, atr, rsi, valid, buysell_pars, n){
+buySellResearch = function(los, his, closes, crosslong, atr, rsi, stdev, valid, buysell_pars, n){
   
   crossovers=data.table(i_bought=c(0), buy_price=0, sell_price=0, rsi=0, 
                         rel_atr=0, maxDip=0, daysCrossed=0, periodMaxPrice=0)[is.na(sell_price)]
@@ -34,7 +37,7 @@ buySellResearch = function(los, his, closes, crosslong, atr, rsi, valid, buysell
          valid[i]){ # Buy if in the valid period){  # and the RSI is low enough
         crossovers = rbind(crossovers,
                            data.table(i_bought=i, buy_price=closes[i], sell_price=NA, 
-                                      rsi=rsi[i], rel_atr=atr[i]/closes[i], maxDip, daysCrossed, periodMaxPrice=0) ) 
+                                      rsi=rsi[i], rel_atr=atr[i]/closes[i], rel_std=stdev[i]/closes[i], maxDip, daysCrossed, periodMaxPrice=0) ) 
         }
       getPeriodMaxPrice = function(i_bought, current_i, prices_seq){
         i_bought %>% 
@@ -60,18 +63,21 @@ buySellResearch = function(los, his, closes, crosslong, atr, rsi, valid, buysell
 crossover_research=function(pars=list(), dat){
   pars=as.list(pars)
   required_pars = c("short_range",      "long_range",               'crossover_units',
-                    "buy_trigger",      #"min_dip",                  "buy_trigger_days_max",     "buy_trigger_days_min",  
+                    "buy_trigger",      
                     "sell_hi",          "sell_lo",                  "sell_atr",         
                     "sell_days",        "sell_last")
   (required_pars %in% names(pars)) %>% all %>% stopifnot
   
   dat = crossover_prep(dat, short_range = pars$short_range,long_range = pars$long_range, crossover_units = pars$crossover_units)
-  dat[, buySellResearch(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, rsi, valid, pars, .N),
+  dat[, buySellResearch(loFilled, hiFilled, AdjCloseFilled, CrossoverLong, atr, rsi, stdev, valid, pars, .N),
       .(stock)] 
 }
 
+fulldat = get_dt(name = 'fulldat')
+
+
 parameterset = expand.grid(short_range=c(28), long_range=c(250), crossover_units=c(''),
-                           buy_trigger=c(0),
+                           buy_trigger=c(-.05),
                            sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                            sell_days=c(180), sell_last=c(T)
 )
@@ -81,6 +87,9 @@ all_crossovers = crossover_research(pars = parameterset, fulldat )
 
 predictors = all_crossovers[profit<.5, .(rsi,rel_atr,maxDip,daysCrossed,periodMaxPrice)]
 output = all_crossovers[profit<.5, .(profit)]
+
+prepped = crossover_prep(fulldat, short_range = 28,long_range = 250, crossover_units = '')
+prepped[stock=='AAPL'] %>% with(plot(Date, CrossoverLong))
 
 myxgb = xgboost(data = predictors %>% as.matrix, 
         label = output %>% unlist, 
