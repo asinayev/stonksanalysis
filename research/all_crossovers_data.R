@@ -84,7 +84,7 @@ fulldat = get_dt(name = 'fulldat')
 
 
 parameterset = expand.grid(short_range=c(28), long_range=c(250), crossover_units=c(0),
-                           buy_trigger=c(-.05,-.1,0,-.15),
+                           buy_trigger=c(.05),
                            sell_hi=c(.15), sell_lo=c(.25), sell_atr = c(100),
                            sell_days=c(180), sell_last=c(T)
 )
@@ -92,24 +92,31 @@ parameterset = expand.grid(short_range=c(28), long_range=c(250), crossover_units
 all_crossovers = parameterset %>% 
   apply(1, as.list) %>%
   parallel::mclapply(crossover_research, dat=fulldat, mc.cores=2) %>%
-  rbindlist 
+  rbindlist %>%
+  rbind(all_crossovers,use.names=TRUE, fill=TRUE)
 
-all_crossovers = crossover_research(pars = parameterset, dat = fulldat )
-all_crossovers[,profit:=pct_diff(sell_price, buy_price, buy_price)]
+all_crossovers[,profit:=pct_diff(sell_price, buy_price, buy_price)]#+(.07*(365-date_sold+date_bought))-(.07*(date_sold-date_bought)/365)]
 
 predictors_train = all_crossovers[profit<.5 & date_bought<'2018-01-01', .(rsi,rel_atr,rel_std,rel_price,maxDip,daysCrossed,periodMaxPrice, buy_trigger)]
 output_train = all_crossovers[profit<.5  & date_bought<'2018-01-01', .(profit)]
 myxgb = xgboost(data = predictors_train %>% as.matrix,
         label = output_train %>% unlist, 
-        #params = list(booster='gblinear'), 
-        nrounds = 10000, eta=.0001, max_depth=3, gamma=.5, objective = "reg:squarederror")
+        params = list(booster='gblinear'), 
+        nrounds = 10000, eta=.002, max_depth=1, gamma=20, objective = "reg:squarederror"
+        ,xgb_model = myxgb
+)
+# linear booster correlation ~.078, gains ~.05, ~100 purchases
+
+# fit <- rpart(profit~., data = cbind(predictors_train,output_train), method = 'anova',cp=.003)
+# rpart.plot(fit)
+           
 
 predictors_test = all_crossovers[profit<.5 & date_bought>'2018-01-01', .(rsi,rel_atr,rel_std,rel_price,maxDip,daysCrossed,periodMaxPrice, buy_trigger)]
 output_test = all_crossovers[profit<.5  & date_bought>'2018-01-01', .(profit)]
 
 preds_table = data.table(output=output_test, predictions = predict(myxgb, predictors_test%>%as.matrix))
 cor(preds_table)
-preds_table[predictions>.05, mean(output.profit)]
+preds_table[order(predictions,decreasing = T)][1:200,mean(output.profit)]
 preds_table[,.(.N,mean(output.profit)),round(predictions,2)] %>% with(plot(x=round, y=V2, cex=sqrt(N/10))) 
 preds_table[,.(.N,mean(output.profit)),round(predictions,2)][order(round)]
 
