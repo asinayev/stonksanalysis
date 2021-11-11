@@ -3,9 +3,9 @@ require(tidyquant)
 
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1636253557582.csv") #from https://www.nasdaq.com/market-activity/stocks/screener
 
-share_buybacks = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=164&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-07&end_date=2021-11-07&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjM0MDkwNywibmJmIjoxNjM2MzQwOTA3LCJleHAiOjE2MzYzNzY5MDcsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.9dsmXQJ5CK36b8oi09pR0bK9mJmJtTlXef_y19Xz94NDUz1X_ObQKrUC5E7JLqSq7lzBSQs3vlAU-evHqK84JQ')
-dividend_creations = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=168&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-07&end_date=2021-11-07&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjM0MDkwNywibmJmIjoxNjM2MzQwOTA3LCJleHAiOjE2MzYzNzY5MDcsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.9dsmXQJ5CK36b8oi09pR0bK9mJmJtTlXef_y19Xz94NDUz1X_ObQKrUC5E7JLqSq7lzBSQs3vlAU-evHqK84JQ')
-dividend_increase= jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=121&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-07&end_date=2021-11-07&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjM0MDkwNywibmJmIjoxNjM2MzQwOTA3LCJleHAiOjE2MzYzNzY5MDcsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.9dsmXQJ5CK36b8oi09pR0bK9mJmJtTlXef_y19Xz94NDUz1X_ObQKrUC5E7JLqSq7lzBSQs3vlAU-evHqK84JQ')
+share_buybacks = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=164&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2020-11-11&end_date=2021-11-11&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjY2NTY0NiwibmJmIjoxNjM2NjY1NjQ2LCJleHAiOjE2MzY3MDE2NDYsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.V5pTrTAlQEhHJQYoNMLSdUSXSLm4AkFY4Sf1pokMZahn19AV_bMFENPsdYSJ9mSwJW6BHHvqHzJSyGbBCLS1KQ')
+dividend_creations = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=168&&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2020-11-11&end_date=2021-11-11&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjY2NTY0NiwibmJmIjoxNjM2NjY1NjQ2LCJleHAiOjE2MzY3MDE2NDYsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.V5pTrTAlQEhHJQYoNMLSdUSXSLm4AkFY4Sf1pokMZahn19AV_bMFENPsdYSJ9mSwJW6BHHvqHzJSyGbBCLS1KQ')
+dividend_increase= jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=121&&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2020-11-11&end_date=2021-11-11&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTYzNjY2NTY0NiwibmJmIjoxNjM2NjY1NjQ2LCJleHAiOjE2MzY3MDE2NDYsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMS0xMi0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZX19.V5pTrTAlQEhHJQYoNMLSdUSXSLm4AkFY4Sf1pokMZahn19AV_bMFENPsdYSJ9mSwJW6BHHvqHzJSyGbBCLS1KQ')
 
 share_buybacks = data.frame(share_buybacks[c('symbol','event_date_est')])
 share_buybacks$eventtype='buyback'
@@ -38,6 +38,7 @@ stockdat[,next2close :=shift(close,-2),symbol]
 stockdat[,next2high  :=shift(high, -2),symbol]
 stockdat[,next2low   :=shift(low,  -2),symbol]
 stockdat[,prevclose  :=shift(close, 1),symbol]
+stockdat[,prevvolume :=shift(volume,1),symbol]
 
 events_prices = merge(data.table(eventsdf),
                       stockdat,
@@ -54,6 +55,7 @@ events_prices[,gain_day_1:=ifelse( is_after_hours, (nextclose-nextopen)/nextopen
 events_prices[,gain_day_2:=ifelse( is_after_hours, (next2close-next2open)/next2open, (nextclose-nextopen)/nextopen )]
 events_prices[,gain_cum:=ifelse( is_after_hours, (next2close-nextopen)/nextopen, (nextclose-open)/open )]
 events_prices[,delta_since_prev:= ifelse( is_after_hours, (nextopen-close)/close, (open-prevclose)/prevclose )]
+events_prices[,prev_vol:= ifelse( is_after_hours, volume*close, prevvolume*prevclose )]
 
 events_prices$gain_cum%>%summary
 
@@ -62,9 +64,19 @@ events_prices[,.(mean(gain_cum,na.rm=T), median(gain_cum, na.rm=T), .N),.(`Marke
 events_prices[,.(mean(gain_cum,na.rm=T), median(gain_cum, na.rm=T), .N),.(Sector,eventtype)][order(N)]
 events_prices[,.(mean(gain_cum,na.rm=T), median(gain_cum, na.rm=T), .N),.(is_after_hours,eventtype)][order(N)]
 
-events_prices[eventtype=='dividend_increase',.(mean(gain_cum,na.rm=T),.N), round(delta_since_prev,2)][order(round)] %>% with(plot(round,V1,cex=log(N)/2))
+events_prices[eventtype!='dividend_increase',.(mean(gain_cum,na.rm=T),.N),.( round(log(prev_vol)) )][order(round)] %>% with(plot(round,V1,cex=log(N)/2))
+abline(h=0)
+events_prices[eventtype=='dividend_increase',.(mean(gain_cum,na.rm=T),.N),   round(delta_since_prev,2)][order(round)] %>% with(plot(round,V1,cex=log(N)/2))
 abline(h=0)
 abline(v=0)
 
-events_prices[`Market Cap`<25*10^9 & Sector!='Finance' & delta_since_prev %between% c(-.01,.1),
+
+summary(lm(gain_cum~
+             (Sector=='Finance') + 
+             (log(prev_vol) %between% c(12,17)) +
+             (delta_since_prev %between% c(-.01,.1)), events_prices, subset=eventtype!='dividend_increase'))
+
+events_prices[Sector!='Finance' & log(prev_vol) %between% c(12,17) & eventtype!='dividend_increase' & delta_since_prev %between% c(-.01,.1),
               .(mean(gain_cum,na.rm=T), median(gain_cum,na.rm=T),mean(gain_cum>0,na.rm=T), .N )]
+
+events_prices[eventtype %in% c('dividient_creation', 'buyback') & `Market Cap`<25*10^9 & Sector!='Finance' & delta_since_prev %between% c(-.01,.1)][order(-event_date_est)]
