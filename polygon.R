@@ -111,7 +111,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
 }
 
 stock_day = function(stockname, start_date, end_date, key){
-  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/minute/%s/%s?adjusted=true&sort=asc&apiKey=%s&limit=10000" %>%
+  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/minute/%s/%s?adjusted=false&sort=asc&apiKey=%s&limit=10000" %>%
     sprintf(stockname, start_date, end_date, key)
   response = hit_polygon(link, tries = 3, results_contain = "c")
   if (!is(response, 'numeric')){
@@ -122,7 +122,8 @@ stock_day = function(stockname, start_date, end_date, key){
                  high = response$results$h,
                  low = response$results$l,
                  volume = response$results$v, 
-                 DateTime= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') )
+                 TimeStamp = response$results$t,
+                 DateTime= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'EST') )
     )
   } else {
     return(
@@ -131,6 +132,7 @@ stock_day = function(stockname, start_date, end_date, key){
                  high = NA, 
                  low = NA, 
                  volume = NA, 
+                 TimeStamp = NA,
                  DateTime= as.Date(start_date) )
     )
   }
