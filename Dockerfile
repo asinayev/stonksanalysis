@@ -4,7 +4,12 @@ RUN install2.r --error \
     --deps TRUE \
     data.table \
     readxl \
-    tidyquant
+    tidyquant \ 
+    rpart.plot
+    
+RUN apt-get install -y default-jre
+
+RUN apt-get install -y default-jdk
 
 RUN git clone https://github.com/asinayev/stonksanalysis.git
 
