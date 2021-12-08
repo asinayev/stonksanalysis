@@ -12,12 +12,12 @@ RUN apt-get update && \
     update-ca-certificates -f;
 
 # Setup JAVA_HOME -- useful for docker commandline
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
-RUN export JAVA_HOME;
+# ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+# RUN export JAVA_HOME;
 
 RUN apt-get curl &
     apt-get install zip unzip;
 
 RUN curl --output clientportal.gw.zip https://download2.interactivebrokers.com/portal/clientportal.gw.zip  && \
   unzip clientportal.gw.zip && \
-  bin/run.sh root/conf.yaml
+  bin/run.sh root/conf.yaml;
