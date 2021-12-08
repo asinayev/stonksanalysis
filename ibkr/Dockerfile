@@ -15,8 +15,8 @@ RUN apt-get update && \
 # ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 # RUN export JAVA_HOME;
 
-RUN apt-get install curl && \
-    apt-get install zip unzip;
+RUN apt-get install -y curl && \
+    apt-get install -y zip unzip;
 
 RUN curl --output clientportal.gw.zip https://download2.interactivebrokers.com/portal/clientportal.gw.zip  && \
   unzip clientportal.gw.zip && \
