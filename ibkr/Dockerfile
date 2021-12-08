@@ -19,5 +19,4 @@ RUN apt-get install -y curl && \
     apt-get install -y zip unzip;
 
 RUN curl --output clientportal.gw.zip https://download2.interactivebrokers.com/portal/clientportal.gw.zip  && \
-  unzip clientportal.gw.zip && \
-  bin/run.sh root/conf.yaml;
+  unzip clientportal.gw.zip;
