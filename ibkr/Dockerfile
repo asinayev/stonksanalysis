@@ -15,6 +15,6 @@ RUN apt-get update && \
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA_HOME
 
-RUN wget https://download2.interactivebrokers.com/portal/clientportal.gw.zip && \
-  unzip clientportal.gw.zip && \
-  bin/run.sh root/conf.yaml
+#RUN wget https://download2.interactivebrokers.com/portal/clientportal.gw.zip && \
+#  unzip clientportal.gw.zip && \
+#  bin/run.sh root/conf.yaml
