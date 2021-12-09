@@ -3,18 +3,18 @@ require(tidyquant)
 require(rpart)
 
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
-fundamentals = fundamentals[sample(nrow(fundamentals))]
+fundamentals = fundamentals[sample(nrow(fundamentals),5000)]
 
 prices <- fundamentals$Symbol %>%
   unique %>% split(1:8) %>%
   parallel::mclapply(tq_get,
-                     from=Sys.Date()-100,
+                     from=Sys.Date()-10*365,
                      to=Sys.Date()+2,
                      mc.cores = 8
   ) %>%
   rbindlist(fill=T)
 
-prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>35, symbol]]
+prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 prices = prices[order(symbol,date)]
 prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag")]
 prices[,"lag1open":=shift(open, n = 1, type = "lag")]
@@ -26,12 +26,8 @@ prices[!is.na(volume),volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ) ]
 
 prices[!is.na(us_delta) & !is.na(abroad_delta),
        lagging_corr:=
-         runCor( us_delta, abroad_delta, 28),
+         runCor( us_delta, abroad_delta, 365),
        symbol]
-prices[!is.na(us_delta) & !is.na(abroad_delta),
-       lagging_corr2:=
-         rollapplyr( .SD, 28, function(x) cor(x[,1], x[,2], method = 'spearman'), by.column=F, fill = NA  ),
-       symbol, .SDcols=c('us_delta','abroad_delta')]
 
 prices_metadata = merge(prices,fundamentals,by.x = 'symbol', 
                         by.y = 'Symbol',all.x = T)
@@ -50,10 +46,7 @@ prices_metadata[day_premarket<.96 & lagging_corr< -.4, .(mean(day_delta,na.rm=T)
 # prices_metadata[log(volume_avg+1)<11 & Sector %in% c('Consumer Durables', 'Consumer Non-Durables','Consumer Services', 'Technology', 'Finance'),.(mean(abs(lagging_corr2),na.rm=T),.N),Country][order(V1)]
 
 subsample = prices_metadata[
-  log(volume_avg+1) %between% c(7,11)
-                            & ! Sector %in% c('Finance','Public Utilities',
-                                              'Transportation', 'Basic Industries',
-                                              'Health Care', 'Capital Goods')]
+  log(volume_avg+1) %between% c(7,11)]
 
 subsample[day_premarket<.98 & lagging_corr< -.4
           ,
