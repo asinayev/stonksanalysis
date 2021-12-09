@@ -51,31 +51,21 @@ subsample = prices_metadata[
 subsample[day_premarket<.98 & lagging_corr< -.4
           ,
           .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-subsample[date==max(date, na.rm=T) & lagging_corr2< -.4,
+subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
           .(date, symbol, close, purchase = trunc(close*98,3)/100 )]
 
-
-m0 = rpart((day_delta>1)~(day_premarket<1) + lagging_corr + volume_avg + lagging_corr2,
-           method='class',
-           subsample[year(date)==2019 ],
-           parms=list(split="information",
-                      loss=matrix(c(0,1.75,1,0), byrow=TRUE, nrow=2)),
-           control = rpart.control(minbucket =  500, cp=.00000000001,
-                                   maxsurrogate = 4, xval=10))
-rpart.plot::rpart.plot(m0)
-
-# subsample[,predicted:=predict(m0, subsample)]
-plot_data = subsample[,
-                      .(out = mean(day_delta,na.rm=T), .N),
-                      .(day_premarket = round(day_premarket,2),
-                        lagging_corr = round(lagging_corr2,1),
-                        year(date),
-                        volume = round(log(volume_avg+1)))][N>30 & volume>6]
-
-ggplot(plot_data, aes(x=day_premarket, y=lagging_corr, color=out, size=N))+
-  geom_point(alpha=.9)+
-  scale_color_gradient2(midpoint = 1, low = "red", mid = "white",
-                        high = "blue", space = "Lab" )+
-  geom_hline(yintercept=0) +
-  geom_vline(xintercept=1) +
-  facet_grid(volume~year)
+# Determine correct range to use for volume (it changes over time)
+# plot_data = subsample[,
+#                       .(out = mean(day_delta,na.rm=T), .N),
+#                       .(day_premarket = round(day_premarket,2),
+#                         lagging_corr = round(lagging_corr,1),
+#                         year(date),
+#                         volume = round(log(volume_avg+1)))][N>30 & volume>6]
+# 
+# ggplot(plot_data, aes(x=day_premarket, y=lagging_corr, color=out, size=N))+
+#   geom_point(alpha=.9)+
+#   scale_color_gradient2(midpoint = 1, low = "red", mid = "white",
+#                         high = "blue", space = "Lab" )+
+#   geom_hline(yintercept=0) +
+#   geom_vline(xintercept=1) +
+#   facet_grid(volume~year)
