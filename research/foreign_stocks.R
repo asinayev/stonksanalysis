@@ -3,12 +3,12 @@ require(tidyquant)
 require(rpart)
 
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
-fundamentals = fundamentals[sample(nrow(fundamentals),5000)]
+fundamentals = fundamentals[sample(nrow(fundamentals))]
 
 prices <- fundamentals$Symbol %>%
   unique %>% split(1:8) %>%
   parallel::mclapply(tq_get,
-                     from=Sys.Date()-10*365,
+                     from=Sys.Date()-2*365,
                      to=Sys.Date()+2,
                      mc.cores = 8
   ) %>%
@@ -52,7 +52,8 @@ subsample[day_premarket<.98 & lagging_corr< -.4
           ,
           .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
-          .(date, symbol, close, purchase = trunc(close*98,3)/100 )]
+          .(date, symbol, close, purchase = trunc(close*98,3)/100 )] %>%
+fwrite('/tmp/correlated_stocks.csv')
 
 # Determine correct range to use for volume (it changes over time)
 # plot_data = subsample[,
