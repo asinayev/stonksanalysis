@@ -10,7 +10,7 @@ RUN install2.r --error \
     rpart.plot
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
-    cd stonkanalysis && \
-    git checkout 3a5a201bedfd2ed2392d7853a8fb47fff3cf8a93 
+    cd stonksanalysis && \
+    git checkout fa07161 
 
 CMD ["Rscript","/home/repos/stonksanalysis/research/foreign_stocks.R"]
