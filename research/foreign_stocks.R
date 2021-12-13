@@ -1,8 +1,8 @@
-require(data.table)
 require(tidyquant)
+require(data.table)
 require(rpart)
 
-fundamentals = fread("../other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
+fundamentals = fread("stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
 prices <- fundamentals$Symbol %>%

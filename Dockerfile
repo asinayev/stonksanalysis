@@ -7,6 +7,8 @@ RUN install2.r --error \
     tidyquant \ 
     rpart.plot
     
-RUN git clone https://github.com/asinayev/stonksanalysis.git ~/stonks/
+RUN git clone https://github.com/asinayev/stonksanalysis.git ~/stonksanalysis/ && \
+    cd ~/stonkanalysis/ && \
+    git checkout 
 
-CMD ["Rscript","/root/stonks/research/foreign_stocks.R"]
+CMD ["Rscript","/root/stonksanalysis/research/foreign_stocks.R"]
