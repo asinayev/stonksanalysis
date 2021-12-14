@@ -32,9 +32,6 @@ prices[!is.na(us_delta) & !is.na(abroad_delta),
 prices_metadata = merge(prices,fundamentals,by.x = 'symbol', 
                         by.y = 'Symbol',all.x = T)
 
-prices_metadata[year(date)==2019 ,.(mean(lagging_corr,na.rm=T),.N),.(round(log(Volume)))][order(round)]
-prices_metadata[day_premarket<.96 & lagging_corr< -.4, .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-
 # prices_metadata[,mean(lagging_corr2,na.rm=T),round(log(volume_avg+1))][order(round)]
 # Whitelist Log volume < 11 seems good
 
@@ -48,10 +45,10 @@ prices_metadata[day_premarket<.96 & lagging_corr< -.4, .(mean(day_delta,na.rm=T)
 subsample = prices_metadata[
   log(volume_avg+1) %between% c(7,11)]
 
-subsample[day_premarket<.98 & lagging_corr< -.4
+subsample[day_premarket<.98 & lagging_corr< -.3
           ,
           .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
+subsample[date==max(date, na.rm=T) & lagging_corr< -.3,
           .(date, symbol, close, purchase = trunc(close*98,3)/100 )] %>%
 fwrite('/tmp/correlated_stocks.csv')
 
