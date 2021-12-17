@@ -1,16 +1,17 @@
 require(tidyquant)
 require(data.table)
 require(rpart)
+require(ggplot2)
 
 fundamentals = fread("stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
 prices <- fundamentals$Symbol %>%
-  unique %>% split(1:8) %>%
+  unique %>% split(1:4) %>%
   parallel::mclapply(tq_get,
-                     from=Sys.Date()-2*365,
+                     from=Sys.Date()-15*365,
                      to=Sys.Date()+2,
-                     mc.cores = 8
+                     mc.cores = 4
   ) %>%
   rbindlist(fill=T)
 
@@ -32,38 +33,38 @@ prices[!is.na(us_delta) & !is.na(abroad_delta),
 prices_metadata = merge(prices,fundamentals,by.x = 'symbol', 
                         by.y = 'Symbol',all.x = T)
 
-# prices_metadata[,mean(lagging_corr2,na.rm=T),round(log(volume_avg+1))][order(round)]
-# Whitelist Log volume < 11 seems good
+# Determine correct range to use for volume (it changes over time)
+# plot_data = prices_metadata[, .(out = mean(day_delta,na.rm=T), .N),
+#                             .(day_premarket = round(day_premarket,2),
+#                               lagging_corr = round(lagging_corr,1),
+#                               year(date),
+#                               volume = round(log(volume_avg+1)))
+#                             ][N>30 & volume>8]
+#  
+# ggplot(plot_data[year>2018 & volume %between% c(7,15)], aes(x=day_premarket,
+#                       y=lagging_corr, color=out, size=N))+
+#   geom_point(alpha=.9) +
+#   scale_color_gradient2(midpoint = 1, low = "red", mid ="white", high = "blue", space = "Lab" )+
+#   geom_hline(yintercept=0) +
+#   geom_vline(xintercept=1) +
+#   facet_grid(volume~year)
 
-# prices_metadata[,                    .(mean(lagging_corr2,na.rm=T),.N),Sector][order(V1)]
+# prices_metadata[,mean(lagging_corr,na.rm=T),round(log(volume_avg+1))][order(round)]
+# Whitelist Log volume 10-13 seems good
+
+# prices_metadata[,                    .(mean(lagging_corr,na.rm=T),.N),Sector][order(V1)]
 # prices_metadata[log(volume_avg+1)<11,.(mean(lagging_corr2,na.rm=T),.N),Sector][order(V1)]
-# prices_metadata[log(volume_avg+1)<11 & year(date)>2019,.(mean(lagging_corr2,na.rm=T),.N),Sector][order(V1)]
+# prices_metadata[log(volume_avg+1)<12 & year(date)>2019,.(mean(lagging_corr,na.rm=T),.N),Sector][order(V1)]
 # Whitelist: Consumer Durables, Consumer Non-Durables, Consumer Services, Technology and recently, Finance
 
 # prices_metadata[log(volume_avg+1)<11 & Sector %in% c('Consumer Durables', 'Consumer Non-Durables','Consumer Services', 'Technology', 'Finance'),.(mean(abs(lagging_corr2),na.rm=T),.N),Country][order(V1)]
 
 subsample = prices_metadata[
-  log(volume_avg+1) %between% c(7,11)]
+  log(volume_avg+1) %between% c(10,13)]
 
-subsample[day_premarket<.98 & lagging_corr< -.3
-          ,
+subsample[day_premarket>.98 & lagging_corr< -.3,
           .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 subsample[date==max(date, na.rm=T) & lagging_corr< -.3,
           .(date, symbol, close, buy = trunc(close*98,3)/100 , sell = trunc(close*102,3)/100)] %>%
 fwrite('/tmp/correlated_stocks.csv')
 
-# Determine correct range to use for volume (it changes over time)
-# plot_data = subsample[,
-#                       .(out = mean(day_delta,na.rm=T), .N),
-#                       .(day_premarket = round(day_premarket,2),
-#                         lagging_corr = round(lagging_corr,1),
-#                         year(date),
-#                         volume = round(log(volume_avg+1)))][N>30 & volume>6]
-# 
-# ggplot(plot_data, aes(x=day_premarket, y=lagging_corr, color=out, size=N))+
-#   geom_point(alpha=.9)+
-#   scale_color_gradient2(midpoint = 1, low = "red", mid = "white",
-#                         high = "blue", space = "Lab" )+
-#   geom_hline(yintercept=0) +
-#   geom_vline(xintercept=1) +
-#   facet_grid(volume~year)
