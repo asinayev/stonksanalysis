@@ -9,7 +9,7 @@ fundamentals = fundamentals[sample(nrow(fundamentals))]
 prices <- fundamentals$Symbol %>%
   unique %>% split(1:4) %>%
   parallel::mclapply(tq_get,
-                     from=Sys.Date()-15*365,
+                     from=Sys.Date()-2*365,
                      to=Sys.Date()+2,
                      mc.cores = 4
   ) %>%
