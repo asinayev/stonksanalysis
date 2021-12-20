@@ -6,14 +6,17 @@ require(ggplot2)
 fundamentals = fread("stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
+splits = 16
+system.time(
 prices <- fundamentals$Symbol %>%
-  unique %>% split(1:4) %>%
+  unique %>% split(1:splits) %>%
   parallel::mclapply(tq_get,
                      from=Sys.Date()-2*365,
                      to=Sys.Date()+2,
-                     mc.cores = 4
+                     mc.cores = splits
   ) %>%
   rbindlist(fill=T)
+)
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 prices = prices[order(symbol,date)]
