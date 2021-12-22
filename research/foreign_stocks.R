@@ -65,9 +65,9 @@ prices_metadata = merge(prices,fundamentals,by.x = 'symbol',
 subsample = prices_metadata[
   log(volume_avg+1) %between% c(10,13)]
 
-subsample[day_premarket>.98 & lagging_corr< -.3,
+subsample[day_premarket<.97 & lagging_corr< -.4,
           .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-subsample[date==max(date, na.rm=T) & lagging_corr< -.3,
+subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
           .(date, symbol, close, buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
 fwrite('/tmp/correlated_stocks.csv')
 
