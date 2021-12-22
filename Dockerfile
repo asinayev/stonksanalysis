@@ -11,6 +11,6 @@ RUN install2.r --error \
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
     cd stonksanalysis && \
-    git checkout ec7a20a0d 
+    git checkout 885b779 
 
 CMD ["Rscript","/home/repos/stonksanalysis/research/foreign_stocks.R"]
