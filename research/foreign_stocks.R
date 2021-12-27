@@ -107,5 +107,5 @@ subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
          (predict(lm1, prices) < quantile(predict(lm1, IS), .0005, na.rm=T)) ,
-       .(date, ticker=symbol, close)] %>%
+       .(date, ticker=symbol, price=close)] %>%
   fwrite('/tmp/predicted_short_stocks.csv')
