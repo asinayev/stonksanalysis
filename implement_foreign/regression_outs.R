@@ -42,6 +42,12 @@ lm1 = lm(future_day_delta~
            date>Sys.Date()-365
 )
 
+#print out all of last week's picks
+prices[date>Sys.Date()-7 & 
+         log(volume_avg*lag1close+1)>15 & 
+         predict(lm1, prices) < .985 ,
+       .(date, ticker=symbol, price=close)][order(date)]
+
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
          predict(lm1, prices) < .985 ,
