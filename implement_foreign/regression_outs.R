@@ -38,7 +38,8 @@ lm1 = lm(future_day_delta~
            corr_lag_delta*day_delta +
            corr_lag_rise*day_rise,
          prices,
-         subset = log(volume_avg*close+1) > 15
+         subset = log(volume_avg*close+1) > 15 &
+           date>Sys.Date()-365
 )
 
 prices[date==max(date, na.rm=T) & 
