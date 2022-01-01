@@ -40,27 +40,51 @@ prices[!is.na(lag1_day_delta) & !is.na(lag1_night_delta),
          runCor( lag1_day_delta, lag1_night_delta, 364),
        symbol]
 
-prices[!is.na(lag1_day_delta) & !is.na(lag2_day_rise),
-       lagging_corr2:=
-         runCor( lag1_day_delta, lag2_day_rise, 7),
+prices[!is.na(day_delta) & !is.na(lag1_day_rise),
+       corr_lag_rise:=
+         runCor( day_delta, lag1_day_rise, 7),
        symbol]
-prices[!is.na(lag1_day_delta) & !is.na(lag1_night_delta),
-       lagging_corr3:=
-         runCor( lag1_day_delta, lag2_day_delta, 7),
+prices[!is.na(day_delta) & !is.na(lag1_day_delta),
+       corr_lag_delta:=
+         runCor( day_delta, lag1_day_delta, 7),
        symbol]
-prices[!is.na(lag1_day_delta) & !is.na(lag1_night_delta),
-       lagging_corr4:=
-         runCor( lag1_day_delta, lag2_day_fall, 7),
+prices[!is.na(day_delta) & !is.na(lag1_day_fall),
+       corr_lag_fall:=
+         runCor( day_delta, lag1_day_fall, 7),
        symbol]
-
-IS = prices[date>(Sys.Date()-365) & 
-              log(volume_avg*lag1close+1) > 15]
-lm1 = lm(day_delta~
-           lagging_corr4*lag1_day_fall +
-           lagging_corr3*lag1_day_delta +
-           lagging_corr2*lag1_day_rise,
+sq=function(x)x^2
+yr = 2021
+for (yr in 2018:2021){
+  IS = prices[year(date)==(yr-1) & 
+                log(volume_avg*close+1) %between% c(10,12)]
+  lm1 = lm(future_day_delta~
+             corr_lag_fall*day_fall + sq(day_rise) +
+             corr_lag_delta*day_delta+ sq(day_rise) +
+             corr_lag_rise*day_rise+ sq(day_rise)  ,
+           IS
+  )
+  print(yr)
+  print(prices[year(date)==yr & 
+             log(volume_avg*lag1close+1) %between% c(10,12) & 
+             predict(lm1, prices) < .985 ,
+           .(mean(future_day_delta, na.rm=T), sum(!is.na(future_day_delta)))]
+  )
+}
+IS = prices[year(date)==(yr-1) & 
+              log(volume_avg*close+1) > 15]
+lm1 = lm(future_day_delta~
+           corr_lag_fall*day_fall +
+           corr_lag_delta*day_delta +
+           corr_lag_rise*day_rise,
      IS
    )
+
+prices[year(date)==yr & 
+         log(volume_avg*lag1close+1)>15 & 
+         predict(lm1, prices) < .985 ,
+       .(mean(future_day_delta, na.rm=T), sum(!is.na(future_day_delta)))]
+
+gc()
 
 # Determine correct range to use for volume (it changes over time)
 # plot_data = prices_metadata[, .(out = min(1.1, mean(day_delta,na.rm=T)), .N),
