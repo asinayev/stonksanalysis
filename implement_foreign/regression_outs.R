@@ -58,19 +58,11 @@ lm1 = lm(future_day_delta~
            date>Sys.Date()-365
 )
 
-lm2 = lm(future_day_delta~
-           corr_lag_fall_long*day_fall * log(volume_avg)+
-           corr_lag_delta_long*day_delta * log(volume_avg)+
-           corr_lag_rise_long*day_rise * log(volume_avg),
-         prices,
-         subset = log(volume_avg*close+1) > 15 &
-           date>Sys.Date()-365
-)
 
 #print out all of last week's picks
 prices[date>Sys.Date()-14 & 
          log(volume_avg*lag1close+1)>15 & 
-         (predict(lm1, prices) < .985 & predict(lm2, prices) < .985) ,
+         (predict(lm1, prices) < .985) ,
        .(date, ticker=symbol, closingprice=close, future_day_delta)][order(date)]
 
 prices[date==max(date, na.rm=T) & 

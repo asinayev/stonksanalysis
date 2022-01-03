@@ -26,6 +26,12 @@ prices[future_night_delta<.96 & lagging_corr< -.4 & log(volume_avg+1) %between% 
 prices[future_night_delta>1.04 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
        .(mean(future_day_delta,na.rm=T),.N), year(date)]
 
+prices[date>Sys.Date()-14 & 
+         log(volume_avg+1) %between% c(10,25) & 
+         (lagging_corr< -.4) & abs(future_night_delta-1)>.04 ,
+       .(date, ticker=symbol, closingprice=close, future_night_delta, win = ifelse(future_night_delta<1, future_day_delta-1, 1-future_day_delta))][order(date)]
+
+
 prices[date==max(date, na.rm=T) & 
          lagging_corr< -.4 & 
          log(volume_avg+1) %between% c(10,25),
