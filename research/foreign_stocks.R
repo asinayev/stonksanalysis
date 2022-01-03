@@ -37,7 +37,7 @@ prices[,c("lag1_day_rise",    "lag2_day_rise"   ):=shift(day_rise,    n = 1:2, t
 
 prices[!is.na(lag1_day_delta) & !is.na(lag1_night_delta),
        lagging_corr:=
-         runCor( lag1_day_delta, lag1_night_delta, 364),
+         runCor( day_delta, night_delta, 364),
        symbol]
 
 prices[!is.na(day_delta) & !is.na(lag1_day_rise),
