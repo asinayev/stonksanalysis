@@ -22,7 +22,7 @@ prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365
 setorder(prices, symbol, date)
 prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag"),symbol]
 prices[,c("lag1open",  "lag2open" ):=shift(open,  n = 1:2, type = "lag"),symbol]
-prices[,c("lag1high",  "lag2high" ):=shift(high,  n = 1:2, type = "lag"),symbol]
+prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
 prices[,day_delta:= close/open]
 prices[,day_fall:= low/open]
@@ -34,8 +34,8 @@ prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
 prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
          shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_day_rise",    "lag2_day_rise"   ):=shift(day_rise,    n = 1:2, type = "lag"),symbol]
-
+prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
+prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta )]
 
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
@@ -55,51 +55,84 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
          runCor( day_delta, lag1_day_fall, 7),
        symbol]
 
+prices[!is.na(day_delta) & !is.na(lag1_day_rise),
+       corr_lag_rise_long:=
+         runCor( day_delta, lag1_day_rise, 350),
+       symbol]
+prices[!is.na(day_delta) & !is.na(lag1_day_delta),
+       corr_lag_delta_long:=
+         runCor( day_delta, lag1_day_delta, 350),
+       symbol]
+prices[!is.na(day_delta) & !is.na(lag1_day_fall),
+       corr_lag_fall_long:=
+         runCor( day_delta, lag1_day_fall, 350),
+       symbol]
+
 sq=function(x)x^2
 
+# Regression strategy
+
 prices[,reg_predict := NA]
+prices[,xgb_predict := NA]
 for (yr in 2018:2021){
   IS = prices[year(date)==(yr-1) & 
                 log(volume_avg*close+1) %between% c(15,25)]
-  lm1 = lm(future_day_delta~
-             corr_lag_fall*day_fall +
-             corr_lag_delta*day_delta +
-             corr_lag_rise*day_rise,
+  lm1 = lm(future_day_delta_ltd ~
+             corr_lag_fall*day_fall * log(volume_avg)+
+             corr_lag_delta*day_delta * log(volume_avg)+
+             corr_lag_rise*day_rise * log(volume_avg)+
+             corr_lag_fall_long*day_fall * log(volume_avg)+
+             corr_lag_delta_long*day_delta * log(volume_avg)+
+             corr_lag_rise_long*day_rise * log(volume_avg),
            IS
   )
+  predictors = c('corr_lag_rise_long', 'corr_lag_delta_long', 'corr_lag_fall_long',
+                 'lag1close', 'lag2close', 'lag1open', 'lag2open', 'lag1high', 
+                 'lag2high', 'lag1low', 'lag2low', 'day_delta', 'day_fall', 
+                 'day_rise', 'night_delta', 'volume_avg', 'lag1_day_delta', 
+                 'lag2_day_delta', 'lag1_night_delta', 'lag2_night_delta', 
+                 'lag1_day_fall', 'lag2_day_fall', 'lag1_day_rise', 'lag2_day_rise', 
+                 'lagging_corr', 'corr_lag_rise', 'corr_lag_delta', 'corr_lag_fall', 
+                 'open', 'high', 'low', 'close', 'volume', 'adjusted')
+  
+  dtrain <- xgb.DMatrix(IS[,.SD,.SDcols=predictors] %>% data.matrix, label = IS$future_day_delta_ltd)
+  OS = prices[year(date)==yr & log(volume_avg*close+1) %between% c(15,25)]
+  dtest <-  xgb.DMatrix(OS[,.SD,.SDcols=predictors] %>% data.matrix, label = OS$future_day_delta_ltd)
+  
+  xgb1 = xgb.train(params = list(max_depth=8, gamma=1, lambda=1, eta=.5, objective = "reg:squarederror"),
+                   data = dtrain, 
+                   watchlist = list(train=dtrain, test=dtest),
+                   nrounds = 10)
   prices[,reg_predict:=ifelse(year(date)==yr, predict(lm1,prices), reg_predict)]
+  prices[,xgb_predict:=ifelse(year(date)==yr, predict(xgb1,data.matrix(prices[,.SD,.SDcols=predictors])), xgb_predict)]
   gc()
 }
 
+prices[reg_predict<.97  & 
+         log(volume_avg*close+1) %between% c(15,25),
+       .(mean(future_day_delta,na.rm=T),.N), 
+       year(date)][order(year)]
 
-# Overnight strategy makes money over 50 trades (either long or short) with few exceptions
-prices[reg_predict<.985,
-       .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
+prices[!is.na(future_day_delta_ltd) & reg_predict<.985  & 
+         log(volume_avg*close+1) %between% c(15,25)][order(date, symbol)][ 
+           ,.(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
-prices[night_delta<.97 & lagging_corr< -.4][order(date, symbol)][ ,
-                                                                  .(date, MA = SMA(day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.5,1.5)))
-abline(h=1)
-abline(h=0.9)
-
-prices[night_delta>1.03 & lagging_corr< -.4][order(date, symbol)][ 
-  ,.(date, MA = SMA(day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.5,1.5)))
-abline(h=1)
-abline(h=1.1)
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
 prices[future_night_delta<.96 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
-          .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
+          .(mean(future_day_delta_ltd,na.rm=T),.N), year(date)][order(year)]
 prices[future_night_delta>1.04 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
-       .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
+       .(mean(future_day_delta_ltd,na.rm=T),.N), year(date)][order(year)]
 
-prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
-       .(date, MA = SMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
+       .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 abline(h=1)
 abline(h=0.99)
 abline(h=1.01)
 
-prices[future_night_delta>1.04 & lagging_corr< -.4 & !is.na(future_day_delta) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ 
-  ,.(date, MA = SMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+prices[future_night_delta>1.04 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ 
+  ,.(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 abline(h=1)
 abline(h=1.01)
 abline(h=0.99)

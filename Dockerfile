@@ -11,6 +11,6 @@ RUN install2.r --error \
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
     cd stonksanalysis && \
-    git checkout 4acb04d 
+    git checkout future_night_delta 
 
 CMD bash /home/repos/stonksanalysis/launch.sh
