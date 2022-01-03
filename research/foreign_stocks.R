@@ -29,13 +29,15 @@ prices[,day_fall:= low/open]
 prices[,day_rise:= high/open]
 prices[,night_delta:= open/lag1close]
 prices[!is.na(volume),volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
-prices[,c("lag1_day_delta",    "lag2_day_delta"   ):=shift(day_delta,    n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_night_delta",  "lag2_night_delta" ):=shift(night_delta,  n = 1:2, type = "lag"),symbol]
+prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
+         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
+prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
+         shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
 prices[,c("lag1_day_rise",    "lag2_day_rise"   ):=shift(day_rise,    n = 1:2, type = "lag"),symbol]
 
 
-prices[!is.na(lag1_day_delta) & !is.na(lag1_night_delta),
+prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
          runCor( day_delta, night_delta, 364),
        symbol]
@@ -52,84 +54,52 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
        corr_lag_fall:=
          runCor( day_delta, lag1_day_fall, 7),
        symbol]
+
 sq=function(x)x^2
-yr = 2021
+
+prices[,reg_predict := NA]
 for (yr in 2018:2021){
   IS = prices[year(date)==(yr-1) & 
-                log(volume_avg*close+1) %between% c(10,12)]
+                log(volume_avg*close+1) %between% c(15,25)]
   lm1 = lm(future_day_delta~
-             corr_lag_fall*day_fall + sq(day_rise) +
-             corr_lag_delta*day_delta+ sq(day_rise) +
-             corr_lag_rise*day_rise+ sq(day_rise)  ,
+             corr_lag_fall*day_fall +
+             corr_lag_delta*day_delta +
+             corr_lag_rise*day_rise,
            IS
   )
-  print(yr)
-  print(prices[year(date)==yr & 
-             log(volume_avg*lag1close+1) %between% c(10,12) & 
-             predict(lm1, prices) < .985 ,
-           .(mean(future_day_delta, na.rm=T), sum(!is.na(future_day_delta)))]
-  )
+  prices[,reg_predict:=ifelse(year(date)==yr, predict(lm1,prices), reg_predict)]
+  gc()
 }
-IS = prices[year(date)==(yr-1) & 
-              log(volume_avg*close+1) > 15]
-lm1 = lm(future_day_delta~
-           corr_lag_fall*day_fall +
-           corr_lag_delta*day_delta +
-           corr_lag_rise*day_rise,
-     IS
-   )
 
-prices[year(date)==yr & 
-         log(volume_avg*lag1close+1)>15 & 
-         predict(lm1, prices) < .985 ,
-       .(mean(future_day_delta, na.rm=T), sum(!is.na(future_day_delta)))]
 
-gc()
+# Overnight strategy makes money over 50 trades (either long or short) with few exceptions
+prices[reg_predict<.985,
+       .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
-# Determine correct range to use for volume (it changes over time)
-# plot_data = prices_metadata[, .(out = min(1.1, mean(day_delta,na.rm=T)), .N),
-#                             .(pred_change = round(night_delta,2),
-#                               lagging_corr = round(lagging_corr,1),
-#                               year(date),
-#                               volume = round(log(volume_avg+1)))
-#                             ][N>30 & volume>8]
-# plot_data = prices_metadata[, .(out = min(1.1, mean(day_delta,na.rm=T)), .N),
-#                             .(pred_change = round(lag_day_delta,2),
-#                               lagging_corr = round(lagging_corr2,1),
-#                               year(date),
-#                               volume = round(log(volume_avg+1)))
-# ][N>30 & volume>8]
-#
-# ggplot(plot_data[year>2015 & volume %between% c(7,15)], aes(x=pred_change,
-#                       y=lagging_corr, color=out, size=N))+
-#   geom_point(alpha=.9) +
-#   scale_color_gradient2(midpoint = 1, low = "red", mid ="white", high = "blue", space = "Lab" )+
-#   geom_hline(yintercept=0) +
-#   geom_vline(xintercept=1) +
-#   facet_grid(volume~year)
+prices[night_delta<.97 & lagging_corr< -.4][order(date, symbol)][ ,
+                                                                  .(date, MA = SMA(day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.5,1.5)))
+abline(h=1)
+abline(h=0.9)
 
-# prices_metadata[,mean(lagging_corr,na.rm=T),round(log(volume_avg+1))][order(round)]
-# Whitelist Log volume 10-13 seems good
+prices[night_delta>1.03 & lagging_corr< -.4][order(date, symbol)][ 
+  ,.(date, MA = SMA(day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.5,1.5)))
+abline(h=1)
+abline(h=1.1)
 
-# prices_metadata[,                    .(mean(lagging_corr,na.rm=T),.N),Sector][order(V1)]
-# prices_metadata[log(volume_avg+1)<11,.(mean(lagging_corr2,na.rm=T),.N),Sector][order(V1)]
-# prices_metadata[log(volume_avg+1)<12 & year(date)>2019,.(mean(lagging_corr,na.rm=T),.N),Sector][order(V1)]
-# Whitelist: Consumer Durables, Consumer Non-Durables, Consumer Services, Technology and recently, Finance
+# Overnight strategy makes money over 50 trades (either long or short) with few exceptions
+prices[future_night_delta<.96 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
+          .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
+prices[future_night_delta>1.04 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
+       .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
-# prices_metadata[log(volume_avg+1)<11 & Sector %in% c('Consumer Durables', 'Consumer Non-Durables','Consumer Services', 'Technology', 'Finance'),
-#                 .(mean(abs(lagging_corr2),na.rm=T),.N),Country][order(V1)]
+prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
+       .(date, MA = SMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+abline(h=1)
+abline(h=0.99)
+abline(h=1.01)
 
-subsample = prices[log(volume_avg+1) %between% c(10,13)]
-
-subsample[night_delta<.97 & lagging_corr< -.4,
-          .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-subsample[date==max(date, na.rm=T) & lagging_corr< -.4,
-          .(date, symbol, close, 
-            buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-  fwrite('/tmp/correlated_stocks.csv')
-
-prices[date==max(date, na.rm=T) & 
-         log(volume_avg*lag1close+1)>15 & 
-         (predict(lm1, prices) < quantile(predict(lm1, IS), .0005, na.rm=T)) ,
-       .(date, ticker=symbol, price=close)] %>%
-  fwrite('/tmp/predicted_short_stocks.csv')
+prices[future_night_delta>1.04 & lagging_corr< -.4 & !is.na(future_day_delta) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ 
+  ,.(date, MA = SMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+abline(h=1)
+abline(h=1.01)
+abline(h=0.99)

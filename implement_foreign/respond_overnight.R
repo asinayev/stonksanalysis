@@ -20,15 +20,15 @@ prices[!is.na(day_delta) & !is.na(night_delta),
          runCor( day_delta, night_delta, 364),
        symbol]
 
-prices[future_night_delta<.97 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,13),
+prices[future_night_delta<.96 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
           .(mean(future_day_delta,na.rm=T),.N), year(date)]
 
-prices[future_night_delta>1.03 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,13),
+prices[future_night_delta>1.04 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
        .(mean(future_day_delta,na.rm=T),.N), year(date)]
 
 prices[date==max(date, na.rm=T) & 
          lagging_corr< -.4 & 
-         log(volume_avg+1) %between% c(10,13),
+         log(volume_avg+1) %between% c(10,25),
        .(date, symbol, close,
-         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+         buy = trunc(close*96,3)/100 , sell = (trunc(close*104,3)+1)/100)] %>%
   fwrite('/tmp/correlated_stocks.csv')
