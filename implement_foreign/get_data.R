@@ -9,7 +9,7 @@ system.time(
   prices <- fundamentals$Symbol %>%
     unique %>% split(1:splits) %>%
     parallel::mclapply(tq_get,
-                       from=Sys.Date()-2*365,
+                       from=Sys.Date()-5*365,
                        to=Sys.Date()+2,
                        mc.cores = splits
     ) %>%

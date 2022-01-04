@@ -49,15 +49,15 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
 sq=function(x)x^2
 
 lm1 = lm(future_day_delta~
-           corr_lag_fall*day_fall * log(volume_avg)+ #corr_lag_fall * sq(day_fall) +
-           corr_lag_delta*day_delta * log(volume_avg)+ #corr_lag_delta * sq(day_delta) +
-           corr_lag_rise*day_rise * log(volume_avg)+ #corr_lag_rise * sq(day_rise) +
-           corr_lag_fall_long*day_fall * log(volume_avg)+ #corr_lag_rise_long * sq(day_rise) +
-           corr_lag_delta_long*day_delta * log(volume_avg)+#corr_lag_delta_long * sq(day_delta) +
-           corr_lag_rise_long*day_rise * log(volume_avg) #+ corr_lag_rise_long * sq(day_rise)
-         ,prices,
+           corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
+           corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
+           corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
+           corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
+           corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
+           corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
+         ,prices, weights = (prices$date-min(prices$date))/as.integer(max(prices$date)),
          subset = log(volume_avg*close+1) > 15 &
-           date>Sys.Date()-365
+           date>Sys.Date()-3*365
 )
 
 
