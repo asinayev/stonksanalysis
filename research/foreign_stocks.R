@@ -11,7 +11,7 @@ system.time(
   prices <- fundamentals$Symbol %>%
     unique %>% split(1:splits) %>%
     parallel::mclapply(tq_get,
-                       from=Sys.Date()-6*365,
+                       from=Sys.Date()-8*365,
                        to=Sys.Date()+2,
                        mc.cores = splits
     ) %>%
@@ -71,11 +71,10 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
 sq=function(x)x^2
 
 # Regression strategy
-
+prices[,reg_predict := as.numeric(32)]
 prices[,reg_predict := NA]
-for (pricedate in sort(unique(prices$date))[-1:-502] ){
-  print(as.Date(pricedate))
-  IS = prices[date %between% c(pricedate-600, pricedate-1) & 
+for (yr in 2016:2021 ){
+  IS = prices[year(date) %between% c(yr-3, yr-1) & 
                 log(volume_avg*close+1) %between% c(15,25)]
   lm1 = lm(future_day_delta_ltd ~
              corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
@@ -84,18 +83,15 @@ for (pricedate in sort(unique(prices$date))[-1:-502] ){
              corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
              corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
              corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
-           ,IS
+           ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date))
   )
-  prices[date==pricedate,
-         reg_predict:=predict(lm1,data.frame(.SD))]
+  prices[year(date)==yr,
+         reg_predict:=predict(lm1,data.frame(.SD))  ]
   gc()
 }
-# 2018   .983   208
-# 2019   .995    86
-# 2020  1.010  2486
-# 2021   .974   491
 
-prices[reg_predict<.975  & 
+
+prices[reg_predict<.99  & 
          log(volume_avg*close+1) %between% c(15,25),
        .(mean(future_day_delta_ltd,na.rm=T),.N), 
        year(date)][order(year)]
