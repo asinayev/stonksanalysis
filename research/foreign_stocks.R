@@ -73,44 +73,31 @@ sq=function(x)x^2
 # Regression strategy
 
 prices[,reg_predict := NA]
-prices[,xgb_predict := NA]
-for (yr in 2018:2021){
-  IS = prices[year(date)==(yr-1) & 
+for (pricedate in sort(unique(prices$date))[-1:-502] ){
+  print(as.Date(pricedate))
+  IS = prices[date %between% c(pricedate-600, pricedate-1) & 
                 log(volume_avg*close+1) %between% c(15,25)]
   lm1 = lm(future_day_delta_ltd ~
-             corr_lag_fall*day_fall * log(volume_avg)+
-             corr_lag_delta*day_delta * log(volume_avg)+
-             corr_lag_rise*day_rise * log(volume_avg)+
-             corr_lag_fall_long*day_fall * log(volume_avg)+
-             corr_lag_delta_long*day_delta * log(volume_avg)+
-             corr_lag_rise_long*day_rise * log(volume_avg),
-           IS
+             corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
+             corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
+             corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
+             corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
+             corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
+             corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
+           ,IS
   )
-  predictors = c('corr_lag_rise_long', 'corr_lag_delta_long', 'corr_lag_fall_long',
-                 'lag1close', 'lag2close', 'lag1open', 'lag2open', 'lag1high', 
-                 'lag2high', 'lag1low', 'lag2low', 'day_delta', 'day_fall', 
-                 'day_rise', 'night_delta', 'volume_avg', 'lag1_day_delta', 
-                 'lag2_day_delta', 'lag1_night_delta', 'lag2_night_delta', 
-                 'lag1_day_fall', 'lag2_day_fall', 'lag1_day_rise', 'lag2_day_rise', 
-                 'lagging_corr', 'corr_lag_rise', 'corr_lag_delta', 'corr_lag_fall', 
-                 'open', 'high', 'low', 'close', 'volume', 'adjusted')
-  
-  dtrain <- xgb.DMatrix(IS[,.SD,.SDcols=predictors] %>% data.matrix, label = IS$future_day_delta_ltd)
-  OS = prices[year(date)==yr & log(volume_avg*close+1) %between% c(15,25)]
-  dtest <-  xgb.DMatrix(OS[,.SD,.SDcols=predictors] %>% data.matrix, label = OS$future_day_delta_ltd)
-  
-  xgb1 = xgb.train(params = list(max_depth=8, gamma=1, lambda=1, eta=.5, objective = "reg:squarederror"),
-                   data = dtrain, 
-                   watchlist = list(train=dtrain, test=dtest),
-                   nrounds = 10)
-  prices[,reg_predict:=ifelse(year(date)==yr, predict(lm1,prices), reg_predict)]
-  prices[,xgb_predict:=ifelse(year(date)==yr, predict(xgb1,data.matrix(prices[,.SD,.SDcols=predictors])), xgb_predict)]
+  prices[date==pricedate,
+         reg_predict:=predict(lm1,data.frame(.SD))]
   gc()
 }
+# 2018   .983   208
+# 2019   .995    86
+# 2020  1.010  2486
+# 2021   .974   491
 
-prices[reg_predict<.97  & 
+prices[reg_predict<.975  & 
          log(volume_avg*close+1) %between% c(15,25),
-       .(mean(future_day_delta,na.rm=T),.N), 
+       .(mean(future_day_delta_ltd,na.rm=T),.N), 
        year(date)][order(year)]
 
 prices[!is.na(future_day_delta_ltd) & reg_predict<.985  & 
