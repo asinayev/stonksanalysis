@@ -110,9 +110,9 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
   }
 }
 
-stock_day = function(stockname, start_date, end_date, key, interval='minute'){
-  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/%s/%s/%s?adjusted=false&sort=asc&limit=50000&apiKey=%s" %>%
-    sprintf(stockname, interval, start_date, end_date, key)
+stock_day = function(stockname, start_date, end_date, key, interval='minute', interval_len=1){
+  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/%s/%s/%s/%s?adjusted=false&sort=asc&limit=50000&apiKey=%s" %>%
+    sprintf(stockname, interval_len, interval, start_date, end_date, key)
   response = hit_polygon(link, tries = 3, results_contain = "c")
   if (!is(response, 'numeric')){
     return(
