@@ -128,12 +128,12 @@ stock_day = function(stockname, start_date, end_date, key, interval='minute', in
   } else {
     return(
       data.table(stock = stockname,
-                 AdjClose = NA, 
-                 high = NA, 
-                 low = NA, 
-                 volume = NA, 
-                 TimeStamp = NA,
-                 DateTime= as.Date(start_date) )
+                 AdjClose = NULL, 
+                 high = NULL, 
+                 low = NULL, 
+                 volume = NULL, 
+                 TimeStamp = NULL,
+                 DateTime= as.POSIXct(as.Date(start_date)) )
     )
   }
 }
