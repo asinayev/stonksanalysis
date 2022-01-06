@@ -20,6 +20,23 @@ select_field = function(response, field){
     return(response[['results']][[field]])
 }
 
+stock_deets = function( key, stockname){
+  x = "https://api.polygon.io/v1/meta/symbols/%s/company?apiKey=%s" %>%
+    sprintf(stockname, key) %>%
+    hit_polygon
+  if(!'tags' %in% names(x)){return(NULL)}
+  x$tags=paste(x$tags, collapse=',')
+  x$similar=paste(x$similar, collapse=',')
+  x
+}
+
+stock_deets_v = function(key, stocknames, cores){
+  stocknames %>%
+    unique %>%
+    parallel::mclapply(stock_deets, key=key, mc.cores = cores) %>% 
+    rbindlist(fill=T, use.names = T)
+}
+
 financials_from_polygon = function( key, stockname, date, field=F){
   response = "https://api.polygon.io/v2/reference/financials/%s?type=Y&sort=-reportPeriod&apiKey=%s" %>%
     sprintf(stockname, key) %>%
@@ -151,4 +168,7 @@ sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
   stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
     rbindlist(fill=TRUE, use.names = T)
 }
-# stock_history('AI', as.Date('2017-01-01'),as.Date('2020-01-01'),POLYKEY)
+
+
+
+
