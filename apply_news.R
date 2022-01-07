@@ -27,7 +27,7 @@ enrich = function(stocklist, moves, apikey){
   financials = stock_deets_v(apikey, unique(stocklist), 8)
   financials[,symbol:=ticker]
   moves[,price:=lastTrade.p]
-  data.table(moves)[ticker %in% unique(stocklist)] %>%
+  moves[ticker %in% unique(stocklist)] %>%
     merge(financials, by.x='ticker', by.y='ticker')
 }
 
@@ -47,7 +47,7 @@ matching_news = function(news, keyword, publisher, max_tickers=Inf){
 
 current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=%s" %>%
   sprintf(POLYKEY) %>%
-  hit_polygon
+  hit_polygon %>% data.table
 current_news = news_since_yesterday(POLYKEY)
 
 # short penny stocks with GlobeNewswire's "Health" or Benzinga's "Penny Stocks" keywords (single ticker)
