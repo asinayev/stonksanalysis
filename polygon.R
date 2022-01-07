@@ -21,13 +21,12 @@ select_field = function(response, field){
 }
 
 stock_deets = function( key, stockname){
-  x = "https://api.polygon.io/v1/meta/symbols/%s/company?apiKey=%s" %>%
+  x = "https://api.polygon.io/vX/reference/tickers/%s?apiKey=%s" %>%
     sprintf(stockname, key) %>%
     hit_polygon
-  if(!'tags' %in% names(x)){return(NULL)}
-  x$tags=paste(x$tags, collapse=',')
-  x$similar=paste(x$similar, collapse=',')
-  x
+  if(!'results' %in% names(x)){return(NULL)}
+  x$results$address=paste(x$results$address, collapse=',')
+  x$results
 }
 
 stock_deets_v = function(key, stocknames, cores){

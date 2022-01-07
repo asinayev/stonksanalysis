@@ -65,7 +65,7 @@ lm1 = lm(future_day_delta~
 prices[date>Sys.Date()-14 & 
          log(volume_avg*lag1close+1)>15 & 
          (predict(lm1, prices) < .99) ,
-       .(date, ticker=symbol, closingprice=close, future_day_delta)][order(date)]
+       .(date, symbol, closingprice=close, future_day_delta)][order(date)]
 
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
