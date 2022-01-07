@@ -26,7 +26,7 @@ enrich = function(stocklist, moves, apikey){
   stocklist=unlist(stocklist)
   financials = stock_deets_v(apikey, unique(stocklist), 8)
   financials[,symbol:=ticker]
-  financials[,price:=lastTrade.p]
+  moves[,price:=lastTrade.p]
   data.table(moves)[ticker %in% unique(stocklist)] %>%
     merge(financials, by.x='ticker', by.y='ticker')
 }
