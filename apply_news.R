@@ -7,7 +7,7 @@ setwd(args[1])
 source("polygon.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-stopifnot(POLYGONKEY!='')
+stopifnot(POLYKEY!='')
 
 news_since_yesterday=function(apikey){
   current_news = "https://api.polygon.io/v2/reference/news?order=desc&sort=published_utc&apiKey=%s&limit=1000" %>%
