@@ -113,7 +113,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
                  low = response$results$l,
                  volume = response$results$v, 
                  Date= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
-      )
+    )
   } else {
     return(
       data.table(stock = stockname,
