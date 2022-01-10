@@ -32,7 +32,8 @@ enrich = function(stocklist, moves, apikey){
     merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close)), symbol], 
           by.x='ticker',by.y='symbol', all.x=T)
   enriched_moves[,symbol:=ticker]
-  enriched_moves[,price:=ifelse(lastTrade.p!=0,lastTrade.p,yahoo_price) ]
+  enriched_moves[,c('price','lastTrade.p'):=ifelse(lastTrade.p!=0,lastTrade.p,yahoo_price) ]
+  enriched_moves[,prevDay.c:=ifelse(prevDay.c!=0,prevDay.c,yahoo_price) ]
   return(enriched_moves)
 }
 
