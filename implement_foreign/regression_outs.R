@@ -70,5 +70,5 @@ prices[date>Sys.Date()-14 &
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
          predict(lm1, prices) < .99 ,
-       .(date, symbol, price=close)] %>%
+       .(date, symbol, price=close, volume)] %>%
   fwrite('/tmp/predicted_short_stocks.csv')

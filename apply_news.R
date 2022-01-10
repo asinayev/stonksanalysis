@@ -29,11 +29,12 @@ enrich = function(stocklist, moves, apikey){
   yahoo_results = tq_get(unique(stocklist), from=Sys.Date()-100) %>% data.table
   enriched_moves = moves[ticker %in% unique(stocklist)] %>%
     merge(financials, by.x='ticker', by.y='ticker') %>% 
-    merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close)), symbol], 
+    merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close),yahoo_vol=last(volume)), symbol], 
           by.x='ticker',by.y='symbol', all.x=T)
   enriched_moves[,symbol:=ticker]
   enriched_moves[,c('price','lastTrade.p'):=ifelse(lastTrade.p!=0,lastTrade.p,yahoo_price) ]
   enriched_moves[,prevDay.c:=ifelse(prevDay.c!=0,prevDay.c,yahoo_price) ]
+  enriched_moves[,volume:=ifelse(prevDay.v!=0,prevDay.v,yahoo_vol)]
   return(enriched_moves)
 }
 
@@ -59,27 +60,27 @@ current_news = news_since_yesterday(POLYKEY)
 # short penny stocks with GlobeNewswire's "Health" or Benzinga's "Penny Stocks" keywords (single ticker)
 matching_news(current_news, keyword='Health', publisher='GlobeNewswire Inc.', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c')) %>%
+  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
   fwrite('/tmp/shortpenny.csv')
 matching_news(current_news, keyword='Penny Stocks', publisher='Benzinga', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c')) %>%
+  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume'))  %>%
   fwrite('/tmp/shortpenny.csv', append = T)
 # Long Motley Fool's investing and Benzinga's movers keywords with OTH increases 2-10% (single ticker)
 matching_news(current_news, keyword='investing', publisher='The Motley Fool', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(lastTrade.p > prevDay.c*1.02 & lastTrade.p < prevDay.c*1.1, 
-         select=c('symbol','price','prevDay.c')) %>%
+         select=c('symbol','price','prevDay.c','prevDay.c','volume'  )) %>%
   fwrite('/tmp/longzing.csv')
 matching_news(current_news, keyword='Movers', publisher='Benzinga', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(lastTrade.p > prevDay.c*1.02 & lastTrade.p < prevDay.c*1.1, 
-         select=c('symbol','price','prevDay.c')) %>%
+         select=c('symbol','price','prevDay.c','prevDay.c','volume')) %>%
   fwrite('/tmp/longzing.csv', append=T)
 # Long PennyStocks' penny stocks that didn't change too much from previous day
 matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(lastTrade.p > prevDay.c*.9 & lastTrade.p < prevDay.c*1.1 & log(market_cap)<21, 
-         select=c('symbol','price','prevDay.c')) %>%
+         select=c('symbol','price','prevDay.c','prevDay.c','volume')) %>%
   fwrite('/tmp/longpenny.csv')
 
