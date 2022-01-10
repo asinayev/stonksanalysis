@@ -26,10 +26,14 @@ enrich = function(stocklist, moves, apikey){
   moves = data.table(moves$tickers)
   stocklist=unlist(stocklist)
   financials = stock_deets_v(apikey, unique(stocklist), 8)
-  financials[,symbol:=ticker]
-  moves[,price:=lastTrade.p]
-  moves[ticker %in% unique(stocklist)] %>%
-    merge(financials, by.x='ticker', by.y='ticker')
+  yahoo_results = tq_get(unique(stocklist), from=Sys.Date()-100) %>% data.table
+  enriched_moves = moves[ticker %in% unique(stocklist)] %>%
+    merge(financials, by.x='ticker', by.y='ticker') %>% 
+    merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close)), symbol], 
+          by.x='ticker',by.y='symbol', all.x=T)
+  enriched_moves[,symbol:=ticker]
+  enriched_moves[,price:=ifelse(lastTrade.p!=0,lastTrade.p,yahoo_price) ]
+  return(enriched_moves)
 }
 
 matching_news = function(news, keyword, publisher, max_tickers=Inf){
