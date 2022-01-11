@@ -58,14 +58,14 @@ current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tic
 current_news = news_since_yesterday(POLYKEY)
 
 # short penny stocks with GlobeNewswire's "Health" or Benzinga's "Penny Stocks" keywords (single ticker)
-matching_news(current_news, keyword='Health', publisher='GlobeNewswire Inc.', max_tickers=1) %>%
+matching_news(current_news, keyword='Health', publisher='GlobeNewswire Inc.', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
   fwrite('/tmp/shortpenny.csv')
-matching_news(current_news, keyword='Penny Stocks', publisher='Benzinga', max_tickers=1) %>%
-  enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume'))  %>%
-  fwrite('/tmp/shortpenny.csv', append = T)
+# matching_news(current_news, keyword='Penny Stocks', publisher='Benzinga', max_tickers=Inf) %>%
+#   enrich(current_moves, POLYKEY) %>%
+#   subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume'))  %>%
+#   fwrite('/tmp/shortpenny.csv', append = T)
 # Long Motley Fool's investing and Benzinga's movers keywords with OTH increases 2-10% (single ticker)
 matching_news(current_news, keyword='investing', publisher='The Motley Fool', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
