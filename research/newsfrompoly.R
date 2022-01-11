@@ -31,8 +31,8 @@ get_day = function(date, key){
   } else {
     yesterday = date-1
   }
-  open = lubridate::as_datetime(paste(yesterday,"09:30:00",collapse = "T"),tz='America/New_York')
-  close = lubridate::as_datetime(paste(date,"16:00:00",collapse = "T"),tz='America/New_York')
+  open = lubridate::as_datetime(paste(yesterday,"08:30:00",collapse = "T"),tz='America/New_York')
+  close = lubridate::as_datetime(paste(date,"17:00:00",collapse = "T"),tz='America/New_York')
   
   day_moves = "https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/%s?adjusted=true&apiKey=%s" %>%
     sprintf(date, key) %>%
