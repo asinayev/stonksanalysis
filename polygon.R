@@ -25,7 +25,7 @@ stock_deets = function( key, stockname){
     sprintf(stockname, key) %>%
     hit_polygon
   if(!'results' %in% names(x)){return(NULL)}
-  x$results[c('ticker','name','market_cap','list_date','locale','total_employees')]
+  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees')] 
 }
 
 stock_deets_v = function(key, stocknames, cores){
