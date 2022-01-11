@@ -23,11 +23,13 @@ news_since_yesterday=function(apikey){
 }
 
 enrich = function(stocklist, moves, apikey){
+  if(length(stocklist)==0){
+    stocklist='GOOG'
+  }
   moves = data.table(moves$tickers)
   stocklist=unlist(stocklist)
   financials = stock_deets_v(apikey, unique(stocklist), 8)
   yahoo_results = tq_get(unique(stocklist), from=Sys.Date()-100) %>% data.table
-  print(names(financials))
   enriched_moves = moves[ticker %in% unique(stocklist)] %>%
     merge(financials, by.x='ticker', by.y='ticker') %>% 
     merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close),yahoo_vol=last(volume)), symbol], 
@@ -36,7 +38,7 @@ enrich = function(stocklist, moves, apikey){
   enriched_moves[,c('price','lastTrade.p'):=ifelse(lastTrade.p!=0,lastTrade.p,yahoo_price) ]
   enriched_moves[,prevDay.c:=ifelse(prevDay.c!=0,prevDay.c,yahoo_price) ]
   enriched_moves[,volume:=ifelse(prevDay.v!=0,prevDay.v,yahoo_vol)]
-  return(enriched_moves)
+  return(enriched_moves[symbol!='GOOG'])
 }
 
 matching_news = function(news, keyword, publisher, max_tickers=Inf){
@@ -71,7 +73,7 @@ matching_news(current_news, keyword='Health', publisher='GlobeNewswire Inc.', ma
 matching_news(current_news, keyword='investing', publisher='The Motley Fool', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(lastTrade.p > prevDay.c*1.02 & lastTrade.p < prevDay.c*1.1, 
-         select=c('symbol','price','prevDay.c','prevDay.c','volume'  )) %>%
+         select=c('symbol','price','prevDay.c','prevDay.c','volume') ) %>%
   fwrite('/tmp/longzing.csv')
 matching_news(current_news, keyword='Movers', publisher='Benzinga', max_tickers=1) %>%
   enrich(current_moves, POLYKEY) %>%
