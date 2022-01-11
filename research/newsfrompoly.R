@@ -1,3 +1,10 @@
+require(tidyquant, quietly = T)
+require(data.table, quietly = T)
+
+setwd('~/stonksanalysis')
+source("polygon.R", local=getenv('POLYGONKEY'))
+
+
 get_day = function(date, key){
   
   combine_sources = function(day_moves, yesterday_moves, today_news, yesterday_news){
@@ -76,13 +83,17 @@ byword[log(market_cap)<21 & keywords =='Health' & publisher.name=='GlobeNewswire
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
-byword[log(market_cap)<21 & keywords =='Penny Stocks' & publisher.name=='Benzinga',
+# short penny stocks with GlobeNewswire's "Health" keywords
+
+byword[keywords =='investing' & publisher.name=='The Motley Fool' & 
+         !is.na(single_ticker) & overnight_delta <.98,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
-# short penny stocks with GlobeNewswire's "Health" or Benzinga's "Penny Stocks" keywords (single ticker)
+         length(unique(paste(date,ticker)))),.(month(date), year(date) )][order(month,decreasing = T)]
+# short penny stocks from the motley fool that have dropped overnight and long ones that rose
 
-byword[keywords =='investing' & publisher.name=='The Motley Fool' & !is.na(single_ticker) & overnight_delta %between% c(1.02,1.1),
+byword[keywords =='Movers' & publisher.name=='Benzinga' & 
+         !is.na(single_ticker) & overnight_delta %between% c(1.02,1.1),
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(month(date), year(date) )][order(month,decreasing = T)]
@@ -92,12 +103,9 @@ byword[publisher.name=='PennyStocks' & log(market_cap)<21,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(publisher.name, month(date))][order(V1,decreasing = T)][V3>200]
-# Long PennyStocks' penny stocks that didn't change too much from previous day
+# Long PennyStocks' penny stocks 
 
-news_moves[grepl('Value', title, ignore.case=T),
-       .(round(mean(c/o,na.rm=T),3),
-         median(c/o,na.rm=T),
-         length(unique(paste(date,ticker)))),.(publisher.name)][order(V3,decreasing = T)][1:20]
-
-
-
+byword[overnight_delta<.98  & log(market_cap)<21,
+       .(mean(delta,na.rm=T),
+         median(delta,na.rm=T),
+         length(unique(paste(date,ticker)))),.(publisher.name)][order(V1,decreasing = T)][V3>200]
