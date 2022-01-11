@@ -27,6 +27,7 @@ enrich = function(stocklist, moves, apikey){
   stocklist=unlist(stocklist)
   financials = stock_deets_v(apikey, unique(stocklist), 8)
   yahoo_results = tq_get(unique(stocklist), from=Sys.Date()-100) %>% data.table
+  print(names(financials))
   enriched_moves = moves[ticker %in% unique(stocklist)] %>%
     merge(data.frame(financials[,!is.na(names(financials))]), by.x='ticker', by.y='ticker') %>% 
     merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close),yahoo_vol=last(volume)), symbol], 
