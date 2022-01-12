@@ -1,3 +1,5 @@
+echo $run_what;
+
 if [ $run_what == "all" || $run_what == "news" ] ; then
 	Rscript /home/repos/stonksanalysis/apply_news.R /home/repos/stonksanalysis
 fi
