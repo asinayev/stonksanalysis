@@ -46,7 +46,7 @@ matching_news = function(news, keyword, publisher, max_tickers=Inf){
     if(is.na(word)){
       return(T)
     } else {
-      return(word %in% keyword_list)  
+      return(any(word %in% keyword_list))
       }
     }
   x=news[sapply(keywords, keyword_match, word=keyword) & 
@@ -61,31 +61,21 @@ current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tic
 current_news = news_since_yesterday(POLYKEY)
 
 # short penny stocks with GlobeNewswire's "Health" 
-matching_news(current_news, keyword='Health', publisher='GlobeNewswire Inc.', max_tickers=Inf) %>%
+matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'), 
+              publisher='GlobeNewswire Inc.', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
   fwrite('/tmp/healthshort.csv')
-# Penny stocks with Motley Fool's investing keyword referring to only one stock: short when dropped OTH and long when rose OTH
-matching_news(current_news, keyword='investing', publisher='The Motley Fool', max_tickers=1) %>%
-  enrich(current_moves, POLYKEY) %>%
-  subset(lastTrade.p < prevDay.c*.98, 
-         select=c('symbol','price','prevDay.c','prevDay.c','volume') ) %>%
-  fwrite('/tmp/motleyshort.csv')
-matching_news(current_news, keyword='investing', publisher='The Motley Fool', max_tickers=1) %>%
-  enrich(current_moves, POLYKEY) %>%
-  subset(lastTrade.p > prevDay.c*1.02 & lastTrade.p < prevDay.c*1.1, 
-         select=c('symbol','price','prevDay.c','prevDay.c','volume') ) %>%
-  fwrite('/tmp/motleylong.csv')
-# Long Benzinga's movers keywords with OTH increases 2-10% (single ticker)
-matching_news(current_news, keyword='Movers', publisher='Benzinga', max_tickers=1) %>%
-  enrich(current_moves, POLYKEY) %>%
-  subset(lastTrade.p > prevDay.c*1.02 & lastTrade.p < prevDay.c*1.1, 
-         select=c('symbol','price','prevDay.c','prevDay.c','volume')) %>%
-  fwrite('/tmp/zinglong.csv', append=T)
-# Long PennyStocks' penny stocks 
+# Short PennyStocks' penny stocks with upward movement
 matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(lastTrade.p > prevDay.c*.9 & lastTrade.p < prevDay.c*1.1 & log(market_cap)<21, 
-         select=c('symbol','price','prevDay.c','prevDay.c','volume')) %>%
-  fwrite('/tmp/pennylong.csv')
+  subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
+  dplyr::mutate( buy=0, sell=round(prevDay.c*1.015,2)) %>%
+  fwrite('/tmp/pennyshort.csv')
+# short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
+matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='Benzinga', max_tickers=Inf) %>%
+  enrich(current_moves, POLYKEY) %>%
+  subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
+  dplyr::mutate( buy=0, sell=round(prevDay.c*1.015,2)) %>%
+  fwrite('/tmp/pennyshort.csv')
 

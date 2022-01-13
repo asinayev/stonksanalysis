@@ -38,8 +38,8 @@ get_day = function(date, key){
   } else {
     yesterday = date-1
   }
-  open = lubridate::as_datetime(paste(yesterday,"08:30:00",collapse = "T"),tz='America/New_York')
-  close = lubridate::as_datetime(paste(date,"17:00:00",collapse = "T"),tz='America/New_York')
+  open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')
+  close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
   
   day_moves = "https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/%s?adjusted=true&apiKey=%s" %>%
     sprintf(date, key) %>%
@@ -61,7 +61,7 @@ get_day = function(date, key){
   combine_sources(day_moves, yesterday_moves, today_news)
   }
 
-days_to_look_at = as.Date(as.Date("2021-04-18"):Sys.Date(),origin='1970-01-01')
+days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
 # news_moves = sample(days_to_look_at, 20) %>%
 #   lapply(get_day, key=POLYKEY) %>%
@@ -85,27 +85,24 @@ byword[log(market_cap)<21 & keywords =='Health' & publisher.name=='GlobeNewswire
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
 # short penny stocks with GlobeNewswire's "Health" keywords
 
-byword[keywords =='investing' & publisher.name=='The Motley Fool' & 
-         !is.na(single_ticker) & overnight_delta <.98,
+byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date), year(date) )][order(month,decreasing = T)]
-# short penny stocks from the motley fool that have dropped overnight and long ones that rose
+         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+# short PennyStocks penny stocks with upward movement >1%
 
-byword[keywords =='Movers' & publisher.name=='Benzinga' & 
-         !is.na(single_ticker) & overnight_delta %between% c(1.02,1.1),
+byword[log(market_cap)<21 & publisher.name=='Benzinga' & keywords=='Penny Stocks' & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date), year(date) )][order(month,decreasing = T)]
-# Long Motley Fool's investing and Benzinga's movers keywords with OTH increases 2-10% (single ticker)
+         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+byword[log(market_cap)<21 & publisher.name=='Benzinga' & keywords=='Small Cap' & overnight_delta>1.01,
+       .(mean(delta,na.rm=T),
+         median(delta,na.rm=T),
+         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+# short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 
-byword[publisher.name=='PennyStocks' & log(market_cap)<21,
-       .(mean(delta,na.rm=T),
-         median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(publisher.name, month(date))][order(V1,decreasing = T)][V3>200]
-# Long PennyStocks' penny stocks 
 
-byword[overnight_delta<.98  & log(market_cap)<21,
+byword[log(market_cap)<21 & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(publisher.name)][order(V1,decreasing = T)][V3>200]
+         length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V3>200]
