@@ -77,5 +77,5 @@ matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='B
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
   dplyr::mutate( buy=0, sell=round(prevDay.c*1.015,2)) %>%
-  fwrite('/tmp/pennyshort.csv')
+  fwrite('/tmp/zingashort.csv')
 
