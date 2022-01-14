@@ -2,8 +2,8 @@ require(tidyquant, quietly = T)
 require(data.table, quietly = T)
 
 setwd('~/stonksanalysis')
-source("polygon.R", local=getenv('POLYGONKEY'))
-
+source("polygon.R", local=T)
+POLYKEY = Sys.getenv('POLYGONKEY')
 
 get_day = function(date, key){
   
@@ -77,9 +77,9 @@ news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))]
 
 byword = news_moves[!sapply(keywords, is.null),
                   .(keywords=unlist(keywords) ), 
-                  .(id, delta=c/o, overnight_delta=o/prev_close, ticker, single_ticker, market_cap, date, publisher.name)]
+                  .(id, delta=c/o, overnight_delta=o/prev_close, ticker, single_ticker, market_cap, date, publisher.name, title)]
 
-byword[log(market_cap)<21 & keywords =='Health' & publisher.name=='GlobeNewswire Inc.',
+byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
@@ -91,18 +91,19 @@ byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
 # short PennyStocks penny stocks with upward movement >1%
 
-byword[log(market_cap)<21 & publisher.name=='Benzinga' & keywords=='Penny Stocks' & overnight_delta>1.01,
-       .(mean(delta,na.rm=T),
-         median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
-byword[log(market_cap)<21 & publisher.name=='Benzinga' & keywords=='Small Cap' & overnight_delta>1.01,
+byword[log(market_cap)<21 & publisher.name=='Benzinga' & 
+         keywords%in%c('Small Cap','Penny Stocks') & 
+         overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 
 
-byword[log(market_cap)<21 & overnight_delta>1.01,
+byword[log(market_cap)<21 & overnight_delta<.99
+      #   keywords %in% c('Top Stories', 'Markets', 'Movers','Pre-Market Outlook') & 
+       #   publisher.name=='Benzinga' 
+       ,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V3>200]
