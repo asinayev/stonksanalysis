@@ -100,10 +100,9 @@ byword[log(market_cap)<21 & publisher.name=='Benzinga' &
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 
 
-byword[log(market_cap)<21 & overnight_delta<.99
-      #   keywords %in% c('Top Stories', 'Markets', 'Movers','Pre-Market Outlook') & 
-       #   publisher.name=='Benzinga' 
+byword[
        ,
-       .(mean(delta,na.rm=T),
+       .(mean(abs(delta-1),na.rm=T),
+         mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V3>200]
+         length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]

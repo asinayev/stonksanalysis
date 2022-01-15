@@ -3,7 +3,7 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
-fundamentals = fread("stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
+fundamentals = fread("other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
 splits = 16
@@ -20,8 +20,8 @@ system.time(
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
-prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag"),symbol]
-prices[,c("lag1open",  "lag2open" ):=shift(open,  n = 1:2, type = "lag"),symbol]
+prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
 prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
 prices[,day_delta:= close/open]
@@ -36,6 +36,18 @@ prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
 prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
 prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
 prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta )]
+
+
+#####
+prices[!is.na(lag1close),
+       c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
+       symbol ]
+prices[close<lower*.85 & open>lower*.85, 
+       .(mean(lead1open/close, na.rm=T), median(lead1open/close,na.rm=T),.N),
+       year(date)][order(year)]
+#Buy at close, setting limit to 85% of the bband when stock opened above this threshold
+#####
+
 
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
