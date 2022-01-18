@@ -11,5 +11,5 @@ if [ $run_what == "all" ] || [ $run_what == "pred" ] ; then
 	Rscript /home/repos/stonksanalysis/implement_foreign/respond_overnight.R
 fi
 if [ $run_what == "mid" ] ; then
-	Rscript /home/repos/stonksanalysis/apply_bband.R
+	Rscript /home/repos/stonksanalysis/apply_bband.R /home/repos/stonksanalysis
 fi
