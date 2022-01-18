@@ -108,6 +108,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
     return(
       data.table(stock = stockname,
                  AdjClose = response$results$c, 
+                 open = response$results$o,
                  high = response$results$h,
                  low = response$results$l,
                  volume = response$results$v, 
@@ -117,6 +118,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
     return(
       data.table(stock = stockname,
                  AdjClose = NA, 
+                 open = NA,
                  high = NA, 
                  low = NA, 
                  volume = NA, 
