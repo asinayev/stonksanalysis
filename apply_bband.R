@@ -42,7 +42,6 @@ history %>%
          select=c('stock','AdjClose','volume','lower','open')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=pmin(lower*.9, open*.85), 
-                 order_type='LMT', time_in_force='',
-                 strike_price=pmin(lower*.9, open*.85), sell=0) %>%
+                 order_type='LOC', time_in_force='', sell=0) %>%
   fwrite('/tmp/bandlong.csv')
 
