@@ -30,18 +30,17 @@ history[,c("lag1close", "lag2close", "lead1close"):=
           shift(AdjClose, n = c(1:2,-1), type = "lag"),stock]
 history[,c("lead1open"):=
           shift(open, n = c(-1), type = "lag"),stock]
-history[!is.na(lag1close),
-       c('lower','avg','upper','pctB'):= 
-         data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)), stock]
-history[AdjClose<lower*.9 & day_delta<.85 & volume_avg*lag1close>100000, 
+history[!is.na(AdjClose),close_running_min:= frollapply(AdjClose, min, n = 50 ),stock ]
+history[(AdjClose<low*1.01 | AdjClose==close_running_min) & day_delta<.85 & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000, 
        .(mean(lead1open/AdjClose, na.rm=T), median(lead1open/AdjClose,na.rm=T),.N)]
 
 
 history %>%
-  subset(Date == max(Date) & day_delta<.925 & AdjClose<lower*.975  & volume_avg*lag1close>100000,  
-         select=c('stock','AdjClose','volume','lower','open')) %>%
+  subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
+         & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
+         select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
-                 strike_price=pmin(lower*.9, open*.85), 
+                 strike_price=pmin(pmax(low*1.01, close_running_min), open*.85), 
                  order_type='LOC', time_in_force='', sell=0) %>%
   fwrite('/tmp/bandlong.csv')
 
