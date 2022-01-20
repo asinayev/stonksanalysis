@@ -40,7 +40,7 @@ history %>%
          & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
          select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
-                 strike_price=pmin(pmax(low*1.01, close_running_min), open*.85), 
+                 strike_price=pmin(pmax(low, close_running_min), open*.85), 
                  order_type='LOC', time_in_force='', sell=0) %>%
   fwrite('/tmp/bandlong.csv')
 
