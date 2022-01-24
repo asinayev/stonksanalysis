@@ -70,5 +70,6 @@ prices[date>Sys.Date()-14 &
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
          predict(lm1, prices) < .99 ,
-       .(date, symbol, price=close, volume)] %>%
+       .(date, symbol, close, volume)] %>%
+  dplyr::mutate( action='SELL', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/predicted_short_stocks.csv')

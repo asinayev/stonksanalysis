@@ -65,18 +65,24 @@ matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'
               publisher='GlobeNewswire Inc.', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
-  dplyr::mutate( close=prevDay.c, buy=0, sell=round(prevDay.c*1.015,2)) %>%
+  dplyr::mutate( action='SELL', close=prevDay.c, 
+                 strike_price=round(prevDay.c*1.015,2), 
+                 order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/healthshort.csv')
 # Short PennyStocks' penny stocks with upward movement
 matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
-  dplyr::mutate( close=prevDay.c, buy=0, sell=round(prevDay.c*1.015,2)) %>%
+  dplyr::mutate( action='SELL', close=prevDay.c, 
+                 strike_price=round(prevDay.c*1.015,2), 
+                 order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/pennyshort.csv')
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='Benzinga', max_tickers=Inf) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
-  dplyr::mutate( close=prevDay.c, buy=0, sell=round(prevDay.c*1.015,2)) %>%
+  dplyr::mutate( action='SELL', close=prevDay.c, 
+                 strike_price=round(prevDay.c*1.015,2), 
+                 order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/zingashort.csv')
 
