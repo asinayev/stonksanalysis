@@ -161,10 +161,10 @@ sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
     dplyr::select('ticker') %>% unlist %>%
     unique %>% sample(nsample)  %>%
     parallel::mclapply(stock_history,
-                       start_date = date-365*2, 
+                       start_date = date, 
                        end_date = date+365, 
                        key = key,
-                       mc.cores = 16)
+                       mc.cores = 16, check_ticker=F)
   stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
     rbindlist(fill=TRUE, use.names = T)
 }

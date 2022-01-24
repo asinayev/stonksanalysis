@@ -3,11 +3,9 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
-
-prices <- tq_get(c('TSLA','AAPL','SPY','BAR','PDBC'),
-                     from=Sys.Date()-8*365,
-                     to=Sys.Date()+2) %>%
-  data.table
+prices=lapply(Sys.Date()-365*8:9, sampled_data, key=POLYKEY, nsample=100, exchange = c('XNAS')) %>%
+  rbindlist
+  
 setorder(prices, symbol, date)
 
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
@@ -31,17 +29,17 @@ prices[,
          sum(ifelse(switcher, night_delta-1, 0), na.rm=T)),
        .(symbol,year(date))][order(symbol,year)]
 
-prices[lag1close/lag1open>1 & lag1open/close>1  & 
+prices[lag1close/lag1open>1.01 & open/lag1close<.99  & 
           volume*close>100000
        ,
        .(mean(lead1delta, na.rm=T), 
          mean(lead1daydelta, na.rm=T), 
          mean(lead1nightdelta, na.rm=T), .N), 
        .(year(date), 
-         overnight_rise = round(open/lag1close,2),
-         undue_fall = round(open/close,2))][N>100][order(year, pmax(-V1,-V2,-V3))] %>%
-  dplyr::mutate(V1=ifelse(V1>1.03, 1.03, V1) ) %>%
-  ggplot(aes(x=undue_fall, y=overnight_rise, color=V1, size=log(N)))+
+         overall_rise = round(lag1open/close,2),
+         delta = round(close/open,2))][N>100][order(year, pmax(-V1,-V2,-V3))] %>%
+  dplyr::mutate(V1=ifelse(V3>1.03, 1.03, V3) ) %>%
+  ggplot(aes(x=delta, y=overall_rise, color=V1, size=log(N)))+
   scale_color_gradient2(
     low = "blue",
     mid = "white",
