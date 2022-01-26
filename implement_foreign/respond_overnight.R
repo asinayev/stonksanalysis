@@ -44,7 +44,7 @@ prices[date==max(date, na.rm=T) & close/open>1.05 &
          volume*close>100000  & volume*close<500000,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
-                 strike_price=trunc(close*975,3)/100, 
+                 strike_price=trunc(close*975,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/updownmorn.csv')
 
