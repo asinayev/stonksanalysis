@@ -35,16 +35,6 @@ history[(AdjClose<low*1.01 | AdjClose==close_running_min) & day_delta<.85 & volu
        .(mean(lead1open/AdjClose, na.rm=T), median(lead1open/AdjClose,na.rm=T),.N)]
 
 
-history %>% #See foreign stocks
-  subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
-         & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
-         select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
-  dplyr::mutate( symbol=stock, action='BUY', 
-                 strike_price=pmin(pmax(low, close_running_min), open*.85), 
-                 order_type='LOC', time_in_force='') %>%
-  fwrite('/tmp/bandlong.csv')
-
-
 history %>% 
   subset(Date == max(Date) & day_delta<.975 & open/lag1close> 1.05  
          & volume_avg*lag1close>100000  & volume_avg*lag1close<500000,  
@@ -53,4 +43,14 @@ history %>%
                  strike_price=open*.95, 
                  order_type='LOC', time_in_force='') %>%
   fwrite('/tmp/updown.csv')
+
+history %>% 
+  subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
+         & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
+         select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
+  dplyr::mutate( symbol=stock, action='BUY', 
+                 strike_price=pmin(pmax(low, close_running_min), open*.85), 
+                 order_type='LOC', time_in_force='') %>%
+  fwrite('/tmp/bandlong.csv')
+
 
