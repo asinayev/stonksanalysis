@@ -5,9 +5,9 @@ setwd('~/stonksanalysis')
 source("polygon.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-get_day = function(date, key){
+get_day = function(date, key, yesterday_news=F){
   
-  combine_sources = function(day_moves, yesterday_moves, today_news, yesterday_news){
+  combine_sources = function(day_moves, yesterday_moves, today_news){
 
     today_news[,single_ticker:=ifelse(lapply(tickers, length)==1, 
                                     unlist(lapply(tickers, function(x)x[[1]])), 
@@ -27,7 +27,7 @@ get_day = function(date, key){
     today_news = today_news[, .SD[1], .(id, ticker)]
     
     merge(today_news, day_moves, by.x='ticker', by.y='T', all.x=T) %>%
-      merge(yesterday_moves[,.(`T`,prev_close = c)], 
+      merge(yesterday_moves[,.(`T`,prev_close = c, prev_open = o)], 
             by.x='ticker', by.y='T', all.x=T)
   }
   
@@ -38,9 +38,13 @@ get_day = function(date, key){
   } else {
     yesterday = date-1
   }
-  open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')
-  close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
-  
+  if(yesterday_news){
+    open = lubridate::as_datetime(paste(yesterday,"09:30:00",collapse = "T"),tz='America/New_York')
+    close = lubridate::as_datetime(paste(yesterday,"15:00:00",collapse = "T"),tz='America/New_York')
+  } else {
+    open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')
+    close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
+  }
   day_moves = "https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/%s?adjusted=true&apiKey=%s" %>%
     sprintf(date, key) %>%
     hit_polygon
@@ -69,7 +73,9 @@ days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
 news_moves = parallel::mclapply(
   days_to_look_at, 
-  get_day, key=POLYKEY,mc.cores = 16) %>% 
+  get_day, key=POLYKEY,mc.cores = 16,
+  yesterday_news=F
+  ) %>% 
   rbindlist(use.names=TRUE, fill=T)
 financials = stock_deets_v(POLYKEY, news_moves$ticker, 16)
 news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))], 
@@ -77,7 +83,8 @@ news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))]
 
 byword = news_moves[!sapply(keywords, is.null),
                   .(keywords=unlist(keywords) ), 
-                  .(id, delta=c/o, overnight_delta=o/prev_close, ticker, single_ticker, market_cap, date, publisher.name, title)]
+                  .(id, delta=c/o, overnight_delta=o/prev_close, prev_delta=prev_close/prev_open, 
+                    ticker, single_ticker, market_cap, date, publisher.name, title)]
 
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
@@ -106,3 +113,4 @@ byword[
          mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]
+

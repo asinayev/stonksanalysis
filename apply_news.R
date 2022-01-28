@@ -17,9 +17,11 @@ news_since_yesterday=function(apikey){
   current_news = current_news$results %>%data.table
   current_news[, published_nyc := published_utc%>% as_datetime() %>% with_tz('America/New_York')]
   
-  last_close = as_datetime(paste(Sys.Date()-1,'16:00:00', collapse='T'), tz='America/New_York')
-  last_open = as_datetime(paste(Sys.Date(),'09:30:00', collapse='T'), tz='America/New_York')
-  current_news[published_nyc>last_close & published_nyc<last_open]
+  yesterday_open = as_datetime(paste(Sys.Date()-1,'09:30:00', collapse='T'), tz='America/New_York')
+  yesterday_close = as_datetime(paste(Sys.Date()-1,'16:00:00', collapse='T'), tz='America/New_York')
+  today_open = as_datetime(paste(Sys.Date(),'09:30:00', collapse='T'), tz='America/New_York')
+  current_news[,news_oth:=published_nyc>yesterday_close]
+  current_news[published_nyc>yesterday_open & published_nyc<today_open]
 }
 
 enrich = function(stocklist, moves, apikey){
@@ -41,7 +43,7 @@ enrich = function(stocklist, moves, apikey){
   return(enriched_moves[symbol!='GOOG'])
 }
 
-matching_news = function(news, keyword, publisher, max_tickers=Inf){
+matching_news = function(news, keyword, publisher, max_tickers=Inf, allow_yesterday=F){
   keyword_match = function(word, keyword_list){
     if(all(is.na(word))){
       return(T)
@@ -50,6 +52,7 @@ matching_news = function(news, keyword, publisher, max_tickers=Inf){
       }
     }
   x=news[sapply(keywords, keyword_match, word=keyword) & 
+           ifelse(news_oth,T,allow_yesterday) &
          publisher.name==publisher & 
          sapply(tickers, function(x)length(x)<=max_tickers), tickers]
   x
@@ -62,7 +65,7 @@ current_news = news_since_yesterday(POLYKEY)
 
 # short penny stocks with GlobeNewswire's "Health" 
 matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'), 
-              publisher='GlobeNewswire Inc.', max_tickers=Inf) %>%
+              publisher='GlobeNewswire Inc.', max_tickers=Inf, allow_yesterday=F) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
@@ -70,7 +73,8 @@ matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'
                  order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/healthshort.csv')
 # Short PennyStocks' penny stocks with upward movement
-matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf) %>%
+matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf, 
+              allow_yesterday=T) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
@@ -78,7 +82,8 @@ matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf
                  order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/pennyshort.csv')
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
-matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='Benzinga', max_tickers=Inf) %>%
+matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='Benzinga', 
+              max_tickers=Inf, allow_yesterday=T) %>%
   enrich(current_moves, POLYKEY) %>%
   subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
