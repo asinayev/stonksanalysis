@@ -13,8 +13,9 @@ news_since_yesterday=function(apikey){
   current_news = "https://api.polygon.io/v2/reference/news?order=desc&sort=published_utc&apiKey=%s&limit=1000" %>%
     sprintf(apikey) %>%
     hit_polygon(results_contain = 'published_utc')
-  
-  current_news = current_news$results %>%data.table
+  second_page = hit_polygon(paste0(current_news$next_url,"&apiKey=",POLYKEY) )
+
+  current_news = rbind(current_news$results %>%data.table, second_page$results %>%data.table)
   current_news[, published_nyc := published_utc%>% as_datetime() %>% with_tz('America/New_York')]
   
   yesterday_open = as_datetime(paste(Sys.Date()-1,'09:30:00', collapse='T'), tz='America/New_York')
