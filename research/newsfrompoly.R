@@ -114,3 +114,5 @@ byword[
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]
 
+
+news_moves[grepl('buyback|repurchase|dividend increase', title, ignore.case = T) & is.na(single_ticker), .(title, ticker,date)][order(date)] %>% View
