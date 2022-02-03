@@ -27,7 +27,7 @@ get_day = function(date, key, yesterday_news=F){
     today_news = today_news[, .SD[1], .(id, ticker)]
     
     merge(today_news, day_moves, by.x='ticker', by.y='T', all.x=T) %>%
-      merge(yesterday_moves[,.(`T`,prev_close = c, prev_open = o)], 
+      merge(yesterday_moves[,.(`T`,prev_close = c, prev_open = o, prev_vol = v)], 
             by.x='ticker', by.y='T', all.x=T)
   }
   
@@ -114,5 +114,24 @@ byword[
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]
 
+unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,publisher.name)], bigram, title)[
+  bigram=='daily j']
 
-news_moves[grepl('buyback|repurchase|dividend increase', title, ignore.case = T) & is.na(single_ticker), .(title, ticker,date)][order(date)] %>% View
+news_moves_prices[grepl('top|beat|surpass', title, ignore.case = T)  
+                    & grepl('earning', title, ignore.case = T) 
+                    & grepl('revenue', title, ignore.case = T) 
+                    & publisher.name=='Zacks Investment Research'
+                    & o/prev_close>1 &  volume_avg*prev_close<10000000 & volume_avg*prev_close>1000000
+                    & !is.na(single_ticker),max(date),
+                    .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
+
+news_moves[grepl('(earnings).*(revenue)', title, ignore.case = T) &
+             o/prev_close>1
+           & !is.na(single_ticker),max(date),
+           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
+
+
+news_moves[grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T) 
+           & !is.na(single_ticker),max(date),
+           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
+
