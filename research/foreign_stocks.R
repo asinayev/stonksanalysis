@@ -24,7 +24,7 @@ system.time(
 #   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
 
-prices = prices[symbol %in% prices[!is.na(volume) & !is.na(close) & !is.na(open),.N,symbol][N>100, symbol]]
+prices = prices[symbol %in% prices[!is.na(volume) & !is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
 prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
@@ -143,10 +143,12 @@ x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
-prices[future_night_delta<.96 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
-          .(mean(future_day_delta_ltd,na.rm=T),.N), year(date)][order(year)]
-prices[future_night_delta>1.04 & lagging_corr< -.4 & log(volume_avg+1) %between% c(10,25),
-       .(mean(future_day_delta_ltd,na.rm=T),.N), year(date)][order(year)]
+prices[future_night_delta<.96 & lagging_corr< -.4 & 
+         volume*close>100000,
+          .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
+prices[future_night_delta>1.04 & lagging_corr< -.4 & 
+         volume*close>100000,
+       .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
        .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
