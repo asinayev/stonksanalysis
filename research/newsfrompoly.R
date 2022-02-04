@@ -80,6 +80,9 @@ news_moves = parallel::mclapply(
 financials = stock_deets_v(POLYKEY, news_moves$ticker, 16)
 news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))], 
                    by='ticker')
+spy_moves = tq_get('SPY') %>% data.table
+spy_moves[,spy_overnight_delta:=open/shift(close, 1, type='lag') ]
+news_moves = merge(news_moves,spy_moves[,.(date,spy_overnight_delta)], by ='date')
 
 byword = news_moves[!sapply(keywords, is.null),
                   .(keywords=unlist(keywords) ), 
@@ -117,18 +120,20 @@ byword[
 unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,publisher.name)], bigram, title)[
   bigram=='daily j']
 
-news_moves_prices[grepl('top|beat|surpass', title, ignore.case = T)  
-                    & grepl('earning', title, ignore.case = T) 
-                    & grepl('revenue', title, ignore.case = T) 
-                    & publisher.name=='Zacks Investment Research'
-                    & o/prev_close>1 &  volume_avg*prev_close<10000000 & volume_avg*prev_close>1000000
-                    & !is.na(single_ticker),max(date),
-                    .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
+news_moves[grepl('top|beat|surpass', title, ignore.case = T)  
+           & grepl('earning', title, ignore.case = T) 
+           & grepl('revenue', title, ignore.case = T) 
+           & !grepl('financ', name, ignore.case = T) 
+           & publisher.name=='Zacks Investment Research'
+           & o/prev_close>1  & o/prev_open<1.1 & prev_vol*prev_close<10000000 & prev_vol*prev_close>100000
+           & !is.na(single_ticker),
+           max(date),
+           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
 
 news_moves[grepl('(earnings).*(revenue)', title, ignore.case = T) &
              o/prev_close>1
            & !is.na(single_ticker),max(date),
-           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N)]
+           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N),month(date)][order(month)]
 
 
 news_moves[grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T) 
