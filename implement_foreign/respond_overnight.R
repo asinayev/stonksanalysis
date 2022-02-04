@@ -33,7 +33,7 @@ prices[date>Sys.Date()-14 &
 
 
 prices[date==max(date, na.rm=T) & 
-         lagging_corr< -.4 & 
+         lagging_corr< -.4 & lag1_day_delta>.98 & 
          log(volume_avg+1) %between% c(10,25),
        .(date, symbol, close,
          buy = trunc(close*96,3)/100 , sell = (trunc(close*104,3)+1)/100)] %>%
