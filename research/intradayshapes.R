@@ -50,6 +50,30 @@ get_features_for_stock = function(stockname){
   return(daily_features)
 }
 
+get_hours_for_stock = function(stockname){
+  stockdat = rbind(
+    stock_day(
+      stockname = stockname,
+      start_date='2018-01-01',
+      end_date='2019-12-31',
+      key=POLYKEY,
+      interval='hour',
+      interval_len=1),
+    stock_day(
+      stockname = stockname,
+      start_date='2020-01-01',
+      end_date='2021-12-31',
+      key=POLYKEY,
+      interval='minute',
+      interval_len=10), 
+    fill=T
+  )
+  stockdat[,date:=as.Date(DateTime)]
+  setorder(stockdat, stock, DateTime)
+  daily_features = stockdat[,extract_features_for_day(.SD),.(date,stock)]
+  return(daily_features)
+}
+
 splits = 10
 system.time(
   stockdat <- fundamentals[Volume>1000]$Symbol %>%
