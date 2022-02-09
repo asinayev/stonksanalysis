@@ -127,32 +127,49 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
   }
 }
 
-stock_day = function(stockname, start_date, end_date, key, interval='minute', interval_len=1){
-  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/%s/%s/%s/%s?adjusted=false&sort=asc&limit=50000&apiKey=%s" %>%
-    sprintf(stockname, interval_len, interval, start_date, end_date, key)
-  response = hit_polygon(link, tries = 3, results_contain = "c")
-  if (!is(response, 'numeric')){
-    return(
-      data.table(stock = stockname,
-                 Open = response$results$o, 
-                 AdjClose = response$results$c, 
-                 high = response$results$h,
-                 low = response$results$l,
-                 volume = response$results$v, 
-                 TimeStamp = response$results$t,
-                 DateTime= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'EST') )
-    )
+add_results = function(results, ...){
+  
+  response = "https://api.polygon.io/v2/aggs/ticker/%s/range/%s/%s/%s/%s?adjusted=false&sort=asc&limit=50000&apiKey=%s" %>%
+    sprintf(...) %>%
+    hit_polygon(tries = 3, results_contain = "c")
+  if('results' %in% names(response)){
+    rbind(results,
+          data.table(stock = response$ticker,
+                     Open = response$results$o, 
+                     AdjClose = response$results$c, 
+                     high = response$results$h,
+                     low = response$results$l,
+                     volume = response$results$v, 
+                     TimeStamp = response$results$t,
+                     DateTime= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'EST') 
+          ),
+          fill=TRUE
+    ) %>% return
   } else {
-    return(
-      data.table(stock = stockname,
-                 AdjClose = NULL, 
-                 high = NULL, 
-                 low = NULL, 
-                 volume = NULL, 
-                 TimeStamp = NULL,
-                 DateTime= as.POSIXct(as.Date(start_date)) )
-    )
+      return(results)
+    }
+}
+
+stock_day = function(stockname, start_date, end_date, key, 
+                     interval='minute', interval_len=1, day_buffer = 1){
+  results = data.table(stock = stockname,
+                       AdjClose = 0, 
+                       high = 0, 
+                       low = 0, 
+                       volume = 0, 
+                       TimeStamp = 0,
+                       DateTime= as.POSIXct(as.Date(start_date), tz = 'EST'))[stock==1]
+  results = add_results(results, stockname, interval_len, interval, 
+            start_date, end_date, key)
+  while(nrow(results)>=1 & 
+        as_date(end_date) - as_date(max(results$DateTime)) > day_buffer){
+    new_results = add_results(results, stockname, interval_len, interval, 
+                as_date(max(results$DateTime)), end_date, key)
+    if(new_results[,max(DateTime)]>results[,max(DateTime)]){
+      results=new_results
+    } else { break }
   }
+  return(unique(results,by=c('stock','TimeStamp')))
 }
 
 
