@@ -172,6 +172,30 @@ stock_day = function(stockname, start_date, end_date, key,
   return(unique(results,by=c('stock','TimeStamp')))
 }
 
+get_hours_for_stocks = function(stocknames,
+                                start_date='2018-01-01', 
+                                end_date=Sys.Date(),
+                                key=POLYKEY){
+  stockdat = 
+    stocknames %>%
+    unique %>%
+    parallel::mclapply(
+      stock_day,
+      start_date=start_date,
+      end_date=end_date,
+      key=key,
+      interval='minute',
+      interval_len=60, day_buffer = 7,
+      mc.cores = 20) %>% 
+    rbindlist(fill = T)
+  setorder(stockdat, stock, DateTime)
+  stockdat[, DateTime := as.POSIXct(TimeStamp/1000, 
+                                    origin="1970-01-01", tz = 'EST')]
+  stockdat[,bar_date:=as_date(DateTime)]
+  stockdat[,bar_hour:=lubridate::hour(DateTime)]
+  dcast(stockdat, stock+bar_date~bar_hour, value.var = 'AdjClose') %>%
+    return
+}
 
 sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
   stocklist = stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%

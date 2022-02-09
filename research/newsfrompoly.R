@@ -80,13 +80,10 @@ news_moves = parallel::mclapply(
 financials = stock_deets_v(POLYKEY, news_moves$ticker, 16)
 news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))], 
                    by='ticker')
-spy_moves = tq_get('SPY') %>% data.table
-spy_moves[,spy_overnight_delta:=open/shift(close, 1, type='lag') ]
-news_moves = merge(news_moves,spy_moves[,.(date,spy_overnight_delta)], by ='date')
 
 byword = news_moves[!sapply(keywords, is.null),
                   .(keywords=unlist(keywords) ), 
-                  .(id, delta=c/o, overnight_delta=o/prev_close, prev_delta=prev_close/prev_open, 
+                  .(id, delta=c/o, overnight_delta=o/prev_close, prev_delta=prev_close/prev_open, open=o,
                     ticker, single_ticker, market_cap, date, publisher.name, title)]
 
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
@@ -94,6 +91,20 @@ byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press rele
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
 # short penny stocks with GlobeNewswire's "Health" keywords
+pennyshort_trades = byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
+       .(date,ticker,open,delta)]
+pennyshort_hours = get_hours_for_stocks(pennyshort_trades$ticker,
+                                start_date=min(pennyshort_trades$date), 
+                                end_date=Sys.Date(),
+                                key=POLYKEY)
+merge(pennyshort_trades, pennyshort_hours, 
+      by.x=c('ticker','date'),by.y=c('stock','bar_date'))[
+        ,.(mean(`9`/open,na.rm=T),
+           mean(`10`/open,na.rm=T),
+           mean(`11`/open,na.rm=T),
+           mean(`14`/open,na.rm=T),
+           mean(`15`/open,na.rm=T),
+           mean(delta,na.rm=T))]
 
 byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
