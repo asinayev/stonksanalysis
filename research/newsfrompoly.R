@@ -112,6 +112,26 @@ byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01
          length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
 # short PennyStocks penny stocks with upward movement >1%
 
+pennyshort_trades = byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01,
+                           .(date,ticker,open,delta)]
+pennyshort_hours = get_hours_for_stocks(pennyshort_trades$ticker,
+                                        start_date=min(pennyshort_trades$date), 
+                                        end_date=Sys.Date(),
+                                        key=POLYKEY)
+merge(pennyshort_trades, pennyshort_hours, 
+      by.x=c('ticker','date'),by.y=c('stock','bar_date'))[ !is.na(AdjClose_9)
+        ,.(mean(open/Open_9,na.rm=T),
+           mean(AdjClose_9/open,na.rm=T),
+           mean(AdjClose_10/open,na.rm=T),
+           mean(AdjClose_11/open,na.rm=T),
+           mean(AdjClose_12/open,na.rm=T),
+           mean(AdjClose_13/open,na.rm=T),
+           mean(AdjClose_14/open,na.rm=T),
+           mean(AdjClose_15/AdjClose_8,na.rm=T),
+           mean(Open_16/open,na.rm=T),
+           mean(delta,na.rm=T),.N)]
+
+
 byword[log(market_cap)<21 & publisher.name=='Benzinga' & 
          keywords%in%c('Small Cap','Penny Stocks') & 
          overnight_delta>1.01,
