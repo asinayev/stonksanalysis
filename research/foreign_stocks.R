@@ -6,6 +6,25 @@ require(ggplot2)
 fundamentals = fread("other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
+wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
+  pennyshort_hours = get_hours_for_stocks(trade_data$ticker,
+                                          start_date=min(trade_data$date), 
+                                          end_date=Sys.Date(),
+                                          key=POLYKEY)
+  merge(trade_data, pennyshort_hours, 
+        by.x=c('ticker','date'),by.y=c('stock','bar_date'))[ !is.na(AdjClose_9)
+                                                             ,.(mean(open/Open_9,na.rm=T),
+                                                                mean(AdjClose_9/open,na.rm=T),
+                                                                mean(AdjClose_10/open,na.rm=T),
+                                                                mean(AdjClose_11/open,na.rm=T),
+                                                                mean(AdjClose_12/open,na.rm=T),
+                                                                mean(AdjClose_13/open,na.rm=T),
+                                                                mean(AdjClose_14/open,na.rm=T),
+                                                                mean(AdjClose_15/AdjClose_8,na.rm=T),
+                                                                mean(Open_16/open,na.rm=T),
+                                                                mean(delta,na.rm=T),.N)]
+}
+
 splits = 16
 system.time(
   prices <- fundamentals$Symbol %>%
@@ -73,6 +92,18 @@ prices[
     volume*close>100000  & volume*close<500000,
   .(mean(lead1close/lead1open, na.rm=T), .N), 
   .(year(date))][order(year)] 
+prices[
+  lead1open/close< .975 & close/open>1.05 & 
+    volume*close>100000  & volume*close<500000,
+  .(mean(lead1close/lead1open, na.rm=T), .N), 
+  .(year(date))][order(year)] 
+prices[
+  night_delta< .975 & lag1_day_delta>1.05 & 
+    volume_avg*lag1close>100000  & volume_avg*lag1close<500000 & 
+    date>'2022-01-01',
+                           .(date,ticker=symbol,open,delta=day_delta)] %>%
+  wins_by_hour
+
 #At open, buy stocks that climbed yesterday but fell overnight today
 #####
 
