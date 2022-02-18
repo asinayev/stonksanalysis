@@ -11,18 +11,19 @@ wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
                                           start_date=min(trade_data$date), 
                                           end_date=Sys.Date(),
                                           key=POLYKEY)
-  merge(trade_data, pennyshort_hours, 
-        by.x=c('ticker','date'),by.y=c('stock','bar_date'))[ !is.na(AdjClose_9)
-                                                             ,.(mean(open/Open_9,na.rm=T),
-                                                                mean(AdjClose_9/open,na.rm=T),
-                                                                mean(AdjClose_10/open,na.rm=T),
-                                                                mean(AdjClose_11/open,na.rm=T),
-                                                                mean(AdjClose_12/open,na.rm=T),
-                                                                mean(AdjClose_13/open,na.rm=T),
-                                                                mean(AdjClose_14/open,na.rm=T),
-                                                                mean(AdjClose_15/AdjClose_8,na.rm=T),
-                                                                mean(Open_16/open,na.rm=T),
-                                                                mean(delta,na.rm=T),.N)]
+  res = merge(trade_data, pennyshort_hours, 
+        by.x=c('ticker','date'),by.y=c('stock','bar_date'))
+  print(res[ !is.na(AdjClose_9),.(mean(open/Open_9,na.rm=T),
+                                  at10=mean(AdjClose_9/open,na.rm=T),
+                                  mean(AdjClose_10/open,na.rm=T),
+                                  mean(AdjClose_11/open,na.rm=T),
+                                  mean(AdjClose_12/open,na.rm=T),
+                                  mean(AdjClose_13/open,na.rm=T),
+                                  mean(AdjClose_14/open,na.rm=T),
+                                  at359 = mean(AdjClose_15/open,na.rm=T),
+                                  atclose = mean(Open_16/open,na.rm=T),
+                                  delta = mean(delta,na.rm=T),.N)])
+  res
 }
 
 splits = 16
@@ -49,6 +50,7 @@ prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), t
 prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
 prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
+prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
 prices[,day_delta:= close/open]
 prices[,day_fall:= low/open]
 prices[,day_rise:= high/open]
@@ -87,16 +89,13 @@ prices[
 #At close, buy stocks that climbed last night and fell today, setting limit to 95% of the open
 #####
 
+
 prices[
-  lead1open/close< .975 & close/open>1.05 & 
-    volume*close>100000  & volume*close<500000,
-  .(mean(lead1close/lead1open, na.rm=T), .N), 
+  night_delta< .975 & lag1_day_delta>1.05 & 
+    lag1volume*lag1close>75000 & lag1volume*lag1close>75000,
+  .(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
-prices[
-  lead1open/close< .975 & close/open>1.05 & 
-    volume*close>100000  & volume*close<500000,
-  .(mean(lead1close/lead1open, na.rm=T), .N), 
-  .(year(date))][order(year)] 
+
 prices[
   night_delta< .975 & lag1_day_delta>1.05 & 
     volume_avg*lag1close>100000  & volume_avg*lag1close<500000 & 

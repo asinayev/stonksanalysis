@@ -68,7 +68,7 @@ current_news = news_since_yesterday(POLYKEY)
 matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'), 
               publisher='GlobeNewswire Inc.', max_tickers=Inf, allow_yesterday=F) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','price','prevDay.c','volume')) %>%
+  subset(log(market_cap)<21 & volume*prevDay.c>75000, select=c('symbol','price','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
                  strike_price=round(prevDay.c*1.015,2), 
                  order_type='LMT', time_in_force='OPG') %>%
@@ -77,7 +77,7 @@ matching_news(current_news, keyword=c('Health', 'Partnerships', 'Press releases'
 matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf, 
               allow_yesterday=T) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
+  subset(log(market_cap)<21 & volume*prevDay.c>75000, select=c('symbol','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
                  strike_price=round(prevDay.c*1.015,2), 
                  order_type='LMT', time_in_force='OPG') %>%
@@ -86,7 +86,7 @@ matching_news(current_news, keyword=NA, publisher='PennyStocks', max_tickers=Inf
 matching_news(current_news, keyword=c('Penny Stocks', 'Small Cap'), publisher='Benzinga', 
               max_tickers=Inf, allow_yesterday=T) %>%
   enrich(current_moves, POLYKEY) %>%
-  subset(log(market_cap)<21, select=c('symbol','prevDay.c','volume')) %>%
+  subset(log(market_cap)<21 & volume*prevDay.c>75000, select=c('symbol','prevDay.c','volume')) %>%
   dplyr::mutate( action='SELL', close=prevDay.c, 
                  strike_price=round(prevDay.c*1.015,2), 
                  order_type='LMT', time_in_force='OPG') %>%
