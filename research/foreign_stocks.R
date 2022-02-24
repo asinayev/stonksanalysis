@@ -3,7 +3,7 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
-fundamentals = fread("other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
+fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
 fundamentals = fundamentals[sample(nrow(fundamentals))]
 
 wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
@@ -161,14 +161,28 @@ for (yr in 2016:2021 ){
 }
 
 
+IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30 &
+              log(volume_avg*close+1) %between% c(15,25)]
+lm1 = lm(future_day_delta_ltd ~
+           corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
+           corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
+           corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
+           corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
+           corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
+           corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
+         ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date))
+)
+prices[year(date)==2022,
+       reg_predict:=predict(lm1,data.frame(.SD))  ]
+
 prices[reg_predict<.99  & 
          log(volume_avg*close+1) %between% c(15,25),
-       .(mean(future_day_delta_ltd,na.rm=T),.N), 
+       .(mean(future_day_delta,na.rm=T),.N), 
        year(date)][order(year)]
 
-prices[!is.na(future_day_delta_ltd) & reg_predict<.985  & 
+prices[!is.na(future_day_delta) & reg_predict<.99  & 
          log(volume_avg*close+1) %between% c(15,25)][order(date, symbol)][ 
-           ,.(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+           ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 

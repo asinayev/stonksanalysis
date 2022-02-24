@@ -64,12 +64,12 @@ lm1 = lm(future_day_delta~
 #print out all of last week's picks
 prices[date>Sys.Date()-14 & 
          log(volume_avg*lag1close+1)>15 & 
-         (predict(lm1, prices) < .99) ,
+         (predict(lm1, prices) < .985) ,
        .(date, symbol, closingprice=close, future_day_delta)][order(date)]
 
 prices[date==max(date, na.rm=T) & 
          log(volume_avg*lag1close+1)>15 & 
-         predict(lm1, prices) < .99 ,
+         predict(lm1, prices) < .985 ,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='SELL', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/predicted_short_stocks.csv')
