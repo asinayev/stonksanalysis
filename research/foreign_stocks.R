@@ -67,7 +67,7 @@ prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_
 prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta )]
 
 
-#####
+#####bandlong
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
 #        symbol ]
@@ -80,6 +80,7 @@ prices[(close<low*1.01 | close==low_running) & day_delta<.85
 #At close, buy stocks that fell 15% and closed at the day's low or 50D low of close prices
 #####
 
+#####updown
 prices[
   open/lag1close> 1.05 & close/open<.95 & 
     volume*close>100000  & volume*close<500000,
@@ -89,10 +90,10 @@ prices[
 #At close, buy stocks that climbed last night and fell today, setting limit to 95% of the open
 #####
 
-
+#####updownmorn
 prices[
   night_delta< .975 & lag1_day_delta>1.05 & 
-    lag1volume*lag1close>75000 & lag1volume*lag1close>75000,
+    lag1volume*lag1close>75000 & volume_avg*lag1close<500000,
   .(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
@@ -106,6 +107,21 @@ prices[
 #At open, buy stocks that climbed yesterday but fell overnight today
 #####
 
+
+
+###### volumeshort
+prices[lag1volume/volume_avg>10 & lag1_day_delta>.975 & night_delta>1.01 & 
+         volume_avg*lag1close>75000  & volume_avg>50000,
+       .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
+#
+######
+
+###### volumelong
+prices[lag1volume/volume_avg <.5 & night_delta< .96 & 
+         volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
+         volume_avg>50000,
+       .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
+######
 
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
@@ -175,7 +191,7 @@ lm1 = lm(future_day_delta_ltd ~
 prices[year(date)==2022,
        reg_predict:=predict(lm1,data.frame(.SD))  ]
 
-prices[reg_predict<.99  & 
+prices[reg_predict<.985  & 
          log(volume_avg*close+1) %between% c(15,25),
        .(mean(future_day_delta,na.rm=T),.N), 
        year(date)][order(year)]
