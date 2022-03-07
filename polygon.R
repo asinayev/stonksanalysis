@@ -101,7 +101,7 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
       end_date = end_date-7
     }
   }
-  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&apiKey=%s" %>%
+  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&limit=50000&apiKey=%s" %>%
     sprintf(stockname, start_date, end_date, key)
   response = hit_polygon(link, tries = 3, results_contain = "c")
   if (!is(response, 'numeric')){
@@ -197,13 +197,17 @@ get_hours_for_stocks = function(stocknames,
     return
 }
 
-sampled_data=function(key, date, nsample, exchange = c('XNYS','XNAS','XASE')){
-  stocklist = stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%
+sampled_data=function(key, date, end_date = as.Date(date)+365, nsample, exchange = c('XNYS','XNAS','XASE')){
+  stocks = stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%
+    subset(type=='CS') %>%
     dplyr::select('ticker') %>% unlist %>%
-    unique %>% sample(nsample)  %>%
-    parallel::mclapply(stock_history,
-                       start_date = date, 
-                       end_date = date+365, 
+    unique
+  if(nsample){
+    stocks=sample(stocks, nsample)
+  }
+  stocklist = parallel::mclapply(stocks, stock_history,
+                       start_date = as.Date(date), 
+                       end_date = end_date, 
                        key = key,
                        mc.cores = 16, check_ticker=F)
   stocklist[unlist(lapply(stocklist,is.data.frame))] %>%

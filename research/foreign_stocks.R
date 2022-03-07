@@ -3,45 +3,45 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
-fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
-fundamentals = fundamentals[sample(nrow(fundamentals))]
-
-wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
-  pennyshort_hours = get_hours_for_stocks(trade_data$ticker,
-                                          start_date=min(trade_data$date), 
-                                          end_date=Sys.Date(),
-                                          key=POLYKEY)
-  res = merge(trade_data, pennyshort_hours, 
-        by.x=c('ticker','date'),by.y=c('stock','bar_date'))
-  print(res[ !is.na(AdjClose_9),.(mean(open/Open_9,na.rm=T),
-                                  at10=mean(AdjClose_9/open,na.rm=T),
-                                  mean(AdjClose_10/open,na.rm=T),
-                                  mean(AdjClose_11/open,na.rm=T),
-                                  mean(AdjClose_12/open,na.rm=T),
-                                  mean(AdjClose_13/open,na.rm=T),
-                                  mean(AdjClose_14/open,na.rm=T),
-                                  at359 = mean(AdjClose_15/open,na.rm=T),
-                                  atclose = mean(Open_16/open,na.rm=T),
-                                  delta = mean(delta,na.rm=T),.N)])
-  res
-}
-
-splits = 16
-system.time(
-  prices <- fundamentals$Symbol %>%
-    unique %>% split(1:splits) %>%
-    parallel::mclapply(tq_get,
-                       from=Sys.Date()-8*365,
-                       to=Sys.Date()+2,
-                       mc.cores = splits
-    ) %>%
-    rbindlist(fill=T)
-)
+# fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
+# fundamentals = fundamentals[sample(nrow(fundamentals))]
+# 
+# wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
+#   pennyshort_hours = get_hours_for_stocks(trade_data$ticker,
+#                                           start_date=min(trade_data$date), 
+#                                           end_date=Sys.Date(),
+#                                           key=POLYKEY)
+#   res = merge(trade_data, pennyshort_hours, 
+#         by.x=c('ticker','date'),by.y=c('stock','bar_date'))
+#   print(res[ !is.na(AdjClose_9),.(mean(open/Open_9,na.rm=T),
+#                                   at10=mean(AdjClose_9/open,na.rm=T),
+#                                   mean(AdjClose_10/open,na.rm=T),
+#                                   mean(AdjClose_11/open,na.rm=T),
+#                                   mean(AdjClose_12/open,na.rm=T),
+#                                   mean(AdjClose_13/open,na.rm=T),
+#                                   mean(AdjClose_14/open,na.rm=T),
+#                                   at359 = mean(AdjClose_15/open,na.rm=T),
+#                                   atclose = mean(Open_16/open,na.rm=T),
+#                                   delta = mean(delta,na.rm=T),.N)])
+#   res
+# }
+# 
+# splits = 16
+# system.time(
+#   prices <- fundamentals$Symbol %>%
+#     unique %>% split(1:splits) %>%
+#     parallel::mclapply(tq_get,
+#                        from=Sys.Date()-8*365,
+#                        to=Sys.Date()+2,
+#                        mc.cores = splits
+#     ) %>%
+#     rbindlist(fill=T)
+# )
 
 # Get data from polygon instead
-# prices=lapply(Sys.Date()-365*1:7, sampled_data, key=POLYKEY, nsample=2000, exchange = c('XNAS')) %>%
-#   rbindlist%>%
-#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+
+prices=lapply(Sys.Date()-365*1:7, sampled_data, key=POLYKEY, nsample=F, exchange = c('XNAS','XNYS')) %>%   rbindlist%>%
+  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
 
 prices = prices[symbol %in% prices[!is.na(volume) & !is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
@@ -126,6 +126,11 @@ prices[lag1volume/volume_avg <.5 & night_delta< .96 &
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
          runCor( day_delta, night_delta, 364),
+       symbol]
+
+prices[!is.na(day_delta) & !is.na(night_delta),
+       lagging_corr:=
+         runCor( day_delta, night_delta, 7),
        symbol]
 
 prices[!is.na(day_delta) & !is.na(lag1_day_rise),
