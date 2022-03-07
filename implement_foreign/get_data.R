@@ -15,4 +15,5 @@ system.time(
     ) %>%
     rbindlist(fill=T)
 )
+prices = prices[, .SD[1], by=.(symbol, date)]
 fwrite(prices,'/tmp/prices.csv')
