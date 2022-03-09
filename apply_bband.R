@@ -9,11 +9,9 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 stopifnot(POLYKEY!='')
 
-current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=%s" %>%
-  sprintf(POLYKEY) %>%
-  hit_polygon
+stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), financials=F, cores=16)
 
-history = current_moves$tickers$ticker %>%
+history = stocklist$ticker %>%
   parallel::mclapply(
     stock_history,
     start_date = Sys.Date()-365, end_date = Sys.Date()+1, key = POLYKEY, 
@@ -36,11 +34,11 @@ history[(AdjClose<low*1.01 | AdjClose==close_running_min) & day_delta<.85 & volu
 
 
 history %>% 
-  subset(Date == max(Date) & day_delta<.975 & open/lag1close> 1.05  
-         & volume_avg*lag1close>100000  & volume_avg*lag1close<500000,  
+  subset(Date == max(Date) & day_delta<.94 & open/lag1close> 1.05  
+         & volume*lag1close>100000  & volume*lag1close<500000,  
          select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
-                 strike_price=open*.95, 
+                 strike_price=open*.9, 
                  order_type='LOC', time_in_force='') %>%
   fwrite('/tmp/updown.csv')
 

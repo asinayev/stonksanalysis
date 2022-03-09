@@ -48,24 +48,23 @@ financials_from_polygon = function( key, stockname, date, field=F){
 }
 
 
-stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', financials=F, cores=16, ticker_type='CS'){
+stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, cores=16, ticker_type='CS'){
   resultlist=list()
-  for (ex in exchange){
-    go=T
-    last_examined=""
-    while(go){
-      link = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
-        sprintf(ex, date, key, last_examined,ticker_type)
-      response = hit_polygon(link)
-      if (!is.null(response$results)){
-        last_examined = response$results$ticker[nrow(response$results)]
-        resultlist[paste(ex, last_examined)]= list(response$results)
-        go=nrow(response$results)==1000
-      } else {
-        go=F
-      }
+  go=T
+  last_examined=""
+  while(go){
+    link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
+      sprintf(date, key, last_examined,ticker_type)
+    response = hit_polygon(link)
+    if (!is.null(response$results)){
+      last_examined = response$results$ticker[nrow(response$results)]
+      resultlist[last_examined]= list(response$results)
+      go=nrow(response$results)==1000
+    } else {
+      go=F
     }
   }
+
   out = resultlist %>% 
     rbindlist(use.names=TRUE, fill = T)
   out = out[,.SD[.N],ticker]
@@ -198,8 +197,8 @@ get_hours_for_stocks = function(stocknames,
 }
 
 sampled_data=function(key, date, end_date = as.Date(date)+365, nsample, 
-                      exchange = c('XNYS','XNAS','XASE'), ticker_type=c('CS') ){
-  stocks = stocklist_from_polygon(key = key, date = date, exchange = exchange, ticker_type=ticker_type) %>%
+                      ticker_type=c('CS') ){
+  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type) %>%
     dplyr::select('ticker') %>% unlist %>%
     unique
   if(nsample){

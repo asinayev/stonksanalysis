@@ -3,9 +3,6 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
-# fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1638810601422.csv") # from https://www.nasdaq.com/market-activity/stocks/screener
-# fundamentals = fundamentals[sample(nrow(fundamentals))]
-# 
 # wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
 #   pennyshort_hours = get_hours_for_stocks(trade_data$ticker,
 #                                           start_date=min(trade_data$date), 
@@ -26,21 +23,9 @@ require(ggplot2)
 #   res
 # }
 # 
-# splits = 16
-# system.time(
-#   prices <- fundamentals$Symbol %>%
-#     unique %>% split(1:splits) %>%
-#     parallel::mclapply(tq_get,
-#                        from=Sys.Date()-8*365,
-#                        to=Sys.Date()+2,
-#                        mc.cores = splits
-#     ) %>%
-#     rbindlist(fill=T)
-# )
-
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*1:7, sampled_data, key=POLYKEY, nsample=F, exchange = c('XNAS','XNYS')) %>%   rbindlist%>%
+prices=lapply(Sys.Date()-365*1:3, sampled_data, key=POLYKEY, nsample=F, ticker_type='CS') %>%   rbindlist%>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
 
@@ -83,7 +68,7 @@ prices[(close<low*1.01 | close==low_running) & day_delta<.85
 #####updown
 prices[
   open/lag1close> 1.05 & close/open<.95 & 
-    volume*close>100000  & volume*close<500000,
+    volume*lag1close>100000  & volume*lag1close<500000,
   .(mean(lead1open/close, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
