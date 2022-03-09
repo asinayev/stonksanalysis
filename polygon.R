@@ -48,14 +48,14 @@ financials_from_polygon = function( key, stockname, date, field=F){
 }
 
 
-stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', financials=F, cores=16){
+stocklist_from_polygon = function(key, exchange = c('XNYS','XNAS'), date = '2018-01-01', financials=F, cores=16, ticker_type='CS'){
   resultlist=list()
   for (ex in exchange){
     go=T
     last_examined=""
     while(go){
-      link = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s" %>%
-        sprintf(ex, date, key, last_examined)
+      link = "https://api.polygon.io/v3/reference/tickers?market=stocks&exchange=%s&date=%s&active=true&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
+        sprintf(ex, date, key, last_examined,ticker_type)
       response = hit_polygon(link)
       if (!is.null(response$results)){
         last_examined = response$results$ticker[nrow(response$results)]
@@ -197,9 +197,9 @@ get_hours_for_stocks = function(stocknames,
     return
 }
 
-sampled_data=function(key, date, end_date = as.Date(date)+365, nsample, exchange = c('XNYS','XNAS','XASE')){
-  stocks = stocklist_from_polygon(key = key, date = date, exchange = exchange) %>%
-    subset(type=='CS') %>%
+sampled_data=function(key, date, end_date = as.Date(date)+365, nsample, 
+                      exchange = c('XNYS','XNAS','XASE'), ticker_type=c('CS') ){
+  stocks = stocklist_from_polygon(key = key, date = date, exchange = exchange, ticker_type=ticker_type) %>%
     dplyr::select('ticker') %>% unlist %>%
     unique
   if(nsample){
