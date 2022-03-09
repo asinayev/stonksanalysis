@@ -83,13 +83,14 @@ news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))]
 
 byword = news_moves[!sapply(keywords, is.null),
                   .(keywords=unlist(keywords) ), 
-                  .(id, delta=c/o, overnight_delta=o/prev_close, prev_delta=prev_close/prev_open, open=o,
+                  .(id, delta=c/o, overnight_delta=o/prev_close, 
+                    prev_delta=prev_close/prev_open, prev_dol_vol = prev_close*prev_vol, open=o,
                     ticker, single_ticker, market_cap, date, publisher.name, title)]
 
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(month,decreasing = T)]
 # short penny stocks with GlobeNewswire's "Health" keywords
 pennyshort_trades = byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
        .(date,ticker,open,delta)]
@@ -109,7 +110,7 @@ merge(pennyshort_trades, pennyshort_hours,
 byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+         length(unique(paste(date,ticker)))),.(year(date), month(date) )][order(month,decreasing = T)]
 # short PennyStocks penny stocks with upward movement >1%
 
 pennyshort_trades = byword[log(market_cap)<21 & publisher.name=='PennyStocks' & overnight_delta>1.01,
@@ -137,7 +138,7 @@ byword[log(market_cap)<21 & publisher.name=='Benzinga' &
          overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(month(date) )][order(month,decreasing = T)]
+         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(month,decreasing = T)]
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 
 
