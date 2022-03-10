@@ -1,6 +1,14 @@
 require(tidyquant, quietly = T)
 require(data.table, quietly = T)
 
+args = commandArgs(trailingOnly=TRUE)
+if(length(args)==0){args='~/stonksanalysis'}
+setwd(args[1])
+source("polygon.R", local=T)
+POLYKEY = Sys.getenv('POLYGONKEY')
+
+stopifnot(POLYKEY!='')
+
 splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), financials=F, cores=splits)
