@@ -67,7 +67,7 @@ prices[(close<low*1.01 | close==low_running) & day_delta<.85
 
 #####updown
 prices[
-  open/lag1close> 1.05 & close/open<.95 & 
+  open/lag1close> 1.05 & close/open<.9 & 
     volume*lag1close>100000  & volume*lag1close<500000,
   .(mean(lead1open/close, na.rm=T), .N), 
   .(year(date))][order(year)] 
