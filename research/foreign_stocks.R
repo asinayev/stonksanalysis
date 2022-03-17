@@ -25,12 +25,13 @@ require(ggplot2)
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*1:3, sampled_data, key=POLYKEY, nsample=F, ticker_type='CS') %>%   rbindlist%>%
+prices=lapply(Sys.Date()-365*6:1, sampled_data, key=POLYKEY, nsample=F, ticker_type='CS') %>%   rbindlist%>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
-
-prices = prices[symbol %in% prices[!is.na(volume) & !is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
+prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
+prices[,days_around:=cumsum(!is.na(close)),symbol]
+
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
 prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
 prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
@@ -40,9 +41,11 @@ prices[,day_delta:= close/open]
 prices[,day_fall:= low/open]
 prices[,day_rise:= high/open]
 prices[,night_delta:= open/lag1close]
-prices[!is.na(volume),volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
-prices[!is.na(close),close_avg:= SMA(shift(close,1,type='lag'), n = 100, ),symbol ]
-prices[!is.na(close),low_running:= frollapply(close, min, n = 50 ),symbol ]
+prices[symbol %in% prices[days_around>30, unique(symbol)],
+       volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
+prices[symbol %in% prices[days_around>30, unique(symbol)],
+       close_avg:= SMA(shift(close,1,type='lag'), n = 30, ),symbol ]
+prices[,low_running:= frollapply(close, min, n = 50 ),symbol ]
 prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
          shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
@@ -68,8 +71,8 @@ prices[(close<low*1.01 | close==low_running) & day_delta<.85
 #####updown
 prices[
   open/lag1close> 1.05 & close/open<.9 & 
-    volume*lag1close>100000  & volume*lag1close<500000,
-  .(mean(lead1open/close, na.rm=T), .N), 
+    volume*lag1close>100000  & volume*lag1close<400000
+  ,.(mean(lead1open/close, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
 #At close, buy stocks that climbed last night and fell today, setting limit to 95% of the open

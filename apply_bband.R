@@ -34,8 +34,8 @@ history[(AdjClose<low*1.01 | AdjClose==close_running_min) & day_delta<.85 & volu
 
 
 history %>% 
-  subset(Date == max(Date) & day_delta<.94 & open/lag1close> 1.05  
-         & volume*lag1close>100000  & volume*lag1close<500000,  
+  subset(Date == max(Date) & day_delta<.95 & open/lag1close> 1.05  
+         & volume*lag1close>75000  & volume*lag1close<300000,  
          select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=open*.9, 
