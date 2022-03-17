@@ -9,7 +9,9 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 stopifnot(POLYKEY!='')
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), financials=F, cores=16)
+stocklist = stocklist_from_polygon(key = POLYKEY, 
+                                   date = paste(year(Sys.Date()),'01','01', sep='-'), 
+                                   financials=F, cores=16)
 
 history = stocklist$ticker %>%
   parallel::mclapply(
@@ -29,14 +31,11 @@ history[,c("lag1close", "lag2close", "lead1close"):=
 history[,c("lead1open"):=
           shift(open, n = c(-1), type = "lag"),stock]
 history[!is.na(AdjClose),close_running_min:= frollapply(AdjClose, min, n = 50 ),stock ]
-history[(AdjClose<low*1.01 | AdjClose==close_running_min) & day_delta<.85 & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000, 
-       .(mean(lead1open/AdjClose, na.rm=T), median(lead1open/AdjClose,na.rm=T),.N)]
-
 
 history %>% 
   subset(Date == max(Date) & day_delta<.95 & open/lag1close> 1.05  
          & volume*lag1close>75000  & volume*lag1close<300000,  
-         select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
+         select=c('stock','AdjClose','volume','low','open','close_running_min','lag1close')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=open*.9, 
                  order_type='LOC', time_in_force='') %>%
@@ -45,7 +44,7 @@ history %>%
 history %>% 
   subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
          & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
-         select=c('stock','AdjClose','volume','low','open','close_running_min')) %>%
+         select=c('stock','AdjClose','volume','low','open','close_running_min','lag1close')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=pmin(pmax(low, close_running_min), open*.85), 
                  order_type='LOC', time_in_force='') %>%
