@@ -20,18 +20,18 @@ prices[,c("lag1_night_delta",  "lag2_night_delta" ):=shift(night_delta,  n = 1:2
 prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
 prices[,c("lag1_day_rise",    "lag2_day_rise"   ):=shift(day_rise,    n = 1:2, type = "lag"),symbol]
 
-prices[!is.na(day_delta) & !is.na(lag1_day_rise),
-       corr_lag_rise:=
-         runCor( day_delta, lag1_day_rise, 7),
-       symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_delta),
-       corr_lag_delta:=
-         runCor( day_delta, lag1_day_delta, 7),
-       symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_fall),
-       corr_lag_fall:=
-         runCor( day_delta, lag1_day_fall, 7),
-       symbol]
+# prices[!is.na(day_delta) & !is.na(lag1_day_rise),
+#        corr_lag_rise:=
+#          runCor( day_delta, lag1_day_rise, 7),
+#        symbol]
+# prices[!is.na(day_delta) & !is.na(lag1_day_delta),
+#        corr_lag_delta:=
+#          runCor( day_delta, lag1_day_delta, 7),
+#        symbol]
+# prices[!is.na(day_delta) & !is.na(lag1_day_fall),
+#        corr_lag_fall:=
+#          runCor( day_delta, lag1_day_fall, 7),
+#        symbol]
 
 prices[!is.na(day_delta) & !is.na(lag1_day_rise),
        corr_lag_rise_long:=
@@ -49,26 +49,15 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
 sq=function(x)x^2
 
 lm1 = lm(future_day_delta~
-           corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
-           corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
-           corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
-           corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
-           corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
-           corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
-         ,prices, weights = (prices$date-min(prices$date))/as.integer(max(prices$date)),
-         subset = log(volume_avg*close+1) > 15 &
-           date>Sys.Date()-3*365
+           corr_lag_fall_long*day_fall +
+           corr_lag_delta_long*day_delta +
+           corr_lag_rise_long*day_rise
+         ,prices, weights = (prices$date-min(prices$date))/as.integer(max(prices$date-min(prices$date))),
+         subset = date>Sys.Date()-3*365
 )
 
-
-#print out all of last week's picks
-prices[date>Sys.Date()-14 & 
-         log(volume_avg*lag1close+1)>15 & 
-         (predict(lm1, prices) < .99) ,
-       .(date, symbol, closingprice=close, future_day_delta)][order(date)]
-
 prices[date==max(date, na.rm=T) & 
-         log(volume_avg*lag1close+1)>15 & 
+         volume_avg*lag1close > 100000 & 
          predict(lm1, prices) < .99 ,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='SELL', order_type='MKT', time_in_force='OPG') %>%

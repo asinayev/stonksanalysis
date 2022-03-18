@@ -131,28 +131,28 @@ prices[!is.na(day_delta) & !is.na(night_delta),
          runCor( day_delta, night_delta, 7),
        symbol]
 
-prices[!is.na(day_delta) & !is.na(lag1_day_rise),
+prices[symbol %in% prices[days_around>7, unique(symbol)],
        corr_lag_rise:=
          runCor( day_delta, lag1_day_rise, 7),
        symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_delta),
+prices[symbol %in% prices[days_around>7, unique(symbol)],
        corr_lag_delta:=
          runCor( day_delta, lag1_day_delta, 7),
        symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_fall),
+prices[symbol %in% prices[days_around>7, unique(symbol)],
        corr_lag_fall:=
          runCor( day_delta, lag1_day_fall, 7),
        symbol]
 
-prices[!is.na(day_delta) & !is.na(lag1_day_rise),
+prices[symbol %in% prices[days_around>350, unique(symbol)],
        corr_lag_rise_long:=
          runCor( day_delta, lag1_day_rise, 350),
        symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_delta),
+prices[symbol %in% prices[days_around>350, unique(symbol)],
        corr_lag_delta_long:=
          runCor( day_delta, lag1_day_delta, 350),
        symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_fall),
+prices[symbol %in% prices[days_around>350, unique(symbol)],
        corr_lag_fall_long:=
          runCor( day_delta, lag1_day_fall, 350),
        symbol]
@@ -162,40 +162,31 @@ sq=function(x)x^2
 # Regression strategy
 prices[,reg_predict := as.numeric(32)]
 prices[,reg_predict := NA]
-for (yr in 2016:2021 ){
-  IS = prices[year(date) %between% c(yr-3, yr-1) & 
-                log(volume_avg*close+1) %between% c(15,25)]
+for (yr in 2019:2021 ){
+  IS = prices[year(date) %between% c(yr-3, yr-1) ]
   lm1 = lm(future_day_delta_ltd ~
-             corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
-             corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
-             corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
-             corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
-             corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
-             corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
-           ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date))
+             corr_lag_fall_long*day_fall +
+             corr_lag_delta_long*day_delta +
+             corr_lag_rise_long*day_rise
+           ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
   )
-  prices[year(date)==yr,
-         reg_predict:=predict(lm1,data.frame(.SD))  ]
+  prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
   gc()
 }
 
 
-IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30 &
-              log(volume_avg*close+1) %between% c(15,25)]
+IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30]
 lm1 = lm(future_day_delta_ltd ~
-           corr_lag_fall*day_fall * log(volume_avg)+ corr_lag_fall * sq(day_fall) +
-           corr_lag_delta*day_delta * log(volume_avg)+ corr_lag_delta * sq(day_delta) +
-           corr_lag_rise*day_rise * log(volume_avg)+ corr_lag_rise * sq(day_rise) +
-           corr_lag_fall_long*day_fall * log(volume_avg)+ corr_lag_rise_long * sq(day_rise) +
-           corr_lag_delta_long*day_delta * log(volume_avg)+corr_lag_delta_long * sq(day_delta) +
-           corr_lag_rise_long*day_rise * log(volume_avg) + corr_lag_rise_long * sq(day_rise)
-         ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date))
+           corr_lag_fall_long*day_fall +
+           corr_lag_delta_long*day_delta +
+           corr_lag_rise_long*day_rise
+         ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
 )
 prices[year(date)==2022,
        reg_predict:=predict(lm1,data.frame(.SD))  ]
 
-prices[reg_predict<.985  & 
-         log(volume_avg*close+1) %between% c(15,25),
+prices[reg_predict<.99  & 
+         volume_avg*close>100000,
        .(mean(future_day_delta,na.rm=T),.N), 
        year(date)][order(year)]
 
