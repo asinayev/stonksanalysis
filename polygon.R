@@ -20,18 +20,18 @@ select_field = function(response, field){
     return(response[['results']][[field]])
 }
 
-stock_deets = function( key, stockname){
-  x = "https://api.polygon.io/vX/reference/tickers/%s?apiKey=%s" %>%
-    sprintf(stockname, key) %>%
+stock_deets = function( key, stockname, date){
+  x = "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
+    sprintf(stockname, date, key) %>%
     hit_polygon
   if(!'results' %in% names(x)){return(NULL)}
-  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees')] 
+  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description')] 
 }
 
-stock_deets_v = function(key, stocknames, cores){
+stock_deets_v = function(key, stocknames, cores, date){
   stocknames %>%
     unique %>%
-    parallel::mclapply(stock_deets, key=key, mc.cores = cores) %>% 
+    parallel::mclapply(stock_deets, key=key, mc.cores = cores, date=date) %>% 
     rbindlist(fill=T, use.names = T)
 }
 
@@ -48,7 +48,7 @@ financials_from_polygon = function( key, stockname, date, field=F){
 }
 
 
-stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, cores=16, ticker_type='CS'){
+stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, details=F, cores=16, ticker_type='CS'){
   resultlist=list()
   go=T
   last_examined=""
@@ -70,10 +70,14 @@ stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, cores=
   out = out[,.SD[.N],ticker]
   if(financials){
     out$ticker %>% unlist %>%
-      unique %>%
       parallel::mclapply(financials_from_polygon, key=key, date=date, field=F, mc.cores = cores) %>%
       rbindlist(fill=TRUE, use.names = T) %>%
       cbind(out) %>%
+      return
+  } else if(details) {
+    out$ticker %>% 
+      stock_deets_v(key=key, cores=cores, date=date) %>%
+      merge(out[,.(ticker)], by='ticker', all.y=T) %>%
       return
   } else {
     return(out)
@@ -196,21 +200,24 @@ get_hours_for_stocks = function(stocknames,
     return
 }
 
-sampled_data=function(key, date, end_date = as.Date(date)+365, nsample, 
-                      ticker_type=c('CS') ){
-  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type) %>%
-    dplyr::select('ticker') %>% unlist %>%
-    unique
-  if(nsample){
-    stocks=sample(stocks, nsample)
-  }
-  stocklist = parallel::mclapply(stocks, stock_history,
+sampled_data=function(key, date, end_date = as.Date(date)+365,
+                      ticker_type=c('CS'),details=F ){
+  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,details = details)
+  stocklist = parallel::mclapply(stocks$ticker, stock_history,
                        start_date = as.Date(date), 
                        end_date = end_date, 
                        key = key,
                        mc.cores = 16, check_ticker=F)
-  stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
-    rbindlist(fill=TRUE, use.names = T)
+  if(details){
+    stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
+      rbindlist(fill=TRUE, use.names = T) %>%
+      merge(stocks, by.x='stock', by.y='ticker')%>%
+      return
+  } else {
+    stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
+      rbindlist(fill=TRUE, use.names = T) %>%
+      return
+  }
 }
 
 

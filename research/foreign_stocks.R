@@ -3,6 +3,10 @@ require(data.table)
 require(rpart)
 require(ggplot2)
 
+setwd('~/stonksanalysis')
+source("polygon.R", local=T)
+POLYKEY = Sys.getenv('POLYGONKEY')
+
 # wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
 #   pennyshort_hours = get_hours_for_stocks(trade_data$ticker,
 #                                           start_date=min(trade_data$date), 
@@ -25,7 +29,8 @@ require(ggplot2)
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*6:1, sampled_data, key=POLYKEY, nsample=F, ticker_type='CS') %>%   rbindlist%>%
+prices=lapply(Sys.Date()-365*5:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T) %>%   
+  rbindlist%>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
 setorder(prices, symbol, date)
@@ -81,8 +86,8 @@ prices[
 #####updownmorn
 prices[
   night_delta< .975 & lag1_day_delta>1.05 & 
-    lag1volume*lag1close>75000 & lag1volume*lag1close<500000,
-  .(mean(day_delta, na.rm=T), .N), 
+    lag1volume*lag1close>75000 & lag1volume*lag1close<1000000
+  ,.(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
 prices[
@@ -104,8 +109,13 @@ prices[lag1volume/volume_avg>10 & lag1_day_delta>.975 & night_delta>1.01 &
 #
 ######
 
-###### volumelong
+###### volumelong 
 prices[lag1volume/volume_avg <.5 & night_delta< .96 & 
+         volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
+         volume_avg>50000,
+       .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
+###### works for ADRCs with less conservative threshold
+prices[lag1volume/volume_avg <1 & night_delta< .96 & 
          volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
          volume_avg>50000,
        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]

@@ -9,20 +9,13 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 stopifnot(POLYKEY!='')
 
-stocklist = stocklist_from_polygon(key = POLYKEY, 
-                                   date = paste(year(Sys.Date()),'01','01', sep='-'), 
-                                   financials=F, cores=16)
-
-history = stocklist$ticker %>%
-  parallel::mclapply(
-    stock_history,
-    start_date = Sys.Date()-365, end_date = Sys.Date()+1, key = POLYKEY, 
-    print=F, check_ticker=F,mc.cores = 16) %>% 
-  rbindlist(use.names=TRUE, fill=T)
+history = sampled_data(key = POLYKEY, date = Sys.Date()-365, end_date = Sys.Date()+1, 
+                       ticker_type = 'CS', details=F)
 
 history = history[stock %in% history[!is.na(AdjClose) & !is.na(open),.N,stock][N>35, stock]]
 setorder(history, stock, Date)
 
+history[,days_around:=cumsum(!is.na(AdjClose)),stock]
 history[,day_delta:= AdjClose/open]
 history[!is.na(volume),
         volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),stock ]
@@ -43,7 +36,7 @@ history %>%
 
 history %>% 
   subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
-         & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000,  
+         & volume_avg*lag1close>100000 & days_around>200,  
          select=c('stock','AdjClose','volume','low','open','close_running_min','lag1close')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=pmin(pmax(low, close_running_min), open*.85), 
