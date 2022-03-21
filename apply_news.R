@@ -30,10 +30,10 @@ enrich = function(stocklist, moves, apikey){
     stocklist='GOOG'
   }
   moves = data.table(moves$tickers)
-  stocklist=unlist(stocklist)
-  financials = stock_deets_v(apikey, unique(stocklist), 8)
-  yahoo_results = tq_get(unique(stocklist), from=Sys.Date()-100) %>% data.table
-  enriched_moves = moves[ticker %in% unique(stocklist)] %>%
+  stocklist=stocklist %>% unlist %>% unique
+  financials = stock_deets_v(apikey, stocklist, 8, date=Sys.Date()-1)
+  yahoo_results = tq_get(stocklist, from=Sys.Date()-100) %>% data.table
+  enriched_moves = moves[ticker %in% stocklist] %>%
     merge(financials, by.x='ticker', by.y='ticker') %>% 
     merge(yahoo_results[order(symbol,date), .(yahoo_price = last(close),yahoo_vol=last(volume)), symbol], 
           by.x='ticker',by.y='symbol', all.x=T)
