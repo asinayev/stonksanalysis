@@ -1,4 +1,4 @@
-setDTthreads(threads = 2)
+setDTthreads(threads = 4)
 get_tech = function(price_dat){
   low_order = order(price_dat$low)
   high_order = order(price_dat$high, decreasing = T)
@@ -39,28 +39,38 @@ prices[ date %between% (Sys.Date()-day_interval) &
          zoo::rollapply(data=.SD[,.(high,low,close,date=as.integer(date))],
                         FUN=dbl_bottom,
                         width=window, align='right',by.column = FALSE,fill=NA,
-                        recent_low_days_ago=2
+                        recent_low_days_ago=0
                         ) %>% matrix(ncol=5) %>% data.frame,
                 symbol]
 
-prices[!is.na(lead1close*lead7close)  &
-         lowest_low_days_ago<35 & 
-         interlow_high>lowest_low+(highest_high-lowest_low)*.3 & 
-         close>(recent_low+(highest_high-lowest_low)*.3) &
-         recent_low > lowest_low #&
-         #recent_low < lowest_low+(highest_high-lowest_low)*.1
-         ,
-       .(mean(lead1open/close),mean(lead1close/lead1open),mean(lead7close/close,na.rm=T),.N ),
-       .(year(date))]
+prices[,day_delta:= close/open]
+prices[,night_delta:= open/lag1close]
+prices[,c("lead1daydelta",   "lead2daydelta",   "lead3daydelta"  ):=
+         shift(day_delta,   n = 1:3, type = "lead"),symbol]
+prices[,c("lead1nightdelta",   "lead2nightdelta",   "lead3nightdelta"  ):=
+         shift(night_delta,   n = 1:3, type = "lead"),symbol]
+prices[,c("lag1open", "lead1open", "lead2open"):=shift(open,  n = c(1,-1,-2), type = "lag"),symbol]
 
-prices[!is.na(lead1close*lead7close)  &
+prices[!is.na(lead1nightdelta*lead1daydelta)  &
          lowest_low_days_ago>35 & 
-         interlow_high>lowest_low+(highest_high-lowest_low)*.3 & 
-         lag1close>(recent_low+(highest_high-lowest_low)*.3) &
-         recent_low > lowest_low #&
+         interlow_high>lowest_low*1.2 &
+         close>recent_low*1.1 &
+         close>(recent_low+(highest_high-lowest_low)*.4) &
+         recent_low > lowest_low +(highest_high-lowest_low)*.1 #&
        #recent_low < lowest_low+(highest_high-lowest_low)*.1
        ,
-       .(mean(open/lag1close),mean(close/open),mean(lead7close/lag1close,na.rm=T),.N ),
+       .(mean(lead1nightdelta),mean(lead1daydelta),.N ),
+       .(year(date))]
+
+prices[!is.na(lead1nightdelta*lead1daydelta*lead2daydelta)  &
+         # lowest_low_days_ago<35 & 
+         # interlow_high>lowest_low*1.1 &
+         lead1close<(recent_low+(highest_high-lowest_low)*.2) &
+         # close>(recent_low+(highest_high-lowest_low)*.05) &
+         lead2open>(recent_low+(highest_high-lowest_low)*.3) &
+         recent_low < lowest_low +(highest_high-lowest_low)*.3
+       ,
+       .(mean(lead2daydelta),.N ),
        .(year(date))]
 
 # recovery best in the 5-15% range
