@@ -27,7 +27,7 @@ dbl_bottom = function(price_dat,
    ))
 }
 
-day_interval=c(1000,100)
+day_interval=c(1500,100)
 window = 45
 
 prices[, c('is_reversal','recent_low','prev_low','lowest_low_days_ago'):=NULL]
@@ -43,14 +43,8 @@ prices[ date %between% (Sys.Date()-day_interval) &
                         ) %>% matrix(ncol=5) %>% data.frame,
                 symbol]
 
-prices[,day_delta:= close/open]
-prices[,night_delta:= open/lag1close]
-prices[,c("lead1daydelta",   "lead2daydelta",   "lead3daydelta"  ):=
-         shift(day_delta,   n = 1:3, type = "lead"),symbol]
-prices[,c("lead1nightdelta",   "lead2nightdelta",   "lead3nightdelta"  ):=
-         shift(night_delta,   n = 1:3, type = "lead"),symbol]
-prices[,c("lag1open", "lead1open", "lead2open"):=shift(open,  n = c(1,-1,-2), type = "lag"),symbol]
 
+#This seems to work for stocks
 prices[!is.na(lead1nightdelta*lead1daydelta)  &
          lowest_low_days_ago>35 & 
          interlow_high>lowest_low*1.2 &
@@ -62,22 +56,51 @@ prices[!is.na(lead1nightdelta*lead1daydelta)  &
        .(mean(lead1nightdelta),mean(lead1daydelta),.N ),
        .(year(date))]
 
-prices[!is.na(lead1nightdelta*lead1daydelta*lead2daydelta)  &
-         # lowest_low_days_ago<35 & 
-         # interlow_high>lowest_low*1.1 &
-         lead1close<(recent_low+(highest_high-lowest_low)*.2) &
-         # close>(recent_low+(highest_high-lowest_low)*.05) &
-         lead2open>(recent_low+(highest_high-lowest_low)*.3) &
-         recent_low < lowest_low +(highest_high-lowest_low)*.3
+#For ETFs
+prices[!is.na(lead1nightdelta*lead1daydelta*lead1delta7)  &
+         # lowest_low_days_ago<10 &
+         # lowest_low_days_ago>2 &
+         # interlow_high>lowest_low +(highest_high-lowest_low)*.3 &
+         # lead1close>(recent_low+(highest_high-lowest_low)*.2) &
+         # close>(recent_low+(highest_high-lowest_low)*.2) &
+         lead2close>(recent_low+(highest_high-lowest_low)*.3) &
+         recent_low < lowest_low +(highest_high-lowest_low)*.1 &
+         recent_low > lowest_low -(highest_high-lowest_low)*.1
        ,
-       .(mean(lead2daydelta),.N ),
-       .(year(date))]
+       .(mean(lead3sellrally),mean(lead1delta7),.N ),
+       .(year(date))][order(year)]
 
-# recovery best in the 5-15% range
-prices[!is.na(lead1close*lead7close) & date %between% (Sys.Date()-c(500,200)) &
-         interlow_high>lowest_low+(highest_high-lowest_low)*.1 & 
-         close>lowest_low+(highest_high-lowest_low)*.3 &
-         recent_low > lowest_low-(highest_high-lowest_low)*.1 &
-         recent_low < lowest_low+(highest_high-lowest_low)*.1,
-       .(mean(lead1open/close),mean(lead1close/lead1open),mean(lead7close/close,na.rm=T),.N ),
-       round( (close-recent_low)/(highest_high-lowest_low), 1) ][order(round)]
+
+
+prices[,sell_rally :=ifelse(close>shift(high,n = 1, type="lag"), close, NA),symbol]
+prices[,sell_rally_increment:=cumsum(!is.na(shift(sell_rally,1,type='lag'))), symbol]
+prices[,sell_rally:=sell_rally[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_increment:=NULL]
+
+prices[symbol %in% prices[days_around>300, unique(symbol)] & !is.na(sell_rally),
+       sell_rally_avg:= SMA(shift(sell_rally/open,25,type='lag'), n = 200 ),symbol ]
+prices[symbol %in% prices[days_around>300, unique(symbol)] & !is.na(sell_rally),
+       delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
+prices[sell_rally/open<2 & (sell_rally_avg-delta_avg)%between%c(.02,.04),
+       .(mean(sell_rally/open),.N,length(unique(symbol)),mean(sell_rally_date-date)),
+       year(date)][order(year)]
+
+# sell_rally_avg = function(price_dat){
+#   price_dat=data.table(price_dat)
+#   price_dat[sell_rally_date>date[.N], sell_rally:=close[.N]]
+#   
+#   return( price_dat[,mean(sell_rally/open)])
+# }
+# system.time(
+# prices[symbol %in% prices[,.N,symbol][N>window,symbol][1:20],
+#        sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_delta=sell_rally/open,
+#                                                    sell_rally_date=as.integer(sell_rally_date),close,open,
+#                                                    date=as.integer(date))],
+#                                        FUN=sell_rally_avg,
+#                                        width=window, align='right',by.column = FALSE,fill=NA
+#        ),symbol ]
+# )
+
+
+
