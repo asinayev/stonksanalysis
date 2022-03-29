@@ -56,20 +56,6 @@ prices[!is.na(lead1nightdelta*lead1daydelta)  &
        .(mean(lead1nightdelta),mean(lead1daydelta),.N ),
        .(year(date))]
 
-#For ETFs
-prices[!is.na(lead1nightdelta*lead1daydelta*lead1delta7)  &
-         # lowest_low_days_ago<10 &
-         # lowest_low_days_ago>2 &
-         # interlow_high>lowest_low +(highest_high-lowest_low)*.3 &
-         # lead1close>(recent_low+(highest_high-lowest_low)*.2) &
-         # close>(recent_low+(highest_high-lowest_low)*.2) &
-         lead2close>(recent_low+(highest_high-lowest_low)*.3) &
-         recent_low < lowest_low +(highest_high-lowest_low)*.1 &
-         recent_low > lowest_low -(highest_high-lowest_low)*.1
-       ,
-       .(mean(lead3sellrally),mean(lead1delta7),.N ),
-       .(year(date))][order(year)]
-
 
 
 prices[,sell_rally :=ifelse(close>shift(high,n = 1, type="lag"), close, NA),symbol]
