@@ -62,6 +62,8 @@ matching_news = function(news, keyword, publisher, max_tickers=Inf, allow_yester
 current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=%s" %>%
   sprintf(POLYKEY) %>%
   hit_polygon
+fwrite(current_moves, '/tmp/current_moves.csv')
+
 current_news = news_since_yesterday(POLYKEY)
 
 # short penny stocks with GlobeNewswire's "Health" 
