@@ -58,35 +58,42 @@ prices[!is.na(lead1nightdelta*lead1daydelta)  &
 
 
 
-prices[,sell_rally :=ifelse(close>shift(high,n = 1, type="lag"), close, NA),symbol]
-prices[,sell_rally_increment:=cumsum(!is.na(shift(sell_rally,1,type='lag'))), symbol]
-prices[,sell_rally:=sell_rally[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag')<shift(high,n = 2, type="lag") | is.na(shift(high,n = 2, type="lag")), 0, 1),symbol]
+prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
+prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_increment:=NULL]
 
-prices[symbol %in% prices[days_around>300, unique(symbol)] & !is.na(sell_rally),
-       sell_rally_avg:= SMA(shift(sell_rally/open,25,type='lag'), n = 200 ),symbol ]
-prices[symbol %in% prices[days_around>300, unique(symbol)] & !is.na(sell_rally),
+
+sell_rally_avg = function(price_dat){
+  days=nrow(price_dat)
+  return( mean(ifelse(price_dat[,1]>price_dat[days,5], 
+                      price_dat[days,2], price_dat[,4])/price_dat[,3]))
+}
+prices[,sell_rally_avg:=NULL]
+prices[,delta_avg:=NULL]
+window=400
+system.time(
+  prices[symbol %in% prices[,.N,symbol][N>window,symbol]
+         ,
+         sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
+                                                     close,open,sell_rally,
+                                                     date=as.integer(date))],
+                                         FUN=sell_rally_avg,
+                                         width=window, align='right',by.column = FALSE,fill=NA
+         ),symbol ]
+)
+
+#400 / 25 /.025
+# year       V1    N  V3             V4
+# 1: 2018 1.049323   24   5 0.9583333 days
+# 2: 2019 1.016563  305  13 2.9508197 days
+# 3: 2020 1.017770 1113 116 3.1725067 days
+# 4: 2021 1.030880  351  22 3.0655271 days
+# 5: 2022 1.039534  193  19 2.2435233 days
+
+prices[symbol %in% prices[,.N,symbol][N>window,symbol],
        delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
-prices[sell_rally/open<2 & (sell_rally_avg-delta_avg)%between%c(.02,.04),
+prices[sell_rally/open<2 & (sell_rally_avg-delta_avg)>.025,
        .(mean(sell_rally/open),.N,length(unique(symbol)),mean(sell_rally_date-date)),
        year(date)][order(year)]
-
-# sell_rally_avg = function(price_dat){
-#   price_dat=data.table(price_dat)
-#   price_dat[sell_rally_date>date[.N], sell_rally:=close[.N]]
-#   
-#   return( price_dat[,mean(sell_rally/open)])
-# }
-# system.time(
-# prices[symbol %in% prices[,.N,symbol][N>window,symbol][1:20],
-#        sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_delta=sell_rally/open,
-#                                                    sell_rally_date=as.integer(sell_rally_date),close,open,
-#                                                    date=as.integer(date))],
-#                                        FUN=sell_rally_avg,
-#                                        width=window, align='right',by.column = FALSE,fill=NA
-#        ),symbol ]
-# )
-
-
-
