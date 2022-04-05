@@ -53,6 +53,6 @@ prices[symbol %in% prices[,.N,symbol][N>window,symbol],
        delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
 
 prices[date==max(date, na.rm=T) & (sell_rally_avg-delta_avg)>.025,
-       .(date, symbol, close, volume)] %>%
+       .(date, symbol, price=close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/rally_etfs.csv')
