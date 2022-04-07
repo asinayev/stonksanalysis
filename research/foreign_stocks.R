@@ -29,7 +29,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*5:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T) %>%   
+prices=lapply(Sys.Date()-365*6:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T) %>%   
   rbindlist%>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
@@ -121,12 +121,7 @@ prices[lag1volume/volume_avg <1 & night_delta< .96 &
        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 ######
 
-prices[!is.na(day_delta) & !is.na(night_delta),
-       lagging_corr:=
-         runCor( day_delta, night_delta, 364),
-       symbol]
-
-prices[!is.na(day_delta) & !is.na(night_delta),
+prices[symbol %in% prices[days_around>7, unique(symbol)], 
        lagging_corr:=
          runCor( day_delta, night_delta, 7),
        symbol]
