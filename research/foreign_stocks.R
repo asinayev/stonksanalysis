@@ -30,7 +30,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # Get data from polygon instead
 
 prices=lapply(Sys.Date()-365*6:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T) %>%   
-  rbindlist%>%
+  rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
 setorder(prices, symbol, date)
