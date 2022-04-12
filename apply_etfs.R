@@ -54,7 +54,7 @@ prices[symbol %in% prices[,.N,symbol][N>window,symbol],
 prices[symbol %in% prices[,.N,symbol][N>30,symbol]
        ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
 
-prices[date==max(date, na.rm=T) & wday(date)!=5 & volume>100000 & close>10 & 
+prices[date==max(date, na.rm=T) & volume>100000 & close>10 & 
          (sell_rally_avg-delta_avg)>.025,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
