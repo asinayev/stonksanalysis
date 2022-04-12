@@ -55,7 +55,7 @@ prices[symbol %in% prices[,.N,symbol][N>30,symbol]
        ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
 
 # Don't buy on Friday, where the previous day is Thursday
-prices[date==max(date, na.rm=T) & wday(date)!=5 & volume>100000 & close>10 & 
+prices[date==max(date, na.rm=T) & wday(Sys.Date())!=6 & volume>100000 & close>10 & 
          (sell_rally_avg-delta_avg)>.02,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
