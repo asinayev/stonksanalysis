@@ -38,7 +38,7 @@ system.time(
 
 prices[symbol %in% prices[,.N,symbol][N>window,symbol],
        delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
-prices[volume>100000 & close>10 & wday(date)<6 & sell_rally/open<2 & (sell_rally_avg-delta_avg)>.025,
+prices[volume>100000 & close>10 & wday(date)<6 & sell_rally/open<2 & (sell_rally_avg-delta_avg)>.02,
        .(mean(sell_rally/open),.N,length(unique(symbol)),mean(sell_rally_date-date)),
        year(date)][order(year)]
 
