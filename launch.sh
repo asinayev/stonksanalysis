@@ -15,4 +15,5 @@ if [ $run_what == "all" ] || [ $run_what == "news" ] ; then
 fi
 if [ $run_what == "mid" ] ; then
 	Rscript /home/repos/stonksanalysis/apply_bband.R /home/repos/stonksanalysis
+	Rscript /home/repos/stonksanalysis/apply_etfs_pm.R /home/repos/stonksanalysis
 fi

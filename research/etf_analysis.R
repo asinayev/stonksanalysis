@@ -36,6 +36,7 @@ system.time(
 # 4: 2021 1.030880  351  22 3.0655271 days
 # 5: 2022 1.039534  193  19 2.2435233 days
 
+# Rally ETFs
 prices[symbol %in% prices[,.N,symbol][N>window,symbol],
        delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
 prices[volume>100000 & close>10 & wday(date)<6 & sell_rally/open<2 & (sell_rally_avg-delta_avg)>.02,
@@ -43,25 +44,20 @@ prices[volume>100000 & close>10 & wday(date)<6 & sell_rally/open<2 & (sell_rally
        year(date)][order(year)]
 
 
-
-
+# revert ETFs
 prices[symbol %in% prices[,.N,symbol][N>30,symbol]
        ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
 
 prices[volume>100000 & close>10 & 
          day30low==low & ((close-low)/(high-low))<.025 & lead1sellrally/lead1open<2 & ((high/low) > 1.025)
-       , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N)
+       , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
        , year(date)]
 
-# The strategy of buying after the high is broken still needs work -- try only cases where it has worked?
-# prices[symbol %in% prices[,.N,symbol][N>5,symbol]
-#        ,day4high:= zoo::rollapply(high,max,width=4, align='right',fill=NA),symbol ]
-# 
-# 
-# prices[volume>100000 & close>10 & #wday(date)<4 & 
-#          lead1sellrally/close<2 & 
-#          day5high==high & ((close-low)/(high-low)) %between% c(.01,.5) 
-#          & (high/low) > 1.05
-#        , .(mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/close,na.rm=T),length(unique(symbol)), length(unique(date)),.N)
-#        , year(date)]
+
+# Low Close ETFs
+prices[lag1volume>100000 & lag1close>10 & lead1sellrally/close<2 & 
+         ((close-low)/(high-low)) < .05
+         & (high/close) > 1.05
+       , .(mean(lead1sellrally/close,na.rm=T),sd(lead1sellrally/close,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
+       , year(date)][order(year)]
