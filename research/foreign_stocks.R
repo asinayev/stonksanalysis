@@ -65,7 +65,7 @@ prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta 
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
 #        symbol ]
 
-prices[(close<low*1.01 | close==low_running) & day_delta<.85 & close>7.5
+prices[(close<low*1.01 | close==low_running) & day_delta<.85 & close>5
        & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000, 
         .(mean(lead1open/close, na.rm=T), median(lead1open/close,na.rm=T),.N),
        year(date)][order(year)]
@@ -75,8 +75,8 @@ prices[(close<low*1.01 | close==low_running) & day_delta<.85 & close>7.5
 
 #####updown
 prices[
-  open/lag1close> 1.05 & close/open<.9  & close>7.5 & 
-    volume*lag1close>100000  & volume*lag1close<400000
+  open/lag1close> 1.05 & close/open<.9  & close>5 & 
+    volume*lag1close>100000  & volume*lag1close<1000000
   ,.(mean(lead1open/close, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
@@ -85,8 +85,8 @@ prices[
 
 #####updownmorn
 prices[
-  night_delta< .975 & lag1_day_delta>1.05  & open>7.5 & 
-    lag1volume*lag1close>75000 & lag1volume*lag1close<1000000
+  night_delta< .975 & lag1_day_delta>1.025  & open>5 & 
+    lag1volume*lag1close>75000 & lag1volume*lag1close<500000
   ,.(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
@@ -103,14 +103,14 @@ prices[
 
 
 ###### volumeshort
-prices[lag1volume/volume_avg>10 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 & 
+prices[lag1volume/volume_avg>7.5 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 & 
          volume_avg*lag1close>75000  & volume_avg>50000,
        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 #
 ######
 
 ###### volumelong 
-prices[lag1volume/volume_avg <.5 & night_delta< .96  & close>7.5 & 
+prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
          volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
          volume_avg>50000,
        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
@@ -192,11 +192,19 @@ x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
-prices[future_night_delta<.96 & lagging_corr< -.4 & 
-         volume*close>100000,
+window = 364
+prices[,lagging_corr_long:=NULL]
+prices[symbol %in% prices[days_around>window, unique(symbol)], 
+       lagging_corr_long:=
+         runCor( day_delta, night_delta, window),
+       symbol]
+
+min_corr = .4
+prices[future_night_delta<.96 & lagging_corr_long< -min_corr & 
+         volume*close>100000 & close>5,
           .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
-prices[future_night_delta>1.04 & lagging_corr< -.4 & 
-         volume*close>100000,
+prices[future_night_delta>1.04 & lagging_corr_long< -min_corr & 
+         volume*close>100000 & close>5,
        .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,

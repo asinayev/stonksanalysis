@@ -18,19 +18,19 @@ prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
 
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
-         runCor( day_delta, night_delta, 364),
+         runCor( day_delta, night_delta, 60),
        symbol]
 
 prices[date==max(date, na.rm=T) & 
-         volume*close>75000 & 
+         volume*close>75000 & close>5 & 
          lagging_corr< -.4 ,
        .(date, symbol, close,
          buy = trunc(close*96,3)/100 , sell = (trunc(close*104,3)+1)/100)] %>%
   fwrite('/tmp/correlated_stocks.csv')
 
 
-prices[date==max(date, na.rm=T) & close/open>1.05 &
-         volume*close>75000 & volume*close<500000,
+prices[date==max(date, na.rm=T) & close/open>1.025 & 
+         volume*close>75000 & volume*close<500000 & close>5 ,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*975,3)/1000, 
@@ -38,8 +38,8 @@ prices[date==max(date, na.rm=T) & close/open>1.05 &
   fwrite('/tmp/updownmorn.csv')
 
 prices[date==max(date, na.rm=T) & 
-         volume/volume_avg>10 & day_delta>.975 & 
-         volume_avg*close>75000  & volume_avg>50000,
+         volume/volume_avg>7.5 & day_delta>.975 & 
+         volume_avg*close>75000  & volume_avg>50000  & close>5,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='SELL', 
                  strike_price=trunc(close*1010,3)/1000, 
@@ -47,12 +47,12 @@ prices[date==max(date, na.rm=T) &
   fwrite('/tmp/volumeshort.csv')
 
 prices[date==max(date, na.rm=T) & 
-         volume/volume_avg <.5 & 
+         volume/volume_avg <.75 & 
          volume_avg*close>100000 & volume_avg*close<1000000 & 
-         volume_avg>50000,
+         volume_avg>50000 & close>5,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
-                 strike_price=trunc(close*96,3)/1000, 
+                 strike_price=trunc(close*970,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
   fwrite('/tmp/volumelong.csv')
 
