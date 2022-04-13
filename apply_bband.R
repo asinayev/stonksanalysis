@@ -27,7 +27,7 @@ history[!is.na(AdjClose),close_running_min:= frollapply(AdjClose, min, n = 50 ),
 
 history %>% 
   subset(Date == max(Date) & day_delta<.95 & open/lag1close> 1.05  
-         & volume*lag1close>75000  & volume*lag1close<300000  & AdjClose>5,  
+         & volume*lag1close>75000  & volume*lag1close<1000000  & AdjClose>5,  
          select=c('stock','AdjClose','volume','low','open','close_running_min','lag1close')) %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=open*.9, 
