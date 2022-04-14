@@ -18,14 +18,14 @@ prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
 
 prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
-         runCor( day_delta, night_delta, 60),
+         runCor( day_delta, night_delta, 100),
        symbol]
 
 prices[date==max(date, na.rm=T) & 
          volume*close>75000 & close>5 & 
-         lagging_corr< -.4 ,
+         lagging_corr< -.5 ,
        .(date, symbol, close,
-         buy = trunc(close*96,3)/100 , sell = (trunc(close*104,3)+1)/100)] %>%
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
   fwrite('/tmp/correlated_stocks.csv')
 
 
