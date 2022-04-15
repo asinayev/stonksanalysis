@@ -4,6 +4,7 @@ prices[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag')<shift(high,n = 
 prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
 prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
 prices[,sell_rally_increment:=NULL]
 
 
@@ -39,7 +40,7 @@ system.time(
 # Rally ETFs
 prices[symbol %in% prices[,.N,symbol][N>window,symbol],
        delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
-prices[volume>100000 & close>10 & wday(date)<6 & sell_rally/open<2 & (sell_rally_avg-delta_avg)>.02,
+prices[volume>100000 & close>10 & sell_rally_day>2 & sell_rally/open<2 & (sell_rally_avg-delta_avg)>.02,
        .(mean(sell_rally/open),.N,length(unique(symbol)),mean(sell_rally_date-date)),
        year(date)][order(year)]
 
@@ -49,10 +50,10 @@ prices[symbol %in% prices[,.N,symbol][N>30,symbol]
        ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
 
-prices[volume>100000 & close>10 & 
+prices[volume>100000 & close>10 & sell_rally_day>5 &
          day30low==low & ((close-low)/(high-low))<.025 & lead1sellrally/lead1open<2 & ((high/low) > 1.025)
        , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
-       , year(date)]
+       , year(date)][order(year)]
 
 
 # Low Close ETFs

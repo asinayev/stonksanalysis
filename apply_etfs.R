@@ -30,6 +30,7 @@ prices = stocklist$ticker %>%
 
 prices = prices[, .SD[1], by=.(stock, Date)][
   ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)]
+setorder(prices, symbol, date)
 
 prices[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag') <  shift(high,n = 2, type="lag") | 
                                        is.na(shift(high,n = 2, type="lag")), 
@@ -37,6 +38,7 @@ prices[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag') <  shift(high,n
 prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
 prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
 
 window=400
 prices[symbol %in% prices[,.N,symbol][N>window,symbol],
@@ -54,15 +56,14 @@ prices[symbol %in% prices[,.N,symbol][N>window,symbol],
 prices[symbol %in% prices[,.N,symbol][N>30,symbol]
        ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
 
-# Don't buy on Friday, where the previous day is Thursday
-prices[date==max(date, na.rm=T) & wday(Sys.Date())!=6 & volume>100000 & close>10 & 
-         (sell_rally_avg-delta_avg)>.02,
+prices[date==max(date, na.rm=T) & volume>100000 & close>10 & 
+         sell_rally_day>2 & (sell_rally_avg-delta_avg)>.02,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/rally_etfs.csv')
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>10 & 
-         day30low==low & ((close-low)/(high-low))<.025 & high/low>1.025,
+         sell_rally_day>5 & day30low==low & ((close-low)/(high-low))<.025 & high/low>1.025,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/revert_etfs.csv')
