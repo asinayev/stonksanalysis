@@ -1,19 +1,17 @@
 echo $run_what;
 
-if [ $run_what == "all" ] || [ $run_what == "data" ] ; then
-	Rscript /home/repos/stonksanalysis/implement_foreign/get_data.R /home/repos/stonksanalysis
+if [ $run_what == "am" ] || [ $run_what == "am_data" ] ; then
+	Rscript /home/repos/stonksanalysis/implement/get_data.R /home/repos/stonksanalysis
 fi
-if [ $run_what == "all" ] || [ $run_what == "pred" ] ; then
-	Rscript /home/repos/stonksanalysis/implement_foreign/regression_outs.R && \
-	Rscript /home/repos/stonksanalysis/implement_foreign/respond_overnight.R
+if [ $run_what == "am" ] || [ $run_what == "am_out" ] ; then
+	Rscript /home/repos/stonksanalysis/implement/am_regression.R && \
+	Rscript /home/repos/stonksanalysis/implement/am_stocks.R && \
+	Rscript /home/repos/stonksanalysis/implement/am_etfs.R /home/repos/stonksanalysis
 fi
-if [ $run_what == "all" ] || [ $run_what == "etfs" ] ; then
-	Rscript /home/repos/stonksanalysis/apply_etfs.R /home/repos/stonksanalysis
+if [ $run_what == "am_news" ] ; then
+	Rscript /home/repos/stonksanalysis/implement_archive/apply_news.R /home/repos/stonksanalysis
 fi
-if [ $run_what == "all" ] || [ $run_what == "news" ] ; then
-	Rscript /home/repos/stonksanalysis/apply_news.R /home/repos/stonksanalysis
-fi
-if [ $run_what == "mid" ] ; then
-	Rscript /home/repos/stonksanalysis/apply_bband.R /home/repos/stonksanalysis
-	Rscript /home/repos/stonksanalysis/apply_etfs_pm.R /home/repos/stonksanalysis
+if [ $run_what == "pm" ] ; then
+	Rscript /home/repos/stonksanalysis/implement/pm_stocks.R /home/repos/stonksanalysis
+	Rscript /home/repos/stonksanalysis/implement/pm_etfs.R /home/repos/stonksanalysis
 fi
