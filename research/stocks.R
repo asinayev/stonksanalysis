@@ -86,7 +86,7 @@ prices[
 #####updownmorn
 prices[
   night_delta< .975 & lag1_day_delta>1.025  & open>5 & 
-    lag1volume*lag1close>75000 & lag1volume*lag1close<500000
+    lag1volume*lag1close>75000 & lag1volume*lag1close<1000000
   ,.(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
