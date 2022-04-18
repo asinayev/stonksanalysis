@@ -30,7 +30,7 @@ prices[date==max(date, na.rm=T) &
 
 
 prices[date==max(date, na.rm=T) & close/open>1.025 & 
-         volume*close>75000 & volume*close<500000 & close>5 ,
+         volume*close>75000 & volume*close<1000000 & close>5 ,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*975,3)/1000, 
