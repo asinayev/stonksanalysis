@@ -192,18 +192,18 @@ x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
-window = 364
+window = 100
 prices[,lagging_corr_long:=NULL]
 prices[symbol %in% prices[days_around>window, unique(symbol)], 
        lagging_corr_long:=
          runCor( day_delta, night_delta, window),
        symbol]
 
-min_corr = .4
-prices[future_night_delta<.96 & lagging_corr_long< -min_corr & 
+min_corr = .5
+prices[future_night_delta<.97 & lagging_corr_long< -min_corr & 
          volume*close>100000 & close>5,
           .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
-prices[future_night_delta>1.04 & lagging_corr_long< -min_corr & 
+prices[future_night_delta>1.03 & lagging_corr_long< -min_corr & 
          volume*close>100000 & close>5,
        .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
