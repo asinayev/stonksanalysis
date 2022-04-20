@@ -16,8 +16,6 @@ current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tic
 
 
 etf_moves = data.table(current_moves$tickers)[ticker %in% etflist$ticker]
-etf_moves[,possible_close:=.97*day.c]
-etf_moves[,possible_low:=pmin(possible_close,day.l)]
 
 subset(etf_moves, 
        prevDay.v>100000 & prevDay.c>10 &
