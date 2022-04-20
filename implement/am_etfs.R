@@ -17,6 +17,8 @@ sell_rally_avg = function(price_dat){
                       price_dat[days,2], price_dat[,4])/price_dat[,3]))
 }
 
+sell_rally_window=200
+delta_window=25
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), 
                                    financials=F, cores=splits, ticker_type='ETF')
@@ -32,7 +34,8 @@ prices = prices[, .SD[1], by=.(stock, Date)][
   ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)]
 setorder(prices, symbol, date)
 
-prices[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag') <  shift(high,n = 2, type="lag") | 
+prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+prices[,sell_rally_increment:=ifelse(lag1close <  shift(high,n = 2, type="lag") | 
                                        is.na(shift(high,n = 2, type="lag")), 
                                      0, 1),symbol]
 prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
@@ -40,30 +43,30 @@ prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
 
-window=400
-prices[symbol %in% prices[,.N,symbol][N>window,symbol],
+prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol],
        sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
                                                    close,open,sell_rally,
                                                    date=as.integer(date))],
                                        FUN=sell_rally_avg,
-                                       width=window, align='right',by.column = FALSE,fill=NA
+                                       width=sell_rally_window, align='right',by.column = FALSE,fill=NA
        ),symbol ]
 
 
 
-prices[symbol %in% prices[,.N,symbol][N>window,symbol],
-       delta_avg:= SMA(shift(close,1,type='lag')/shift(close,2,type='lag'), n = 25 ),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>30,symbol]
-       ,day30low:= zoo::rollapply(low,min,width=30, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
+       delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
 
-prices[date==max(date, na.rm=T) & volume>100000 & close>10 & 
+prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
+         high<lag1close & 
          sell_rally_day>2 & (sell_rally_avg-delta_avg)>.02,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/rally_etfs.csv')
 
-prices[date==max(date, na.rm=T) & volume>100000 & close>10 & 
-         sell_rally_day>5 & day30low==low & ((close-low)/(high-low))<.025 & high/low>1.025,
+prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
+         sell_rally_day>5 & running_low==low & ((close-low)/(high-low))<.025 & high/low>1.025,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   fwrite('/tmp/revert_etfs.csv')
