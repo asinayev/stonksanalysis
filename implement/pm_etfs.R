@@ -22,6 +22,6 @@ subset(etf_moves,
        day.c<day.h/1.04 & day.c<(day.l+.1*(day.h-day.l)),
        select=c('ticker','day.l','day.h','day.c')) %>%
   dplyr::mutate( symbol=ticker, action='BUY', 
-                 strike_price=pmin(day.l + .05*(day.h-day.l), day.h/1.05), 
+                 strike_price=pmin(day.l + .04*(day.h-day.l), day.h/1.05), 
                  order_type='LOC', time_in_force='') %>%
   fwrite('/tmp/lowclose_etfs.csv')
