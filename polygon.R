@@ -52,7 +52,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, detail
   resultlist=list()
   go=T
   last_examined=""
-  while(go){
+  while(!is.null(go) & go){
     link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
       sprintf(date, key, last_examined,ticker_type)
     response = hit_polygon(link)

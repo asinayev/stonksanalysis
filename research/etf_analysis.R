@@ -1,3 +1,40 @@
+require(tidyquant)
+require(data.table)
+require(rpart)
+require(ggplot2)
+
+setwd('~/stonksanalysis')
+source("polygon.R", local=T)
+POLYKEY = Sys.getenv('POLYGONKEY')
+
+prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
+  rbindlist(fill=T) %>%
+  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+prices=lapply(Sys.Date()-365*10:6, sampled_data, key=POLYKEY, ticker_type='INDEX', details=T) %>%   
+  rbindlist(fill=T) %>%
+  dplyr::rename(symbol=stock, close=AdjClose, date=Date) %>% rbind(prices, fill=T)
+
+setorder(prices, symbol, date)
+prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
+prices[,days_around:=cumsum(!is.na(close)),symbol]
+
+prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
+prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
+prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
+prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
+prices[,day_delta:= close/open]
+prices[,day_fall:= low/open]
+prices[,day_rise:= high/open]
+prices[,night_delta:= open/lag1close]
+prices[,low_running:= frollapply(close, min, n = 50 ),symbol ]
+prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
+         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
+prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
+         shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
+prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
+prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
+
 setDTthreads(threads = 4)
 
 setorder(prices, symbol, date)
@@ -34,15 +71,20 @@ system.time({
 }
 )
 
-#200 / 25 /.02
-#    year      avg         sd stocks days   N          held
-# 1: 2018 1.018360 0.09269388     16   93 142 6.161972 days
-# 2: 2019 1.014729 0.07136405     17  126 213 5.178404 days
-# 3: 2020 1.016711 0.16010467     80  177 644 5.111801 days
-# 4: 2021 1.026145 0.06041440     41  185 617 4.505673 days
-# 5: 2022 1.057030 0.08113986     15   53 100 4.220000 days
-
 # Rally ETFs
+#200 / 25 /.02
+#    year      avg          sd stocks days   N          held
+# 1: 2013 1.0099540 0.06367629      3    6   6 6.833333 days
+# 2: 2014 0.9706237 0.11629256      8   24  35 4.428571 days
+# 3: 2015 1.0195746 0.14281974     17  116 169 4.704142 days
+# 4: 2016 1.0074387 0.11111427     23  153 368 5.581522 days
+# 5: 2017 1.0211579 0.04033479     10   82  99 3.777778 days
+# 6: 2018 1.0396232 0.08342452     17   75 103 4.242718 days
+# 7: 2019 1.0154004 0.07193941     17  125 210 5.242857 days
+# 8: 2020 1.0176798 0.15973960     81  176 638 4.970219 days
+# 9: 2021 1.0267763 0.05963472     42  186 607 4.540362 days
+# 0: 2022 1.0546293 0.08046269     17   56 103 3.922330 days
+
 setorder(prices, symbol, date)
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
 prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
@@ -59,6 +101,18 @@ prices[volume>100000 & close>5 &
 
 
 # revert ETFs
+#    year        V1         V2  V3 V4   N            V6
+# 1: 2012 1.0108262 0.03325050  13 10  14 4.428571 days
+# 2: 2013 1.0221889 0.04274297  29 23  40 5.525000 days
+# 3: 2014 1.0212583 0.05459161  63 23  79 3.886076 days
+# 4: 2015 1.0417507 0.07858805  58 30  87 5.781609 days
+# 5: 2016 0.9907140 0.05544958  58 26  68 8.294118 days
+# 6: 2017 0.9911365 0.05974580  25 23  35 7.200000 days
+# 7: 2018 1.0243715 0.02433506 419 40 706 4.968839 days
+# 8: 2019 1.0217739 0.05830259  52 42  79 5.417722 days
+# 9: 2020 1.0315627 0.08956182 392 55 487 5.098563 days
+# 0: 2021 1.0203334 0.05560547 161 43 193 6.538860 days
+# 1: 2022 1.0316547 0.05877418 152 20 176 6.181818 days
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
 
@@ -70,13 +124,17 @@ prices[volume>100000 & close>10 & sell_rally_day>5 &
 
 # Low Close ETFs
 #    year      avg         sd stocks days    N          held
-# 1: 2016 1.019533 0.04217613      4   13   13 5.846154 days
-# 2: 2017 1.019504 0.09806495     47   58  123 7.138211 days
-# 3: 2018 1.013713 0.10998111    146  104  587 6.824532 days
-# 4: 2019 1.021030 0.08597074     77  144  334 6.167665 days
-# 5: 2020 1.029370 0.11947684    586  191 1808 5.091814 days
-# 6: 2021 1.020209 0.07927844    187  165  683 6.222548 days
-# 7: 2022 1.022090 0.08867949    161   62  573 5.619546 days
+# 1: 2012 1.014462 0.04834311     57   47  139 5.920863 days
+# 2: 2013 1.024131 0.04450167     58   51  125 5.120000 days
+# 3: 2014 1.003969 0.11601048     72   69  189 5.957672 days
+# 4: 2015 1.035853 0.08843009    202  112  450 4.777778 days
+# 5: 2016 1.020830 0.09294405     82  120  309 6.634304 days
+# 6: 2017 1.006130 0.10920584     64   80  177 6.790960 days
+# 7: 2018 1.014148 0.10990815    146  104  585 6.745299 days
+# 8: 2019 1.021030 0.08597074     77  144  334 6.167665 days
+# 9: 2020 1.029696 0.11938325    586  191 1801 5.085508 days
+# 0: 2021 1.020013 0.07929712    187  165  681 6.233480 days
+# 1: 2022 1.020582 0.08787149    162   65  623 5.444623 days
 prices[volume>100000 & close>5 & lead1sellrally/close<2 & 
          ((close-low)/(high-low)) < .05
          & (high/close) > 1.05
