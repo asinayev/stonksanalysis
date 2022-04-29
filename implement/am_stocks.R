@@ -5,6 +5,7 @@ if(length(args)==0){
   setwd(args[1]) 
 }
 source("implement/imports.R", local=T)
+prices = fread('/tmp/prices.csv')
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)

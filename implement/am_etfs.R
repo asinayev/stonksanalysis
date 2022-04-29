@@ -59,7 +59,7 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
          sell_rally_day>2 & (sell_rally_avg-delta_avg)>.02,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
-  write_strat(strat_name='rally_etfs.csv')
+  write_strat(strat_name='rally_etfs')
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
          sell_rally_day>5 & running_low==low & ((close-low)/(high-low))<.025 & high/low>1.025,

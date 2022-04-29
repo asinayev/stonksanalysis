@@ -6,6 +6,8 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
+prices = fread('/tmp/prices.csv')
+
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
 prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag"),symbol]
