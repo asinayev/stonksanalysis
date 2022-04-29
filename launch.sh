@@ -1,4 +1,5 @@
 echo $run_what;
+mkdir -p $out_dir;
 
 if [ $run_what == "am" ] || [ $run_what == "am_data" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/get_data.R /home/repos/stonksanalysis

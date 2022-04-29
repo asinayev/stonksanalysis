@@ -1,13 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
 args = commandArgs(trailingOnly=TRUE)
-if(length(args)==0){args='~/stonksanalysis'}
-setwd(args[1])
-source("polygon.R", local=T)
-POLYKEY = Sys.getenv('POLYGONKEY')
-
-stopifnot(POLYKEY!='')
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 
 etflist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date(), financials=F, cores=splits, ticker_type='ETF')
 current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=%s" %>%
@@ -24,4 +21,4 @@ subset(etf_moves,
   dplyr::mutate( symbol=ticker, action='BUY', 
                  strike_price=pmin(day.l + .04*(day.h-day.l), day.h/1.05), 
                  order_type='LOC', time_in_force='') %>%
-  fwrite('/tmp/lowclose_etfs.csv')
+  write_strat(strat_name='lowclose_etfs')

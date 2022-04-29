@@ -1,15 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
 args = commandArgs(trailingOnly=TRUE)
-if(length(args)==0){args='~/stonksanalysis'}
-setwd(args[1])
-source("polygon.R", local=T)
-POLYKEY = Sys.getenv('POLYGONKEY')
-
-stopifnot(POLYKEY!='')
-
-splits = 16
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 
 sell_rally_avg = function(price_dat){
   days=nrow(price_dat)
@@ -19,6 +14,7 @@ sell_rally_avg = function(price_dat){
 
 sell_rally_window=200
 delta_window=25
+splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), 
                                    financials=F, cores=splits, ticker_type='ETF')
@@ -63,10 +59,10 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
          sell_rally_day>2 & (sell_rally_avg-delta_avg)>.02,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
-  fwrite('/tmp/rally_etfs.csv')
+  write_strat(strat_name='rally_etfs.csv')
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
          sell_rally_day>5 & running_low==low & ((close-low)/(high-low))<.025 & high/low>1.025,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
-  fwrite('/tmp/revert_etfs.csv')
+  write_strat(strat_name='revert_etfs')

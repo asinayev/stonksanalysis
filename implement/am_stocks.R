@@ -1,7 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
-prices = fread('/tmp/prices.csv')
+args = commandArgs(trailingOnly=TRUE)
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
@@ -26,8 +29,20 @@ prices[date==max(date, na.rm=T) &
          lagging_corr< -.5 ,
        .(date, symbol, close,
          buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-  fwrite('/tmp/correlated_stocks.csv')
+  dplyr::mutate( stock=symbol, action='BUY', 
+                 strike_price=buy, 
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='correlated_long')
 
+prices[date==max(date, na.rm=T) & 
+         volume*close>75000 & close>5 & 
+         lagging_corr< -.5 ,
+       .(date, symbol, close,
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+  dplyr::mutate( stock=symbol, action='SELL', 
+                 strike_price=sell, 
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='correlated_short')
 
 prices[date==max(date, na.rm=T) & close/open>1.025 & 
          volume*close>75000 & volume*close<1000000 & close>5 ,
@@ -35,7 +50,7 @@ prices[date==max(date, na.rm=T) & close/open>1.025 &
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*975,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
-  fwrite('/tmp/updownmorn.csv')
+  write_strat(strat_name='updownmorn')
 
 prices[date==max(date, na.rm=T) & 
          volume/volume_avg>7.5 & day_delta>.975 & 
@@ -44,7 +59,7 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( stock=symbol, action='SELL', 
                  strike_price=trunc(close*1010,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
-  fwrite('/tmp/volumeshort.csv')
+  write_strat(strat_name='volumeshort')
 
 prices[date==max(date, na.rm=T) & 
          volume/volume_avg <.75 & 
@@ -54,5 +69,5 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*970,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
-  fwrite('/tmp/volumelong.csv')
+  write_strat(strat_name='updown')
 

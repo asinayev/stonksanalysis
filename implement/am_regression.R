@@ -1,7 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
-prices = fread('/tmp/prices.csv')
+args = commandArgs(trailingOnly=TRUE)
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
@@ -61,4 +64,4 @@ prices[date==max(date, na.rm=T) &
          predict(lm1, prices) < .99 ,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='SELL', order_type='MKT', time_in_force='OPG') %>%
-  fwrite('/tmp/predicted_short_stocks.csv')
+  write_strat(strat_name='regression')

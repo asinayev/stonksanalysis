@@ -1,13 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
 args = commandArgs(trailingOnly=TRUE)
-if(length(args)==0){args='~/stonksanalysis'}
-setwd(args[1])
-source("polygon.R", local=T)
-POLYKEY = Sys.getenv('POLYGONKEY')
-
-stopifnot(POLYKEY!='')
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+  }
+source("implement/imports.R", local=T)
 
 history = sampled_data(key = POLYKEY, date = Sys.Date()-365, end_date = Sys.Date()+1, 
                        ticker_type = 'CS', details=F)
@@ -32,7 +29,7 @@ history %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=open*.9, 
                  order_type='LOC', time_in_force='') %>%
-  fwrite('/tmp/updown.csv')
+  write_strat(strat_name='updown')
 
 history %>% 
   subset(Date == max(Date) & day_delta<.925 & (AdjClose<low*1.02 | AdjClose<close_running_min*1.02)  
@@ -41,6 +38,6 @@ history %>%
   dplyr::mutate( symbol=stock, action='BUY', 
                  strike_price=pmin(pmax(low, close_running_min), open*.85), 
                  order_type='LOC', time_in_force='') %>%
-  fwrite('/tmp/bandlong.csv')
+  write_strat(strat_name='bandlong')
 
 
