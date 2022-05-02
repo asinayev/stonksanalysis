@@ -70,5 +70,5 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*970,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='updown')
+  write_strat(strat_name='volumelong')
 
