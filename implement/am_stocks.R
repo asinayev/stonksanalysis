@@ -26,7 +26,7 @@ prices[!is.na(day_delta) & !is.na(night_delta),
        symbol]
 
 prices[date==max(date, na.rm=T) & 
-         volume*close>75000 & close>5 & 
+         volume>25000 & close>5 & 
          lagging_corr< -.5 ,
        .(date, symbol, close,
          buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
@@ -36,7 +36,7 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='correlated_long')
 
 prices[date==max(date, na.rm=T) & 
-         volume*close>75000 & close>5 & 
+         volume>25000 & close>5 & 
          lagging_corr< -.5 ,
        .(date, symbol, close,
          buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
@@ -46,7 +46,7 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='correlated_short')
 
 prices[date==max(date, na.rm=T) & close/open>1.025 & 
-         volume*close>75000 & volume*close<1000000 & close>5 ,
+         volume>25000 & volume*close<1000000 & close>5 ,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*975,3)/1000, 
