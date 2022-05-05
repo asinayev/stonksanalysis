@@ -40,4 +40,11 @@ history %>%
                  order_type='LOC', time_in_force='') %>%
   write_strat(strat_name='bandlong')
 
-
+history %>% 
+  subset(Date == max(Date) & volume_avg>1000000 & lag1close>30 &
+           AdjClose<high/1.04 & AdjClose<(low+.1*(high-low)),  
+         select=c('stock','AdjClose','volume','low','open','close_running_min','lag1close')) %>%
+  dplyr::mutate( symbol=stock, action='BUY', 
+                 strike_price=pmin( low+.04*(high-low), high/1.05), 
+                 order_type='LOC', time_in_force='') %>%
+  write_strat(strat_name='lowclose_big')
