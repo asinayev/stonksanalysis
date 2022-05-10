@@ -50,7 +50,7 @@ prices[symbol %in% prices[days_around>30, unique(symbol)],
        volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
 prices[symbol %in% prices[days_around>30, unique(symbol)],
        close_avg:= SMA(shift(close,1,type='lag'), n = 30, ),symbol ]
-prices[,low_running:= frollapply(close, min, n = 50 ),symbol ]
+prices[,low_running:= frollapply(lag1close, min, n = 50 ),symbol ]
 prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
          shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
@@ -64,9 +64,8 @@ prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta 
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
 #        symbol ]
-
-prices[(close<low*1.01 | close==low_running) & day_delta<.85 & close>5
-       & volume_avg*lag1close>100000  & volume_avg*lag1close<10000000, 
+prices[(close<low*1.01 | close<low_running) & day_delta<.85 & close>5
+       & volume_avg*lag1close>100000, 
         .(mean(lead1open/close, na.rm=T), median(lead1open/close,na.rm=T),.N),
        year(date)][order(year)]
 
