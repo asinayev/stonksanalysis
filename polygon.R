@@ -52,7 +52,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, detail
   resultlist=list()
   go=T
   last_examined=""
-  while(!is.null(go) & go){
+  while(length(go)>0 & go){
     link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
       sprintf(date, key, last_examined,ticker_type)
     response = hit_polygon(link)
@@ -72,7 +72,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, detail
     out$ticker %>% unlist %>%
       parallel::mclapply(financials_from_polygon, key=key, date=date, field=F, mc.cores = cores) %>%
       rbindlist(fill=TRUE, use.names = T) %>%
-      cbind(out) %>%
+      # cbind(out) %>%
       return
   } else if(details) {
     out$ticker %>% 
@@ -201,14 +201,14 @@ get_hours_for_stocks = function(stocknames,
 }
 
 sampled_data=function(key, date, end_date = as.Date(date)+365,
-                      ticker_type=c('CS'),details=F ){
-  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,details = details)
+                      ticker_type=c('CS'),details=F, financials=F ){
+  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,details = details,financials = financials)
   stocklist = parallel::mclapply(stocks$ticker, stock_history,
                        start_date = as.Date(date), 
                        end_date = end_date, 
                        key = key,
                        mc.cores = 16, check_ticker=F)
-  if(details){
+  if(details||financials){
     stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
       rbindlist(fill=TRUE, use.names = T) %>%
       merge(stocks, by.x='stock', by.y='ticker')%>%

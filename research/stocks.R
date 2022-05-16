@@ -29,7 +29,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*6:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T) %>%   
+prices=lapply(Sys.Date()-365*3:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=T) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
