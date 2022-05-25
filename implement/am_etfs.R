@@ -54,6 +54,11 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
+prices[!is.na(day_delta) & !is.na(night_delta),
+       lagging_corr:=
+         runCor( day_delta, night_delta, 100),
+       symbol]
+
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
          high<lag1close & 
@@ -67,3 +72,21 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
+
+prices[date==max(date, na.rm=T) & 
+         lagging_corr< -.4 ,
+       .(date, symbol, close,
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+  dplyr::mutate( stock=symbol, action='BUY', 
+                 strike_price=buy, 
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='etf_corr_long')
+
+prices[date==max(date, na.rm=T) & 
+         lagging_corr< -.4 ,
+       .(date, symbol, close,
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+  dplyr::mutate( stock=symbol, action='SELL', 
+                 strike_price=sell, 
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='etf_corr_short')
