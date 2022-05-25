@@ -14,6 +14,7 @@ sell_rally_avg = function(price_dat){
 
 sell_rally_window=200
 delta_window=25
+corr_window=100
 splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), 
@@ -54,9 +55,9 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
-prices[!is.na(day_delta) & !is.na(night_delta),
+prices[symbol %in% prices[,.N,symbol][N>corr_window,symbol],
        lagging_corr:=
-         runCor( day_delta, night_delta, 100),
+         runCor( close/open, open/lag1close, corr_window),
        symbol]
 
 
@@ -80,7 +81,7 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=buy, 
                  order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='etf_corr_long')
+  write_strat(strat_name='corr_long_etfs')
 
 prices[date==max(date, na.rm=T) & 
          lagging_corr< -.4 ,
@@ -89,4 +90,4 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( stock=symbol, action='SELL', 
                  strike_price=sell, 
                  order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='etf_corr_short')
+  write_strat(strat_name='corr_short_etfs')
