@@ -153,40 +153,40 @@ prices[symbol %in% prices[days_around>350, unique(symbol)],
 sq=function(x)x^2
 
 # Regression strategy
-prices[,reg_predict := as.numeric(32)]
-prices[,reg_predict := NA]
-for (yr in 2019:2021 ){
-  IS = prices[year(date) %between% c(yr-3, yr-1) ]
-  lm1 = lm(future_day_delta_ltd ~
-             corr_lag_fall_long*day_fall +
-             corr_lag_delta_long*day_delta +
-             corr_lag_rise_long*day_rise
-           ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
-  )
-  prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
-  gc()
-}
-
-
-IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30]
-lm1 = lm(future_day_delta_ltd ~
-           corr_lag_fall_long*day_fall +
-           corr_lag_delta_long*day_delta +
-           corr_lag_rise_long*day_rise
-         ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
-)
-prices[year(date)==2022,
-       reg_predict:=predict(lm1,data.frame(.SD))  ]
-
-prices[reg_predict<.99  & 
-         volume_avg*close>100000,
-       .(mean(future_day_delta,na.rm=T),.N), 
-       year(date)][order(year)]
-
-prices[!is.na(future_day_delta) & reg_predict<.99  & 
-         log(volume_avg*close+1) %between% c(15,25)][order(date, symbol)][ 
-           ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
-x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
+# prices[,reg_predict := as.numeric(32)]
+# prices[,reg_predict := NA]
+# for (yr in 2019:2021 ){
+#   IS = prices[year(date) %between% c(yr-3, yr-1) ]
+#   lm1 = lm(future_day_delta_ltd ~
+#              corr_lag_fall_long*day_fall +
+#              corr_lag_delta_long*day_delta +
+#              corr_lag_rise_long*day_rise
+#            ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
+#   )
+#   prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
+#   gc()
+# }
+# 
+# 
+# IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30]
+# lm1 = lm(future_day_delta_ltd ~
+#            corr_lag_fall_long*day_fall +
+#            corr_lag_delta_long*day_delta +
+#            corr_lag_rise_long*day_rise
+#          ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
+# )
+# prices[year(date)==2022,
+#        reg_predict:=predict(lm1,data.frame(.SD))  ]
+# 
+# prices[reg_predict<.99  & 
+#          volume_avg*close>100000,
+#        .(mean(future_day_delta,na.rm=T),.N), 
+#        year(date)][order(year)]
+# 
+# prices[!is.na(future_day_delta) & reg_predict<.99  & 
+#          log(volume_avg*close+1) %between% c(15,25)][order(date, symbol)][ 
+#            ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+# x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
