@@ -41,6 +41,7 @@ prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
 
+
 prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol],
        sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
                                                    close,open,sell_rally,
@@ -75,18 +76,18 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
   write_strat(strat_name='revert_etfs')
 
 prices[date==max(date, na.rm=T) & 
-         lagging_corr< -.4 ,
+         lagging_corr< -.3 & volume>100000 & close>5,
        .(date, symbol, close,
-         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+         buy = trunc(close*98,3)/100 , sell = (trunc(close*102,3)+1)/100)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=buy, 
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='corr_long_etfs')
 
 prices[date==max(date, na.rm=T) & 
-         lagging_corr< -.4 ,
+         lagging_corr< -.3 & volume>100000 & close>5,
        .(date, symbol, close,
-         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+         buy = trunc(close*98,3)/100 , sell = (trunc(close*102,3)+1)/100)] %>%
   dplyr::mutate( stock=symbol, action='SELL', 
                  strike_price=sell, 
                  order_type='LMT', time_in_force='OPG') %>%
