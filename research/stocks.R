@@ -29,7 +29,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*3:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=T) %>%   
+prices=lapply(Sys.Date()-365*9:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 
@@ -64,8 +64,8 @@ prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta 
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
 #        symbol ]
-prices[(close<low*1.01 | close<low_running) & day_delta<.85 & close>5
-       & volume_avg*lag1close>100000, 
+prices[(close<low*1.01 | close<low_running) & day_delta<.8 & close>7
+       & lag1volume>75000, 
         .(mean(lead1open/close, na.rm=T), median(lead1open/close,na.rm=T),.N),
        year(date)][order(year)]
 
@@ -73,11 +73,11 @@ prices[(close<low*1.01 | close<low_running) & day_delta<.85 & close>5
 #####
 
 #####updown
-prices[
-  open/lag1close> 1.05 & close/open<.9  & close>5 & 
-    volume*lag1close>100000  & volume*lag1close<1000000
-  ,.(mean(lead1open/close, na.rm=T), .N), 
-  .(year(date))][order(year)] 
+# prices[
+#   open/lag1close> 1.05 & close/open<.9  & close>7 & 
+#     volume>75000  & volume*lag1close<1000000
+#   ,.(mean(lead1open/close, na.rm=T), .N), 
+#   .(year(date))][order(year)] 
 
 #At close, buy stocks that climbed last night and fell today, setting limit to 95% of the open
 #####
@@ -85,7 +85,7 @@ prices[
 #####updownmorn
 prices[
   night_delta< .975 & lag1_day_delta>1.025  & open>5 & 
-    lag1volume*lag1close>75000 & lag1volume*lag1close<1000000
+    lag1volume%between%c(10000,100000)
   ,.(mean(day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
@@ -102,16 +102,15 @@ prices[
 
 
 ###### volumeshort
-prices[lag1volume/volume_avg>7.5 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 & 
-         volume_avg*lag1close>75000  & volume_avg>50000,
-       .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
+# prices[lag1volume/volume_avg>7.5 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 & 
+#          lag1volume%between%c(10000,100000),
+#        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 #
 ######
 
 ###### volumelong 
 prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
-         volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
-         volume_avg>50000,
+         lag1volume%between%c(10000,100000),
        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 ###### works for ADRCs with less conservative threshold
 prices[lag1volume/volume_avg <1 & night_delta< .96 & 
@@ -198,12 +197,12 @@ prices[symbol %in% prices[days_around>window, unique(symbol)],
          runCor( day_delta, night_delta, window),
        symbol]
 
-min_corr = .5
+min_corr = .45
 prices[future_night_delta<.97 & lagging_corr_long< -min_corr & 
-         volume*close>100000 & close>5,
+         volume%between%c(10000,100000) & close>7,
           .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 prices[future_night_delta>1.03 & lagging_corr_long< -min_corr & 
-         volume*close>100000 & close>5,
+         volume%between%c(10000,100000) & close>7,
        .(mean(future_day_delta,na.rm=T),.N), year(date)][order(year)]
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,

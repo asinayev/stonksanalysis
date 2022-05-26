@@ -140,3 +140,43 @@ prices[volume>100000 & close>5 & lead1sellrally/close<2 & !grepl('short|bear|inv
          & (high/close) > 1.05
        , .(avg = mean(lead1sellrally/close,na.rm=T),sd = sd(lead1sellrally/close,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(sell_rally_date-date))
        , year(date)][order(year)]
+
+window = 100
+prices[,lagging_corr_long:=NULL]
+prices[symbol %in% prices[days_around>window, unique(symbol)], 
+       lagging_corr_long:=
+         runCor( day_delta, night_delta, window),
+       symbol]
+
+min_corr = .3
+# year        V1   N
+# 1: 2012 0.9986683   5
+# 2: 2013 1.0222907  21
+# 3: 2014 1.0192777  27
+# 4: 2015 1.0101338  88
+# 5: 2016 1.0190706  59
+# 6: 2017 1.0321804   9
+# 7: 2018 1.0224720  57
+# 8: 2019 1.0153659  10
+# 9: 2020 1.0121389 340
+# 0: 2021 1.0185442  33
+# 1: 2022 1.0213601  58
+prices[(lead1open/close)<.97 & lagging_corr_long< -min_corr & 
+         volume%between%c(10000,100000) & close>7,
+       .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
+
+# year        V1   N
+# 1: 2012 0.9768759   9
+# 2: 2013 0.9656270  51
+# 3: 2014 0.9655077  46
+# 4: 2015 0.9870471 101
+# 5: 2016 0.9762301  70
+# 6: 2017 0.9718578  25
+# 7: 2018 0.9883178  64
+# 8: 2019 0.9700785  12
+# 9: 2020 0.9894184 315
+# 0: 2021 0.9636769 113
+# 1: 2022 0.9696509  85
+prices[(lead1open/close)>1.03 & lagging_corr_long< -min_corr & 
+         volume%between%c(10000,100000) & close>7,
+       .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
