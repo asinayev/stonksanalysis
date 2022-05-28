@@ -181,6 +181,15 @@ prices[year(date)==2022,
 prices[,reg_predict:=ifelse(is.na(reg_predict),1,reg_predict)]
 prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=7),.995), date]
 
+# year        V1   N
+# 1: 2015 1.0015948 320
+# 2: 2016 1.0033732 153
+# 3: 2017 0.9783223  34
+# 4: 2018 0.9636028 101
+# 5: 2019 0.9748256 652
+# 6: 2020 0.9776544 733
+# 7: 2021 0.9858612 677
+# 8: 2022 0.9796050  85
 prices[reg_predict<threshold  &
          volume>75000 & close>7,
        .(mean(future_day_delta,na.rm=T),.N),
