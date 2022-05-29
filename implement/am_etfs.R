@@ -75,20 +75,20 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
-# prices[date==max(date, na.rm=T) & 
-#          lagging_corr< -.3 & volume>100000 & close>5,
-#        .(date, symbol, close,
-#          buy = trunc(close*98,3)/100 , sell = (trunc(close*102,3)+1)/100)] %>%
-#   dplyr::mutate( stock=symbol, action='BUY', 
-#                  strike_price=buy, 
-#                  order_type='LMT', time_in_force='OPG') %>%
-#   write_strat(strat_name='corr_long_etfs')
-# 
-# prices[date==max(date, na.rm=T) & 
-#          lagging_corr< -.3 & volume>100000 & close>5,
-#        .(date, symbol, close,
-#          buy = trunc(close*98,3)/100 , sell = (trunc(close*102,3)+1)/100)] %>%
-#   dplyr::mutate( stock=symbol, action='SELL', 
-#                  strike_price=sell, 
-#                  order_type='LMT', time_in_force='OPG') %>%
-#   write_strat(strat_name='corr_short_etfs')
+prices[date==max(date, na.rm=T) &
+         lagging_corr< -.3 & volume%between%c(10000,100000) & close>7,
+       .(date, symbol, close,
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+  dplyr::mutate( stock=symbol, action='BUY',
+                 strike_price=buy,
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='corr_long_etfs')
+
+prices[date==max(date, na.rm=T) &
+         lagging_corr< -.3 & volume%between%c(10000,1000000) & close>7,
+       .(date, symbol, close,
+         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
+  dplyr::mutate( stock=symbol, action='SELL',
+                 strike_price=sell,
+                 order_type='LMT', time_in_force='OPG') %>%
+  write_strat(strat_name='corr_short_etfs')

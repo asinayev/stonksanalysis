@@ -178,5 +178,5 @@ prices[(lead1open/close)<.97 & lagging_corr_long< -min_corr &
 # 0: 2021 0.9636769 113
 # 1: 2022 0.9696509  85
 prices[(lead1open/close)>1.03 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,100000) & close>7,
+         volume%between%c(10000,1000000) & close>7,
        .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
