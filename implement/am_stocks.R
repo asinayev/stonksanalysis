@@ -6,6 +6,7 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
+delta_window=25
 
 prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
 setorder(prices, symbol, date)
@@ -24,6 +25,9 @@ prices[!is.na(day_delta) & !is.na(night_delta),
        lagging_corr:=
          runCor( day_delta, night_delta, 100),
        symbol]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
+         frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
 
 prices[date==max(date, na.rm=T) & 
          volume%between%c(10000,100000) & close>5 & 
@@ -45,29 +49,12 @@ prices[date==max(date, na.rm=T) &
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='correlated_short')
 
-prices[date==max(date, na.rm=T) & close/open>1.025 & 
-         volume%between%c(10000,100000) & close>5 ,
+prices[date==max(date, na.rm=T) & 
+         (close/open>1.025 | volume/volume_avg <.75) & RSI>1.25 & close/open<1.1 &
+         volume>100000 & close>7 ,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
                  strike_price=trunc(close*975,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='updownmorn')
-
-# prices[date==max(date, na.rm=T) & 
-#          volume/volume_avg>7.5 & day_delta>.975 & 
-#          volume%between%c(10000,100000) & close>5,
-#        .(date, symbol, close)] %>%
-#   dplyr::mutate( stock=symbol, action='SELL', 
-#                  strike_price=trunc(close*1010,3)/1000, 
-#                  order_type='LMT', time_in_force='OPG') %>%
-#   write_strat(strat_name='volumeshort')
-
-prices[date==max(date, na.rm=T) & 
-         volume/volume_avg <.75 & 
-         volume%between%c(10000,100000) & close>5,
-       .(date, symbol, close)] %>%
-  dplyr::mutate( stock=symbol, action='BUY', 
-                 strike_price=trunc(close*970,3)/1000, 
-                 order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='volumelong')
 
