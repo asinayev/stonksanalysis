@@ -33,6 +33,7 @@ prices = prices[, .SD[1], by=.(stock, Date)][
 setorder(prices, symbol, date)
 
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+prices[,c("lag1high"):=shift(high, n = c(1), type = "lag"),symbol]
 prices[,sell_rally_increment:=ifelse(lag1close <  shift(high,n = 2, type="lag") | 
                                        is.na(shift(high,n = 2, type="lag")), 
                                      0, 1),symbol]
@@ -66,14 +67,13 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
-prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
-         high<lag1close & 
+prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
          sell_rally_day>2 & (sell_rally_avg-delta_avg)>.017,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='rally_etfs')
 
-prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
+prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
          sell_rally_day>5 & (running_low==low | RSI<.7) & ((close-low)/(high-low))<.05 & (((high/low) > 1.025) | ((avg_range/close) > .02)),
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%

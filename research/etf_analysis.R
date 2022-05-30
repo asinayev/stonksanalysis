@@ -71,18 +71,18 @@ system.time({
 )
 
 # Rally ETFs
-#200 / 25 /.02
-#    year       avg         sd stocks days   N          held
-# 1: 2013 1.0079214 0.07097431      2    5   5 7.800000 days
-# 2: 2014 0.9640603 0.11703296      7   25  33 4.515152 days
-# 3: 2015 1.0338281 0.16034269     12   76 113 4.619469 days
-# 4: 2016 1.0121188 0.11377559     15  128 316 5.594937 days
-# 5: 2017 1.0271979 0.03600538      6   63  80 2.925000 days
-# 6: 2018 1.0207102 0.09507518      9   32  35 4.742857 days
-# 7: 2019 1.0360372 0.05695500      7   69  87 4.091954 days
-# 8: 2020 1.0250528 0.18287416     53   91 409 5.068460 days
-# 9: 2021 1.0281825 0.06120994     36  151 533 4.272045 days
-# 0: 2022 1.0637641 0.08052805     14   49  98 3.867347 days
+#200 / 25 /.015
+# year       avg         sd stocks days    N          held
+# 1: 2013 1.0255318 0.04553805      8   28   39 6.461538 days
+# 2: 2014 1.0001505 0.14252778     12   58  103 3.757282 days
+# 3: 2015 1.0324324 0.07958780     25   71  203 3.610837 days
+# 4: 2016 1.0115322 0.10206859     35  131  464 5.517241 days
+# 5: 2017 1.0128430 0.04615133     10   98  134 3.985075 days
+# 6: 2018 0.9952986 0.10017809     15   87  120 7.533333 days
+# 7: 2019 1.0362176 0.05187134     13   81  119 3.857143 days
+# 8: 2020 1.0223254 0.14191596    166  125  932 4.628755 days
+# 9: 2021 1.0236841 0.05764851     65  196 1079 4.348471 days
+# 10: 2022 1.0476884 0.07963000     52   77  416 3.540865 days
 
 setorder(prices, symbol, date)
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
@@ -91,10 +91,10 @@ prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
 prices[,delta_avg:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
-prices[volume>100000 & close>5 & !grepl('short|bear|inverse', name, ignore.case = T) &
+prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
          date!=sell_rally_date & 
          sell_rally_day>2 &
-         lead1sellrally/lead1open<2 & (sell_rally_avg-delta_avg)>.015 
+         lead1sellrally/lead1open<2 & (sell_rally_avg-delta_avg)>.017  
        , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
        , year(date)][order(year)]
 
