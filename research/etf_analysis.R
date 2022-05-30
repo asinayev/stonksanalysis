@@ -27,7 +27,6 @@ prices[,day_delta:= close/open]
 prices[,day_fall:= low/open]
 prices[,day_rise:= high/open]
 prices[,night_delta:= open/lag1close]
-prices[,low_running:= frollapply(close, min, n = 50 ),symbol ]
 prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
          shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
 prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
@@ -101,23 +100,31 @@ prices[volume>100000 & close>5 & !grepl('short|bear|inverse', name, ignore.case 
 
 
 # revert ETFs
-#    year        V1         V2  V3 V4   N            V6
-# 1: 2012 1.0108262 0.03325050  13 10  14 4.428571 days
-# 2: 2013 1.0221889 0.04274297  29 23  40 5.525000 days
-# 3: 2014 1.0212583 0.05459161  63 23  79 3.886076 days
-# 4: 2015 1.0417507 0.07858805  58 30  87 5.781609 days
-# 5: 2016 0.9907140 0.05544958  58 26  68 8.294118 days
-# 6: 2017 0.9911365 0.05974580  25 23  35 7.200000 days
-# 7: 2018 1.0243715 0.02433506 419 40 706 4.968839 days
-# 8: 2019 1.0217739 0.05830259  52 42  79 5.417722 days
-# 9: 2020 1.0315627 0.08956182 392 55 487 5.098563 days
-# 0: 2021 1.0203334 0.05560547 161 43 193 6.538860 days
-# 1: 2022 1.0316547 0.05877418 152 20 176 6.181818 days
+# year        V1         V2  V3 V4    N            V6
+# 1: 2012 1.0098351 0.01092582  14  7   15 5.000000 days
+# 2: 2013 1.0192029 0.04030391  38 35   69 5.101449 days
+# 3: 2014 1.0155033 0.05510823 110 46  193 4.746114 days
+# 4: 2015 1.0379531 0.04830962 371 62  520 3.475000 days
+# 5: 2016 0.9981584 0.06110595 136 35  200 7.245000 days
+# 6: 2017 1.0067291 0.04448623  46 34   76 5.881579 days
+# 7: 2018 1.0191128 0.03654886 518 59 1357 5.061901 days
+# 8: 2019 1.0177200 0.02909109  61 34   93 4.720430 days
+# 9: 2020 1.0292316 0.08994079 470 48  694 4.619597 days
+# 10: 2021 1.0238490 0.03332731 223 51  293 5.569966 days
+# 11: 2022 1.0332055 0.06113103 248 25  377 6.209549 days
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
+       ,running_low:= frollapply(low, min, n = delta_window ),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>5,symbol]
+       ,run5_high:= frollapply(high, max, n = 5 ),symbol ] 
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
+              frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
-prices[volume>100000 & close>10 & sell_rally_day>5 & !grepl('short|bear|inverse', name, ignore.case = T) &
-         running_low==low & ((close-low)/(high-low))<.05 & lead1sellrally/lead1open<2 & ((high/low) > 1.025)
+
+prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & lead1sellrally/lead1open<2 & 
+         sell_rally_day>5 & (running_low == low | RSI<.7) & (((close-low)/(high-low))<.05 ) & (((high/low) > 1.025) | ((avg_range/close) > .02))
        , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
        , year(date)][order(year)]
 

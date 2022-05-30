@@ -60,7 +60,11 @@ prices[symbol %in% prices[,.N,symbol][N>corr_window,symbol],
        lagging_corr:=
          runCor( close/open, open/lag1close, corr_window),
        symbol]
-
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
+         frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
          high<lag1close & 
@@ -70,7 +74,7 @@ prices[date==max(date, na.rm=T) & volume>100000 & close>5 &
   write_strat(strat_name='rally_etfs')
 
 prices[date==max(date, na.rm=T) & volume>100000 & close>5 & 
-         sell_rally_day>5 & running_low==low & ((close-low)/(high-low))<.035 & high/low>1.025,
+         sell_rally_day>5 & (running_low==low | RSI<.7) & ((close-low)/(high-low))<.05 & (((high/low) > 1.025) | ((avg_range/close) > .02)),
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
