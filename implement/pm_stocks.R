@@ -20,7 +20,7 @@ history[,c("lag1close", "lag2close", "lead1close"):=
           shift(AdjClose, n = c(1:2,-1), type = "lag"),stock]
 history[,c("lead1open"):=
           shift(open, n = c(-1), type = "lag"),stock]
-prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
+prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),stock]
 history[!is.na(AdjClose),close_running_min:= frollapply(shift(AdjClose,n=1,type='lag'), min, n = 50 ),stock ]
 
 history %>% 
