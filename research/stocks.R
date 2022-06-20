@@ -29,9 +29,14 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*5:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
+prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+spy_prices=stock_history('SPY', '2011-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
+  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+spy_prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+spy_prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
+prices = merge(prices,spy_prices[,.(date,spy_future_night_delta = lead1open/close, spy_day_delta=close/open)],all.x=T)
 
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
@@ -88,34 +93,24 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 
 #####updownmorn
 prices[
-  close/open>1.025 & 
+  close/open>1.025 & spy_future_night_delta>.99 & 
     volume%between%c(10000,20000) & close>5 & future_night_delta<.975
   ,.(mean(future_day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
 prices[
-  volume/volume_avg <.75 & 
+  volume/volume_avg <.75 & spy_future_night_delta>.99 & 
     volume%between%c(10000,20000) & close>5 & future_night_delta<.975
   ,.(mean(future_day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
 prices[
-  (volume/volume_avg <.75 | close/open>1.025) & 
+  (volume/volume_avg <.75 | close/open>1.025) & spy_future_night_delta>.995 & 
     volume%between%c(10000,20000) & close>5 & future_night_delta<.975
   ,.(mean(future_day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
 
-
-prices[
-  night_delta< .975 & lag1_day_delta>1.05 & 
-    volume_avg*lag1close>100000  & lag1volume*lag1close<500000 & 
-    date>'2022-01-01',
-                           .(date,ticker=symbol,open,delta=day_delta)] %>%
-  wins_by_hour
-
-(close/open>1.025 | volume/volume_avg <.75) & RSI>1.25 & close/open<1.1 &
-  volume>100000 & close>7
-#At open, buy stocks that climbed yesterday but fell overnight today
+#At open, buy stocks that climbed yesterday but fell overnight today unless the index fell overnight
 #####
 
 
@@ -228,7 +223,7 @@ prices[symbol %in% prices[days_around>window, unique(symbol)],
        symbol]
 
 min_corr = .45
-prices[future_night_delta<.97 & lagging_corr_long< -min_corr & 
+prices[future_night_delta<.97 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
          volume%between%c(10000,50000) & close>7,
           .(mean(future_day_delta,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
 prices[future_night_delta>1.03 & lagging_corr_long< -min_corr & 
