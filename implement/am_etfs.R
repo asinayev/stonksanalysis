@@ -74,7 +74,13 @@ prices[date==max(date, na.rm=T) & volume>75000 & close>7 &
   write_strat(strat_name='rally_etfs')
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
-         sell_rally_day>5 & (running_low==low | RSI<.7) & ((close-low)/(high-low))<.05 & (((high/low) > 1.025) | ((avg_range/close) > .02)),
+         (((close-low)/(high-low))<.05 ) & 
+         ((high/close) > 1.05 |
+            ((running_low == low | RSI<.7) & 
+               (((high/low) > 1.05) | ((avg_range/close) > .03))
+            ) 
+         )
+       ,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')

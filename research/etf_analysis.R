@@ -123,11 +123,14 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 
-prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
+prices[volume>100000 & close>7 & #!grepl('short|bear|inverse', name, ignore.case = T) & 
          lead1sellrally/lead1open<2 & 
-         sell_rally_day>5 & 
-         (running_low == low | RSI<.7) & (((close-low)/(high-low))<.05 ) & 
-         (((high/low) > 1.025) | ((avg_range/close) > .02))
+         (((close-low)/(high-low))<.05 ) & 
+         ((high/close) > 1.05 |
+           ((running_low == low | RSI<.7) & 
+            (((high/low) > 1.05) | ((avg_range/close) > .03))
+           ) 
+         )
        , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
        , year(date)][order(year)]
 
@@ -145,18 +148,18 @@ prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case 
 # 9: 2020 1.029696 0.11938325    586  191 1801 5.085508 days
 # 0: 2021 1.020013 0.07929712    187  165  681 6.233480 days
 # 1: 2022 1.020582 0.08787149    162   65  623 5.444623 days
-prices[volume>100000 & close>5 & lead1sellrally/close<2 & !grepl('short|bear|inverse', name, ignore.case = T) &
-         ((close-low)/(high-low)) < .05
-         & (high/close) > 1.05
-       , .(avg = mean(lead1sellrally/close,na.rm=T),sd = sd(lead1sellrally/close,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(sell_rally_date-date))
-       , year(date)][order(year)]
-
-window = 100
-prices[,lagging_corr_long:=NULL]
-prices[symbol %in% prices[days_around>window, unique(symbol)], 
-       lagging_corr_long:=
-         runCor( day_delta, night_delta, window),
-       symbol]
+# prices[volume>100000 & close>5 & lead1sellrally/close<2 & !grepl('short|bear|inverse', name, ignore.case = T) &
+#          ((close-low)/(high-low)) < .05
+#          & (high/close) > 1.05
+#        , .(avg = mean(lead1sellrally/close,na.rm=T),sd = sd(lead1sellrally/close,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(sell_rally_date-date))
+#        , year(date)][order(year)]
+# 
+# window = 100
+# prices[,lagging_corr_long:=NULL]
+# prices[symbol %in% prices[days_around>window, unique(symbol)], 
+#        lagging_corr_long:=
+#          runCor( day_delta, night_delta, window),
+#        symbol]
 
 min_corr = .3
 # year        V1   N
