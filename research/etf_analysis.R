@@ -91,10 +91,10 @@ prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
 prices[,delta_avg:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
-prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
-         date!=sell_rally_date & 
-         sell_rally_day>2 &
-         lead1sellrally/lead1open<2 & (sell_rally_avg-delta_avg)>.017  
+prices[volume>100000 & close>7 & #!grepl('short|bear|inverse', name, ignore.case = T) &
+         lead1sellrally/lead1open<2 & 
+         close<lag1high & sell_rally_day>2 &
+         (sell_rally_avg-delta_avg)>.017  
        , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
        , year(date)][order(year)]
 
@@ -123,8 +123,11 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 
-prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & lead1sellrally/lead1open<2 & 
-         sell_rally_day>5 & (running_low == low | RSI<.7) & (((close-low)/(high-low))<.05 ) & (((high/low) > 1.025) | ((avg_range/close) > .02))
+prices[volume>100000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
+         lead1sellrally/lead1open<2 & 
+         sell_rally_day>5 & 
+         (running_low == low | RSI<.7) & (((close-low)/(high-low))<.05 ) & 
+         (((high/low) > 1.025) | ((avg_range/close) > .02))
        , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
        , year(date)][order(year)]
 
@@ -185,5 +188,5 @@ prices[(lead1open/close)<.97 & lagging_corr_long< -min_corr &
 # 0: 2021 0.9636769 113
 # 1: 2022 0.9696509  85
 prices[(lead1open/close)>1.03 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,1000000) & close>7,
+         volume%between%c(10000,100000) & close>7,
        .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
