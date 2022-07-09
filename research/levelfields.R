@@ -1,5 +1,6 @@
 require(data.table)
 require(tidyquant)
+require(jsonlite)
 
 args = commandArgs(trailingOnly=TRUE)
 if(length(args)==0){args='~/stonksanalysis'}
@@ -9,7 +10,9 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1636253557582.csv") #from https://www.nasdaq.com/market-activity/stocks/screener
 
-#                                            https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=119&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2022-04-08&end_date=2022-07-08&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg
+fieldslink = "https://app.endpoints.levelfields.ai//scenarios.php?key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzM4MTc5NCwibmJmIjoxNjU3MzgxNzk0LCJleHAiOjE2NTc0MTc3OTQsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.2SLw3fiRo3KDsPXfcuNCLV79Z8q7rgGqnursA3P3Nzkrg5p3hvT-elwcS9mFhrdC-AOrpnu45KK-XM619-Va4g"
+jwt = strsplit(fieldslink,"=")[[1]]
+jwt=jwt[length(jwt)]
 scenarios = c('share_buybacks'=164,
               'dividend_creations'=168,
               'dividend_increase'=121,
@@ -17,40 +20,25 @@ scenarios = c('share_buybacks'=164,
               'dividend_reduction'=118,
               'short_seller'=161,
               'ceo_departs'=41,
-              'class_act'=116)
+              'class_act'=116,
+              'removed_sp'=163)
 get_scenario = function(scenario_id,jwt){
   "https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=%s&key=%s&start_date=%s&end_date=%s&jwt=%s" %>%
     sprintf(scenario_id, 'tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb', Sys.Date()-10*365, Sys.Date()+1, jwt) %>%
-    jsonlite::fromJSON
-  }
-lapply(scenarios, jsonlite::fromJSON)
-
-share_buybacks = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=164&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-dividend_creations = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=168&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-dividend_increase= jsonlite::fromJSON(txt=  'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=121&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-mass_layoffs = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=119&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-dividend_reduction = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=118&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-short_seller = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=161&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-ceo_departs = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=41&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-class_act = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=116&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
-
-cols_to_get=c('symbol','event_date_est','event_source','sector','marketcap','filter_volume')
-for(dat in c('share_buybacks','dividend_creations','dividend_increase',
-             'mass_layoffs','dividend_reduction','short_seller','ceo_departs',
-             'class_act')){
-  paste(dat, '=data.frame(',dat,'[cols_to_get])') %>%
-    parse %>% eval
-  paste(dat, "$eventtype='",dat,"'") %>%
-    parse %>% eval
+    fromJSON()
+}
+process_scenario = function(i, scenario_dat_list, cols_to_get){
+  scenario_dat_list[[i]]=data.frame(scenario_dat_list[[i]][cols_to_get])
+  scenario_dat_list[[i]]$eventtype=names(scenarios)[i]
+  scenario_dat_list[[i]]
 }
 
-share_buybacks = data.frame(share_buybacks[cols_to_get])
-share_buybacks$eventtype='buyback'
-dividend_creations= data.frame(dividend_creations[cols_to_get])
-dividend_creations$eventtype='dividend_creation'
-dividend_increase= data.frame(dividend_increase[cols_to_get])
-dividend_increase$eventtype='dividend_increase'
-eventsdf = rbind(share_buybacks,dividend_creations,dividend_increase)
+scenario_dat = lapply(scenarios, get_scenario, jwt=jwt)
+scenario_dat = lapply(1:length(scenarios), process_scenario, scenario_dat_list=scenario_dat,
+           cols_to_get=c('symbol','event_date_est','event_source','sector','marketcap','filter_volume')
+)
+
+eventsdf = rbindlist(scenario_dat)
 
 eventsdf$event_date_est=lubridate::ymd_hms(eventsdf$event_date_est, tz = "EST")
 eventsdf$is_after_hours = lubridate::hour(eventsdf$event_date_est)>9
@@ -109,6 +97,7 @@ events_prices[,gain_day_20:=ifelse( is_after_hours, (next20close-nextopen)/nexto
 events_prices[,gain_rally:=ifelse( is_after_hours, (nextsellrally-nextopen)/nextopen, (sell_rally-open)/open )]
 events_prices[,gain_wait:=ifelse(gain_day_1>-.02, gain_day_1, gain_day_5)]
 events_prices[,gain_wait_rally:=ifelse(gain_day_1>-.02, gain_day_1, gain_rally)]
+events_prices[,gain_wait_fall:=ifelse(gain_day_1> 0, gain_day_1, gain_day_5)]
 events_prices[,gain_overnight:= ifelse( is_after_hours, (nextopen-close)/close, (open-prevclose)/prevclose )]
 events_prices[,marketcap_num:= as.numeric(marketcap)]
 events_prices[,volume_num:= as.numeric(filter_volume)]
@@ -122,6 +111,8 @@ events_prices[,.(day1 = mean(gain_day_1,na.rm=T),
                  rally_days = mean(sell_rally_date-event_date,na.rm=T), 
                  wait1_5 = mean(gain_wait,na.rm=T),
                  wait_rally = mean(gain_wait_rally,na.rm=T),
+                 wait_fall = mean(gain_wait_fall,na.rm=T),
+                 wait_fall = median(gain_wait_fall,na.rm=T),
                  day20 = mean(gain_day_20,na.rm=T), .N),
               .( eventtype)]
 events_prices[,.(mean(gain_day_1,na.rm=T),mean(gain_day_5,na.rm=T), 
@@ -136,13 +127,15 @@ events_prices[,.(mean(gain_day_1,na.rm=T),mean(gain_day_5,na.rm=T),
 events_prices[,.(mean(gain_day_1,na.rm=T),mean(gain_day_5,na.rm=T), 
                  mean(gain_rally,na.rm=T), mean(gain_day_20,na.rm=T), .N),
               .(is_after_hours,eventtype)][order(N)]
-
-events_prices[eventtype=='buyback',
-              .(mean(gain_day_5,na.rm=T),.N),
-              .( round(log(volume_num)) )][order(round)] %>% 
+bad_events=c('short_seller','dividend_reduction','class_act','ceo_departs','mass_layoffs')
+events_prices[eventtype%in%bad_events & gain_overnight<0,
+              .(mean(gain_rally,na.rm=T),.N),
+              .( round(log(marketcap_num)) )][order(round)] %>% 
   with(plot(round,V1,cex=log(N)/2))
 abline(h=0)
-events_prices[eventtype=='buyback',.(mean(gain_day_1,na.rm=T),.N),   round(gain_overnight,2)][order(round)] %>% with(plot(round,V1,cex=log(N)/2))
+events_prices[eventtype%in%bad_events,.(mean(gain_day_1,na.rm=T),.N),   
+              round(gain_overnight,2)][order(round)] %>% 
+  with(plot(round,V1,cex=log(N)/2,xlim=c(-.1,.1),ylim=c(-.1,.1)))
 abline(h=0)
 abline(v=0)
 mc=function(x){(x-mean(x,na.rm=T))}
@@ -154,15 +147,23 @@ summary(MASS::rlm(gain_day_5~
                     log(marketcap_num+1)+
                     gain_overnight
                   , 
-                  events_prices[eventtype=='buyback']))
+                  events_prices[eventtype=='share_buybacks']))
 
-summary(lm(gain_day_1~
-                    (sector=='Financial Services') +
-                    mc(log(volume_num+1)) +
-                    mc(gain_overnight) +
+summary(lm(gain_rally~
+                    #(sector=='Financial Services') +
+                    #mc(log(volume_num+1)) +
+                    #mc(gain_overnight) +
                     mc(log(marketcap_num+1))
                   , 
-                  events_prices[eventtype!='dividend_increase' & event_date_est<"2022-06-01",]))
+                  events_prices[eventtype=='share_buybacks' & gain_overnight>-.02]))
+
+summary(lm(gain_day_5~
+             #(sector=='Financial Services') +
+             mc(log(volume_num+1)) 
+             #mc(gain_overnight) +
+             #mc(log(marketcap_num+1))
+           , 
+           events_prices[eventtype%in%bad_events & gain_overnight<0]))
 
 
 events_prices[log(volume_num+1) < 14 & eventtype!='dividend_increase' & gain_overnight > -.02,
