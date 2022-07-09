@@ -10,6 +10,20 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1636253557582.csv") #from https://www.nasdaq.com/market-activity/stocks/screener
 
 #                                            https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=119&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2022-04-08&end_date=2022-07-08&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg
+scenarios = c('share_buybacks'=164,
+              'dividend_creations'=168,
+              'dividend_increase'=121,
+              'mass_layoffs'=119,
+              'dividend_reduction'=118,
+              'short_seller'=161,
+              'ceo_departs'=41,
+              'class_act'=116)
+get_scenario = function(scenario_id,jwt){
+  "https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=%s&key=%s&start_date=%s&end_date=%s&jwt=%s" %>%
+    sprintf(scenario_id, 'tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb', Sys.Date()-10*365, Sys.Date()+1, jwt) %>%
+    jsonlite::fromJSON
+  }
+lapply(scenarios, jsonlite::fromJSON)
 
 share_buybacks = jsonlite::fromJSON(txt=    'https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=164&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
 dividend_creations = jsonlite::fromJSON(txt='https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=168&key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&start_date=2010-11-29&end_date=2022-11-29&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzI4MzU3MCwibmJmIjoxNjU3MjgzNTcwLCJleHAiOjE2NTczMTk1NzAsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.kBd5MHlHIAF-rweiC2V7uALXUEsNeR403kxcDwb1YtXhms02_QXjbaGMTrdtc_QNy8_Z86tPf4lFlRSR4ZY6Hg')
