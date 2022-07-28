@@ -44,6 +44,16 @@ prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
 prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
 prices[,sell_rally_increment:=NULL]
 
+setorder(prices, symbol, date)
+prices[,sell_mono_increment:=ifelse(lag1close<(lag1low+.8*(lag1high-lag1low))|is.na(lag1high), 0, 1),symbol]
+prices[,sell_mono_increment:=cumsum(sell_mono_increment), symbol]
+prices[,sell_mono:=close[.N], .(sell_mono_increment,symbol)]
+prices[,sell_mono_date:=date[.N], .(sell_mono_increment,symbol)]
+prices[,sell_mono_day:=rowid(sell_mono_increment,symbol)]
+prices[,sell_mono_increment:=NULL]
+
+
+
 
 sell_rally_avg = function(price_dat){
   days=nrow(price_dat)
@@ -87,18 +97,19 @@ system.time({
 setorder(prices, symbol, date)
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
 prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
+prices[,lead1sellmono:= shift(sell_mono,1,type='lead'),symbol ]
 
 prices[,delta_avg:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
-prices[volume>100000 & close>7 & #!grepl('short|bear|inverse', name, ignore.case = T) &
+
+
+prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
          lead1sellrally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          (sell_rally_avg-delta_avg)>.017  
        , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
        , year(date)][order(year)]
-
-
 # revert ETFs
 # year        V1         V2  V3 V4    N            V6
 # 1: 2012 1.0098351 0.01092582  14  7   15 5.000000 days
@@ -123,15 +134,32 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 
-prices[volume>100000 & close>7 & #!grepl('short|bear|inverse', name, ignore.case = T) & 
+potential_buys = prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
+                          lead1sellrally/lead1open<2 & 
+                          close<lag1high & sell_rally_day>2]
+potential_buys[!is.na(sell_rally_avg),rownum:=order(sell_rally_avg-delta_avg, decreasing = T),date] 
+potential_buys[sell_rally_avg-delta_avg>0.017
+               , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
+               , year(date)][order(year)]
+
+prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
          lead1sellrally/lead1open<2 & 
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.05 |
-           ((running_low == low | RSI<.7) & 
-            (((high/low) > 1.05) | ((avg_range/close) > .03))
+           ((running_low == low | RSI<.7) & ((avg_range/close) > .03)
            ) 
          )
        , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
+       , year(date)][order(year)]
+
+prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
+         lead1sellrally/lead1open<2 & 
+         (((close-low)/(high-low))<.05 ) & 
+         ((high/close) > 1.05 |
+            ((running_low == low | RSI<.7) & ((avg_range/close) > .03)
+            ) 
+         )
+       , .( mean(lead1sellmono/lead1open,na.rm=T),sd(lead1sellmono/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_mono_date-date))
        , year(date)][order(year)]
 
 
@@ -154,12 +182,12 @@ prices[volume>100000 & close>7 & #!grepl('short|bear|inverse', name, ignore.case
 #        , .(avg = mean(lead1sellrally/close,na.rm=T),sd = sd(lead1sellrally/close,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(sell_rally_date-date))
 #        , year(date)][order(year)]
 # 
-# window = 100
-# prices[,lagging_corr_long:=NULL]
-# prices[symbol %in% prices[days_around>window, unique(symbol)], 
-#        lagging_corr_long:=
-#          runCor( day_delta, night_delta, window),
-#        symbol]
+window = 100
+prices[,lagging_corr_long:=NULL]
+prices[symbol %in% prices[days_around>(window+1), unique(symbol)],
+       lagging_corr_long:=
+         runCor( day_delta, lag2_day_delta, window),
+       symbol]
 
 min_corr = .3
 # year        V1   N
@@ -174,8 +202,8 @@ min_corr = .3
 # 9: 2020 1.0121389 340
 # 0: 2021 1.0185442  33
 # 1: 2022 1.0213601  58
-prices[(lead1open/close)<.97 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,100000) & close>7,
+prices[(lag1close/lag1open)>1.02 & lagging_corr_long< -min_corr & 
+         volume>100000 & close>7,
        .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
 
 # year        V1   N
@@ -190,6 +218,6 @@ prices[(lead1open/close)<.97 & lagging_corr_long< -min_corr &
 # 9: 2020 0.9894184 315
 # 0: 2021 0.9636769 113
 # 1: 2022 0.9696509  85
-prices[(lead1open/close)>1.03 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,100000) & close>7,
+prices[(lag1close/lag1open)<.97 & lagging_corr_long< -min_corr & 
+         volume>100000 & close>7,
        .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
