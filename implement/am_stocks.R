@@ -56,3 +56,12 @@ prices[date==max(date, na.rm=T) &
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='updownmorn')
 
+
+prices[date==max(date, na.rm=T) & 
+         close/open>1.2 & 
+         volume>100000 & close>7 ,
+       .(date, symbol, close)] %>%
+  dplyr::mutate( stock=symbol, action='SELL', 
+                 strike_price=trunc(close,3)/1000, 
+                 order_type='MKT', time_in_force='OPG') %>%
+  write_strat(strat_name='overbought')

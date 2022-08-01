@@ -105,7 +105,7 @@ prices[
   .(year(date))][order(year)] 
 
 prices[
-  (volume/volume_avg <.75 | close/open>1.025) & spy_future_night_delta>.995 & 
+  (volume/volume_avg <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
     volume%between%c(10000,20000) & close>5 & future_night_delta<.975
   ,.(mean(future_day_delta, na.rm=T), .N), 
   .(year(date))][order(year)] 
@@ -113,6 +113,14 @@ prices[
 #At open, buy stocks that climbed yesterday but fell overnight today unless the index fell overnight
 #####
 
+#####overbought
+prices[
+     day_delta/spy_day_delta>1.20 & close>7 & market_cap>1000000
+     ,.(mean(future_day_delta, na.rm=T), .N), 
+     .(year(date))][order(year)] 
+
+#At open, sell stocks that climbed yesterday too much
+#####
 
 
 ###### volumeshort
