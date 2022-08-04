@@ -67,6 +67,7 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
+         !grepl('short|bear|inverse', name, ignore.case = T) &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-delta_avg)/sell_rally_avg)>.018,
        .(date, symbol, close, volume)] %>%
@@ -75,8 +76,8 @@ prices[date==max(date, na.rm=T) & volume>75000 & close>7 &
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
          (((close-low)/(high-low))<.05 ) & 
-         ((high/close) > 1.05 |
-            ((running_low == low | RSI<.7) & ((avg_range/close) > .03)
+         ((high/close) > 1.075 |
+            ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
             ) 
          )
        ,
