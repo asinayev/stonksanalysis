@@ -7,6 +7,25 @@ setwd('~/stonksanalysis')
 source("polygon.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
+performance=function(date,outcome,days_held,symbol){
+  results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol)
+  results=na.omit(results)
+  results_daily = results[,.(outcome=sum(outcome),trades=.N),date]
+  setorder(results_daily, date)
+  results_daily[,trailing_sum:=frollsum(outcome ,n = 25, align='right',fill=NA)]
+  results_overall= results_daily[,.(average=sum(outcome)/sum(trades),
+                   drawdown=min(trailing_sum,na.rm=T),
+                   total=sum(outcome),
+                   trades=sum(trades),
+                   days_traded=.N
+                   ), 
+                year(date) ]%>%
+    merge(results[,.(avg_days_held=mean(days_held),
+                     stocks_traded=length(unique(symbol))),
+                  year(date)])
+  results_overall[order(year)]
+}
+
 prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
@@ -107,9 +126,9 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
 prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
          lead1sellrally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
-         (sell_rally_avg-delta_avg)>.017  
-       , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
-       , year(date)][order(year)]
+         ((sell_rally_avg-delta_avg)/sell_rally_avg)>.018]%>%
+  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
+
 # revert ETFs
 # year        V1         V2  V3 V4    N            V6
 # 1: 2012 1.0098351 0.01092582  14  7   15 5.000000 days
@@ -142,15 +161,15 @@ potential_buys[sell_rally_avg-delta_avg>0.017
                , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
                , year(date)][order(year)]
 
-prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
+prices[volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
          lead1sellrally/lead1open<2 & 
          (((close-low)/(high-low))<.05 ) & 
-         ((high/close) > 1.05 |
-           ((running_low == low | RSI<.7) & ((avg_range/close) > .03)
+         ((high/close) > 1.075 |
+           ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
            ) 
-         )
-       , .( mean(lead1sellrally/lead1open,na.rm=T),sd(lead1sellrally/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_rally_date-date))
-       , year(date)][order(year)]
+         )]%>%
+  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
+
 
 prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
          lead1sellrally/lead1open<2 & 
