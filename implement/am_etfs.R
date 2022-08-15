@@ -28,7 +28,7 @@ prices = stocklist$ticker %>%
   rbindlist(use.names=TRUE, fill=T)
 
 prices = prices[, .SD[1], by=.(stock, Date)][
-  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)]
+  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose, name)]
 setorder(prices, symbol, date)
 
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
@@ -67,7 +67,7 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
-         !grepl('short|bear|inverse', symbol, ignore.case = T) &
+         !grepl('short|bear|inverse', name, ignore.case = T) &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-delta_avg)/sell_rally_avg)>.018,
        .(date, symbol, close, volume)] %>%
