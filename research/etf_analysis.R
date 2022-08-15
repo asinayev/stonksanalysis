@@ -154,32 +154,28 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 
 
 potential_buys = prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
-                          lead1sellrally/lead1open<2 & 
-                          close<lag1high & sell_rally_day>2]
-potential_buys[!is.na(sell_rally_avg),rownum:=order(sell_rally_avg-delta_avg, decreasing = T),date] 
-potential_buys[sell_rally_avg-delta_avg>0.017
-               , .(avg = mean(lead1sellrally/lead1open,na.rm=T),sd = sd(lead1sellrally/lead1open,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(lead1sellrallydate-date))
-               , year(date)][order(year)]
+                          lead1sellrally/lead1open<2]
+potential_buys[!is.na(sell_rally_avg),
+               rownum:=order(RSI, decreasing = F),date] 
 
-prices[volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
+potential_buys[#volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
          lead1sellrally/lead1open<2 & 
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.075 |
            ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
            ) 
-         )]%>%
+         )][order(rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
+potential_buys[#volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
+  lead1sellrally/lead1open<2 & 
+    (((close-low)/(high-low))<.05 ) & 
+    ((high/close) > 1.075 |
+       ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
+       ) 
+    )]%>%
+  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
-prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) & 
-         lead1sellrally/lead1open<2 & 
-         (((close-low)/(high-low))<.05 ) & 
-         ((high/close) > 1.05 |
-            ((running_low == low | RSI<.7) & ((avg_range/close) > .03)
-            ) 
-         )
-       , .( mean(lead1sellmono/lead1open,na.rm=T),sd(lead1sellmono/lead1open,na.rm=T),length(unique(symbol)), length(unique(date)),.N,mean(sell_mono_date-date))
-       , year(date)][order(year)]
 
 
 # Low Close ETFs
