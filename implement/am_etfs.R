@@ -28,7 +28,8 @@ prices = stocklist$ticker %>%
   rbindlist(use.names=TRUE, fill=T)
 
 prices = prices[, .SD[1], by=.(stock, Date)][
-  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose, name)]
+  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)] %>%
+  merge(stocklist[,.(symbol=ticker, name)], all.x=T)
 setorder(prices, symbol, date)
 
 prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
