@@ -83,7 +83,8 @@ prices[order(RSI,decreasing=F)][
             ) 
          )
        ,
-       .(date, symbol, close, volume)][1:5] %>%
+       .(date, symbol, close, volume)]%>%
+  head(5) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
