@@ -17,7 +17,7 @@ delta_window=25
 corr_window=100
 splits = 16
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), 
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                    financials=F, cores=splits, ticker_type='ETF')
 
 prices = stocklist$ticker %>%

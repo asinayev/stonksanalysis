@@ -11,7 +11,7 @@ stopifnot(POLYKEY!='')
 
 splits = 16
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = paste(year(Sys.Date()),'01','01', sep='-'), financials=F, cores=splits)
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, financials=F, cores=splits)
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
