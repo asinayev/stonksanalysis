@@ -29,15 +29,16 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*18:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
-  rbindlist(fill=T) %>%
-  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-spy_prices=stock_history('SPY', '2004-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
-  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-spy_prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-spy_prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
-prices = merge(prices,spy_prices[,.(date,spy_future_night_delta = lead1open/close, spy_day_delta=close/open)],all.x=T)
+# prices=lapply(Sys.Date()-365*18:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
+#   rbindlist(fill=T) %>%
+#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+# spy_prices=stock_history('SPY', '2004-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
+#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+# spy_prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+# spy_prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
+# prices = merge(prices,spy_prices[,.(date,spy_future_night_delta = lead1open/close, spy_day_delta=close/open)],all.x=T)
 
+prices=fread("~/datasets/stock_prices_15y.csv")
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 prices[,days_around:=cumsum(!is.na(close)),symbol]

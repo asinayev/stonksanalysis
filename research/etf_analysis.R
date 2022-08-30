@@ -7,99 +7,79 @@ setwd('~/stonksanalysis')
 source("polygon.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-performance=function(date,outcome,days_held,symbol){
-  results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol)
-  results=na.omit(results)
-  results_daily = results[,.(outcome=sum(outcome),trades=.N),date]
-  setorder(results_daily, date)
-  results_daily[,trailing_sum:=frollsum(outcome ,n = 25, align='right',fill=NA)]
-  results_overall= results_daily[,.(
-    average=round(sum(outcome)/sum(trades),3),
-                   drawdown=round(min(trailing_sum,na.rm=T),1),
-                   total=round(sum(outcome),1),
-                   trades=sum(trades),
-                   days_traded=.N
-                   ), 
-                year(date) ]%>%
-    merge(results[,.(avg_days_held=mean(days_held),
-                     stocks_traded=length(unique(symbol))),
-                  year(date)])
-  print(results_overall[,.(perf=mean(average), drawdown=min(drawdown), days_traded=sum(days_traded) )])
-  results_overall[order(year)]
-}
-
-prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
-  rbindlist(fill=T) %>%
-  dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-prices=lapply(Sys.Date()-365*18:6, sampled_data, key=POLYKEY, ticker_type='INDEX', details=T) %>%   
-  rbindlist(fill=T) %>%
-  dplyr::rename(symbol=stock, close=AdjClose, date=Date) %>% rbind(prices, fill=T)
-
-setorder(prices, symbol, date)
-prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
-prices[,days_around:=cumsum(!is.na(close)),symbol]
-
-prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
-prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
-prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
-prices[,day_delta:= close/open]
-prices[,day_fall:= low/open]
-prices[,day_rise:= high/open]
-prices[,night_delta:= open/lag1close]
-prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
-         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
-         shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
-
-setDTthreads(threads = 4)
-
-setorder(prices, symbol, date)
-prices[,sell_rally_increment:=ifelse(lag1close<shift(high,n = 2, type="lag") | is.na(shift(high,n = 2, type="lag")), 0, 1),symbol]
-prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
-prices[,sell_rally_increment:=NULL]
-
-setorder(prices, symbol, date)
-prices[,sell_mono_increment:=ifelse(lag1close<(lag1low+.8*(lag1high-lag1low))|is.na(lag1high), 0, 1),symbol]
-prices[,sell_mono_increment:=cumsum(sell_mono_increment), symbol]
-prices[,sell_mono:=close[.N], .(sell_mono_increment,symbol)]
-prices[,sell_mono_date:=date[.N], .(sell_mono_increment,symbol)]
-prices[,sell_mono_day:=rowid(sell_mono_increment,symbol)]
-prices[,sell_mono_increment:=NULL]
-
-
-
-
-sell_rally_avg = function(price_dat){
-  days=nrow(price_dat)
-  return( mean(ifelse(price_dat[,1]>price_dat[days,5], 
-                      price_dat[days,2], price_dat[,4])/price_dat[,3]))
-}
-
-sell_rally_window=200
-delta_window=25
-
-prices[,sell_rally_avg:=NULL]
-system.time({
-  setorder(prices, symbol, date)
-  prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol]
-         ,
-         sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
-                                                     close,
-                                                     open,
-                                                     sell_rally,
-                                                     date=as.integer(date))],
-                                         FUN=sell_rally_avg,
-                                         width=sell_rally_window, align='right',by.column = FALSE,fill=NA
-         ),symbol ]
-}
-)
+# prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
+#   rbindlist(fill=T) %>%
+#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
+# prices=lapply(Sys.Date()-365*18:6, sampled_data, key=POLYKEY, ticker_type='INDEX', details=T) %>%   
+#   rbindlist(fill=T) %>%
+#   dplyr::rename(symbol=stock, close=AdjClose, date=Date) %>% rbind(prices, fill=T)
+# 
+# setorder(prices, symbol, date)
+# prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
+# prices[,days_around:=cumsum(!is.na(close)),symbol]
+# 
+# prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
+# prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
+# prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
+# prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
+# prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
+# prices[,day_delta:= close/open]
+# prices[,day_fall:= low/open]
+# prices[,day_rise:= high/open]
+# prices[,night_delta:= open/lag1close]
+# prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
+#          shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
+# prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
+#          shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
+# prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
+# prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
+# 
+# setDTthreads(threads = 4)
+# 
+# setorder(prices, symbol, date)
+# prices[,sell_rally_increment:=ifelse(lag1close<shift(high,n = 2, type="lag") | is.na(shift(high,n = 2, type="lag")), 0, 1),symbol]
+# prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
+# prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
+# prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+# prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
+# prices[,sell_rally_increment:=NULL]
+# 
+# setorder(prices, symbol, date)
+# prices[,sell_mono_increment:=ifelse(lag1close<(lag1low+.8*(lag1high-lag1low))|is.na(lag1high), 0, 1),symbol]
+# prices[,sell_mono_increment:=cumsum(sell_mono_increment), symbol]
+# prices[,sell_mono:=close[.N], .(sell_mono_increment,symbol)]
+# prices[,sell_mono_date:=date[.N], .(sell_mono_increment,symbol)]
+# prices[,sell_mono_day:=rowid(sell_mono_increment,symbol)]
+# prices[,sell_mono_increment:=NULL]
+# 
+# 
+# 
+# 
+# sell_rally_avg = function(price_dat){
+#   days=nrow(price_dat)
+#   return( mean(ifelse(price_dat[,1]>price_dat[days,5], 
+#                       price_dat[days,2], price_dat[,4])/price_dat[,3]))
+# }
+# 
+# sell_rally_window=200
+# delta_window=25
+# 
+# prices[,sell_rally_avg:=NULL]
+# system.time({
+#   setorder(prices, symbol, date)
+#   prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol]
+#          ,
+#          sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
+#                                                      close,
+#                                                      open,
+#                                                      sell_rally,
+#                                                      date=as.integer(date))],
+#                                          FUN=sell_rally_avg,
+#                                          width=sell_rally_window, align='right',by.column = FALSE,fill=NA
+#          ),symbol ]
+# }
+# )
+prices=fread("~/datasets/etf_prices_15y.csv")
 
 # Rally ETFs
 #         perf  drawdown days_traded
