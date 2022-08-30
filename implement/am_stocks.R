@@ -63,6 +63,6 @@ prices[date==max(date, na.rm=T) &
        .(date, symbol, close, volume)][order(close*volume,decreasing=T)] %>%
   head(3) %>%
   dplyr::mutate( action='SELL', 
-                 order_type='LMT', strike_price=close, 
+                 order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='overbought')
