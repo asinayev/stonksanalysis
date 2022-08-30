@@ -54,9 +54,7 @@ prices[!is.na(day_delta) & !is.na(lag1_day_fall),
 sq=function(x)x^2
 
 lm1 = lm(future_day_delta~
-           corr_lag_fall_long*day_fall +
-           corr_lag_delta_long*day_delta +
-           corr_lag_rise_long*day_rise
+           day_delta + night_delta + day_fall + day_rise
          ,prices, weights = (prices$date-min(prices$date))/as.integer(max(prices$date-min(prices$date))),
          subset = date>Sys.Date()-3*365 & volume>75000 & close>7
 )

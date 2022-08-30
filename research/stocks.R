@@ -29,10 +29,10 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # Get data from polygon instead
 
-prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
+prices=lapply(Sys.Date()-365*18:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-spy_prices=stock_history('SPY', '2011-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
+spy_prices=stock_history('SPY', '2004-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
 spy_prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
 spy_prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
@@ -94,9 +94,8 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 #####updownmorn
 prices[
   close/open>1.025 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & future_night_delta<.975
-  ,.(mean(future_day_delta, na.rm=T), .N), 
-  .(year(date))][order(year)] 
+    volume%between%c(10000,20000) & close>5 & future_night_delta<.975]%>%
+    with(performance(date,future_day_delta-1,1,symbol))
 
 prices[
   volume/volume_avg <.75 & spy_future_night_delta>.99 & 
@@ -115,9 +114,10 @@ prices[
 
 #####overbought
 prices[
-     day_delta/spy_day_delta>1.20 & close>7 & market_cap>1000000
-     ,.(mean(future_day_delta, na.rm=T), .N), 
-     .(year(date))][order(year)] 
+  day_delta>1.20 & close>7 & (night_delta)>1 & 
+    volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
+  with(performance(date,1-future_day_delta,1,symbol))
+
 
 #At open, sell stocks that climbed yesterday too much
 #####
@@ -177,24 +177,22 @@ sq=function(x)x^2
 # Regression strategy
 prices[,reg_predict := as.numeric(32)]
 prices[,reg_predict := NA]
-for (yr in 2015:2021 ){
+for (yr in 2008:2021 ){
   IS = prices[year(date) %between% c(yr-3, yr-1) & volume>75000 & close>7 ]
-  lm1 = lm(future_day_delta_ltd ~
-             corr_lag_fall_long*day_fall +
-             corr_lag_delta_long*day_delta +
-             corr_lag_rise_long*day_rise
+  lm1 = lm(future_day_delta ~
+             day_delta + night_delta + day_fall + day_rise + lag1_day_delta
            ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
   )
+  print(yr)
+  print(round(lm1$coefficients,3))
   prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
   gc()
 }
 
 
 IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30 & volume>75000 & close>7]
-lm1 = lm(future_day_delta_ltd ~
-           corr_lag_fall_long*day_fall +
-           corr_lag_delta_long*day_delta +
-           corr_lag_rise_long*day_rise
+lm1 = lm(future_day_delta ~
+           day_delta + night_delta + day_fall + day_rise
          ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
 )
 prices[year(date)==2022,
@@ -212,7 +210,7 @@ prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=7),
 # 6: 2020 0.9776544 733
 # 7: 2021 0.9858612 677
 # 8: 2022 0.9796050  85
-prices[reg_predict<threshold  &
+prices[reg_predict<threshold  & #!day_delta>1.2 &
          volume>75000 & close>7,
        .(mean(future_day_delta,na.rm=T),.N),
        year(date)][order(year)]

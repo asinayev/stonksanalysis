@@ -13,9 +13,10 @@ performance=function(date,outcome,days_held,symbol){
   results_daily = results[,.(outcome=sum(outcome),trades=.N),date]
   setorder(results_daily, date)
   results_daily[,trailing_sum:=frollsum(outcome ,n = 25, align='right',fill=NA)]
-  results_overall= results_daily[,.(average=sum(outcome)/sum(trades),
-                   drawdown=min(trailing_sum,na.rm=T),
-                   total=sum(outcome),
+  results_overall= results_daily[,.(
+    average=round(sum(outcome)/sum(trades),3),
+                   drawdown=round(min(trailing_sum,na.rm=T),1),
+                   total=round(sum(outcome),1),
                    trades=sum(trades),
                    days_traded=.N
                    ), 
@@ -23,13 +24,14 @@ performance=function(date,outcome,days_held,symbol){
     merge(results[,.(avg_days_held=mean(days_held),
                      stocks_traded=length(unique(symbol))),
                   year(date)])
+  print(results_overall[,.(perf=mean(average), drawdown=min(drawdown), days_traded=sum(days_traded) )])
   results_overall[order(year)]
 }
 
 prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-prices=lapply(Sys.Date()-365*10:6, sampled_data, key=POLYKEY, ticker_type='INDEX', details=T) %>%   
+prices=lapply(Sys.Date()-365*18:6, sampled_data, key=POLYKEY, ticker_type='INDEX', details=T) %>%   
   rbindlist(fill=T) %>%
   dplyr::rename(symbol=stock, close=AdjClose, date=Date) %>% rbind(prices, fill=T)
 
@@ -100,18 +102,24 @@ system.time({
 )
 
 # Rally ETFs
-#200 / 25 /.015
-# year       avg         sd stocks days    N          held
-# 1: 2013 1.0255318 0.04553805      8   28   39 6.461538 days
-# 2: 2014 1.0001505 0.14252778     12   58  103 3.757282 days
-# 3: 2015 1.0324324 0.07958780     25   71  203 3.610837 days
-# 4: 2016 1.0115322 0.10206859     35  131  464 5.517241 days
-# 5: 2017 1.0128430 0.04615133     10   98  134 3.985075 days
-# 6: 2018 0.9952986 0.10017809     15   87  120 7.533333 days
-# 7: 2019 1.0362176 0.05187134     13   81  119 3.857143 days
-# 8: 2020 1.0223254 0.14191596    166  125  932 4.628755 days
-# 9: 2021 1.0236841 0.05764851     65  196 1079 4.348471 days
-# 10: 2022 1.0476884 0.07963000     52   77  416 3.540865 days
+#         perf  drawdown days_traded
+# 1: 0.02586667    -12.4        1078
+#    year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2008   0.074      5.9   7.2     98          36 4.193878 days            17
+# 2: 2009   0.007     -0.2   1.1    152          82 4.631579 days            11
+# 3: 2010   0.011     -0.1   1.3    117          96 3.777778 days             8
+# 4: 2011   0.027     -0.2   4.6    173          83 4.358382 days            15
+# 5: 2012   0.021      0.9   0.4     21          15 2.190476 days             8
+# 6: 2013   0.031      0.7   0.5     17          15 7.117647 days             3
+# 7: 2014  -0.015     -0.8  -0.6     40          32 3.800000 days             8
+# 8: 2015   0.066     -0.7   5.2     79          35 2.898734 days            18
+# 9: 2016   0.012     -3.6   4.0    336         121 5.529762 days            22
+# 0: 2017   0.018     -0.7   1.4     79          68 3.455696 days             9
+# 1: 2018   0.018     -0.5   0.9     51          49 5.215686 days            10
+# 2: 2019   0.034     -0.5   3.4    100          72 4.440000 days             7
+# 3: 2020   0.018    -12.4   9.6    544         109 4.922794 days            79
+# 4: 2021   0.027      0.3  18.0    666         170 4.211712 days            44
+# 5: 2022   0.039     -0.2  14.6    375          95 3.512000 days            45
 
 setorder(prices, symbol, date)
 prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
@@ -121,9 +129,9 @@ prices[,lead1sellmono:= shift(sell_mono,1,type='lead'),symbol ]
 prices[,delta_avg:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
+prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 
-
-prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
+prices[volume>75000 & close>7 & !short &
          lead1sellrally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-delta_avg)/sell_rally_avg)>.018]%>%
@@ -156,18 +164,18 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 potential_buys = prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
                           lead1sellrally/lead1open<2]
 potential_buys[!is.na(sell_rally_avg),
-               rownum:=order(RSI, decreasing = F),date] 
+               rownum:=order(-high/close, decreasing = F),date] 
 
-potential_buys[#volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
+potential_buys[
          lead1sellrally/lead1open<2 & 
          (((close-low)/(high-low))<.05 ) & 
-         ((high/close) > 1.075 |
+         ((high/close) > 1.05 |
            ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
            ) 
          )][order(rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
-potential_buys[#volume>75000 & close>7 & grepl('short|bear|inverse', name, ignore.case = T) & 
+potential_buys[
   lead1sellrally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
@@ -178,25 +186,6 @@ potential_buys[#volume>75000 & close>7 & grepl('short|bear|inverse', name, ignor
 
 
 
-# Low Close ETFs
-#    year      avg         sd stocks days    N          held
-# 1: 2012 1.014462 0.04834311     57   47  139 5.920863 days
-# 2: 2013 1.024131 0.04450167     58   51  125 5.120000 days
-# 3: 2014 1.003969 0.11601048     72   69  189 5.957672 days
-# 4: 2015 1.035853 0.08843009    202  112  450 4.777778 days
-# 5: 2016 1.020830 0.09294405     82  120  309 6.634304 days
-# 6: 2017 1.006130 0.10920584     64   80  177 6.790960 days
-# 7: 2018 1.014148 0.10990815    146  104  585 6.745299 days
-# 8: 2019 1.021030 0.08597074     77  144  334 6.167665 days
-# 9: 2020 1.029696 0.11938325    586  191 1801 5.085508 days
-# 0: 2021 1.020013 0.07929712    187  165  681 6.233480 days
-# 1: 2022 1.020582 0.08787149    162   65  623 5.444623 days
-# prices[volume>100000 & close>5 & lead1sellrally/close<2 & !grepl('short|bear|inverse', name, ignore.case = T) &
-#          ((close-low)/(high-low)) < .05
-#          & (high/close) > 1.05
-#        , .(avg = mean(lead1sellrally/close,na.rm=T),sd = sd(lead1sellrally/close,na.rm=T),stocks = length(unique(symbol)), days = length(unique(date)),.N,held=mean(sell_rally_date-date))
-#        , year(date)][order(year)]
-# 
 window = 100
 prices[,lagging_corr_long:=NULL]
 prices[symbol %in% prices[days_around>(window+1), unique(symbol)],
