@@ -68,6 +68,8 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
          frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
+       ,avg_volume:= frollmean(volume ,n = delta_window, align='right',fill=NA),symbol ]
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
          !grepl('short|bear|inverse', name, ignore.case = T) &
@@ -91,8 +93,7 @@ prices[order(RSI,decreasing=F)][
   write_strat(strat_name='revert_etfs')
 
 prices[order(lagging_corr_long, decreasing = F)][
-  date==max(date, na.rm=T) & volume>75000 & close>7 & 
-    !grepl('short|bear|inverse', name, ignore.case = T) &
+  date==max(date, na.rm=T) & avg_volume>250000 & close>7 &
     delta_avg_short<.97 & lagging_corr_long> .4,
   .(date, symbol, close, volume)] %>%
   head(5) %>%

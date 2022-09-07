@@ -177,23 +177,27 @@ prices[symbol %in% prices[days_around>(window+delta_window), unique(symbol)],
          runCor( day_delta, delta_mn, window),
        symbol]
 
-min_corr = .4
-# year        V1   N
-# 1: 2012 0.9986683   5
-# 2: 2013 1.0222907  21
-# 3: 2014 1.0192777  27
-# 4: 2015 1.0101338  88
-# 5: 2016 1.0190706  59
-# 6: 2017 1.0321804   9
-# 7: 2018 1.0224720  57
-# 8: 2019 1.0153659  10
-# 9: 2020 1.0121389 340
-# 0: 2021 1.0185442  33
-# 1: 2022 1.0213601  58
+#    year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2007   0.083      Inf   0.1      1           1      2.000000             1
+# 2: 2008   0.030      Inf   1.2     40          14      5.800000            27
+# 3: 2009   0.056      Inf   0.1      1           1      1.000000             1
+# 4: 2010   0.057      2.6   3.8     67          31      4.865672            19
+# 5: 2011   0.029     -0.5   3.0    104          46      4.134615            39
+# 6: 2012   0.011      1.5   0.2     15           9      4.800000             6
+# 7: 2013   0.013      0.3   0.5     42          19      4.666667            11
+# 8: 2014   0.077      0.8   2.2     28          14      3.107143            19
+# 9: 2015   0.050      2.1   4.4     88          46      4.125000            29
+# 10: 2016   0.017     -1.8   2.0    121          68      5.140496            29
+# 11: 2017  -0.013     -1.0  -0.6     48          35      6.583333            10
+# 12: 2018   0.018     -1.8   3.6    201          91      5.860697            37
+# 13: 2019   0.040     -0.6   4.8    121          77      4.834711            25
+# 14: 2020   0.008     -3.9   1.3    167          54      4.754491            87
+# 15: 2021   0.026     -0.2   3.5    134          90      5.597015            33
+# 16: 2022   0.018     -0.9   4.2    234          84      5.205128            80       87
 prices[,rownum:=order(lagging_corr_long, decreasing = F),date] 
 
-prices[delta_mn<.97 & lagging_corr_long> min_corr  &
-         volume>100000 & close>7][order(rownum),.SD[1:5],date]%>%
+prices[delta_mn<.97 & lagging_corr_long> .4  & !short &
+         volume>250000 & close>7][order(rownum),.SD[1:5],date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
 
