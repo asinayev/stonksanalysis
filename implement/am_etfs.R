@@ -55,12 +55,14 @@ prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol],
 
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
+       delta_avg_short:= SMA(close/lag1close, n = 5 ),symbol ]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
-# prices[symbol %in% prices[,.N,symbol][N>corr_window,symbol],
-#        lagging_corr:=
-#          runCor( close/open, open/lag1close, corr_window),
-#        symbol]
+prices[symbol %in% prices[,.N,symbol][N>(corr_window+5), unique(symbol)],
+       lagging_corr_long:=
+         runCor( close/open, delta_avg_short, corr_window),
+       symbol]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
        ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
          frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
@@ -88,14 +90,15 @@ prices[order(RSI,decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
-# prices[date==max(date, na.rm=T) &
-#          lagging_corr< -.3 & volume%between%c(10000,100000) & close>7,
-#        .(date, symbol, close,
-#          buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-#   dplyr::mutate( stock=symbol, action='BUY',
-#                  strike_price=buy,
-#                  order_type='LMT', time_in_force='OPG') %>%
-#   write_strat(strat_name='corr_long_etfs')
+prices[order(lagging_corr_long, decreasing = F)][
+  date==max(date, na.rm=T) & volume>75000 & close>7 & 
+    !grepl('short|bear|inverse', name, ignore.case = T) &
+    delta_avg_short<.97 & lagging_corr_long> .4,
+  .(date, symbol, close, volume)] %>%
+  head(5) %>%
+  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  write_strat(strat_name='corr_long_etfs')
+
 # 
 # prices[date==max(date, na.rm=T) &
 #          lagging_corr< -.3 & volume%between%c(10000,100000) & close>7,

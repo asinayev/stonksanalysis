@@ -18,8 +18,8 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 # prices[,days_around:=cumsum(!is.na(close)),symbol]
 # 
-# prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-# prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
+# prices[,c("lag1close", "lag2close", "lead1close", "lead2close"):=shift(close, n = c(1:2,-1:-2), type = "lag"),symbol]
+# prices[,c("lag1open",  "lag2open", "lead1open", "lead2open"):=shift(open,  n = c(1:2,-1:-2), type = "lag"),symbol]
 # prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
 # prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
 # prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
@@ -61,8 +61,8 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 #                       price_dat[days,2], price_dat[,4])/price_dat[,3]))
 # }
 # 
-# sell_rally_window=200
-# delta_window=25
+sell_rally_window=200
+delta_window=25
 # 
 # prices[,sell_rally_avg:=NULL]
 # system.time({
@@ -109,6 +109,10 @@ prices[,lead1sellmono:= shift(sell_mono,1,type='lead'),symbol ]
 prices[,delta_avg:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
        delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
+       volume_avg:= SMA(volume, n = delta_window ),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>5,symbol],
+       delta_mn:= SMA(close/lag1close, n = 5 ),symbol ]
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 
 prices[volume>75000 & close>7 & !short &
@@ -144,7 +148,7 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 potential_buys = prices[volume>75000 & close>7 & !grepl('short|bear|inverse', name, ignore.case = T) &
                           lead1sellrally/lead1open<2]
 potential_buys[!is.na(sell_rally_avg),
-               rownum:=order(-high/close, decreasing = F),date] 
+               rownum:=order(delta_mdn, decreasing = T),date] 
 
 potential_buys[
          lead1sellrally/lead1open<2 & 
@@ -168,12 +172,12 @@ potential_buys[
 
 window = 100
 prices[,lagging_corr_long:=NULL]
-prices[symbol %in% prices[days_around>(window+1), unique(symbol)],
+prices[symbol %in% prices[days_around>(window+delta_window), unique(symbol)],
        lagging_corr_long:=
-         runCor( day_delta, lag2_day_delta, window),
+         runCor( day_delta, delta_mn, window),
        symbol]
 
-min_corr = .3
+min_corr = .4
 # year        V1   N
 # 1: 2012 0.9986683   5
 # 2: 2013 1.0222907  21
@@ -186,9 +190,12 @@ min_corr = .3
 # 9: 2020 1.0121389 340
 # 0: 2021 1.0185442  33
 # 1: 2022 1.0213601  58
-prices[(lag1close/lag1open)>1.02 & lagging_corr_long< -min_corr & 
-         volume>100000 & close>7,
-       .(mean(lead1close/lead1open,na.rm=T),.N), year(date)][order(year)]
+prices[,rownum:=order(lagging_corr_long, decreasing = F),date] 
+
+prices[delta_mn<.97 & lagging_corr_long> min_corr  &
+         volume>100000 & close>7][order(rownum),.SD[1:5],date]%>%
+  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
+
 
 # year        V1   N
 # 1: 2012 0.9768759   9
