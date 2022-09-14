@@ -35,16 +35,27 @@ stock_deets_v = function(key, stocknames, cores, date){
     rbindlist(fill=T, use.names = T)
 }
 
-financials_from_polygon = function( key, stockname, date, field='dateKey'){
+financials_from_polygon = function( key, stockname, date, field=F){
   response = "https://api.polygon.io/v2/reference/financials/%s?type=Y&sort=-reportPeriod&apiKey=%s" %>%
     sprintf(stockname, key) %>%
-    hit_polygon(results_contain = field)
-  if(response!=0){
+    hit_polygon
+  if('results' %in% names(response) && 'dateKey' %in% names(response$results)){
     results = data.table(response$results)
     results[dateKey<date][order(dateKey, decreasing = T)][1,]
   } else {
       return(data.table(ticker=stockname))
     }
+}
+
+filing_dates_from_polygon = function( key, stockname ){
+  response = "https://api.polygon.io/vX/reference/financials?ticker=%s&sort=-filing_date&apiKey=%s&limit=100" %>%
+    sprintf(stockname, key) %>%
+    hit_polygon
+  if(is.list(response)){
+    return(data.table(symbol=stockname, date=as.Date(response$results$filing_date)))
+  } else {
+    return(data.table(symbol=stockname))
+  }
 }
 
 
@@ -70,7 +81,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', financials=F, detail
   out = out[,.SD[.N],ticker]
   if(financials){
     out$ticker %>% unlist %>%
-      parallel::mclapply(financials_from_polygon, key=key, date=date, mc.cores = cores) %>%
+      parallel::mclapply(financials_from_polygon, key=key, date=date, field=F, mc.cores = cores) %>%
       rbindlist(fill=TRUE, use.names = T) %>%
       # cbind(out) %>%
       return
