@@ -21,7 +21,7 @@ prices[,reg_predict:=predict(lm1, prices)]
 prices[,reg_predict:=ifelse(is.na(reg_predict),1,reg_predict)]
 
 prices[volume>75000 & close>7,
-       threshold:=pmin(quantile(reg_predict,.001,type=7),.995), date]
+       threshold:=pmin(quantile(reg_predict,.001,type=1),.995), date]
 
 prices[date==max(date, na.rm=T) & 
          volume>75000 & close>7 &

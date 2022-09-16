@@ -43,32 +43,9 @@ setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 prices[,days_around:=cumsum(!is.na(close)),symbol]
 
-prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
-prices[,c("lag1high",  "lag2high", "future_day_high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
-prices[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
-prices[,day_delta:= close/open]
-prices[,day_fall:= low/open]
-prices[,day_rise:= high/open]
-prices[,night_delta:= open/lag1close]
-prices[symbol %in% prices[days_around>30, unique(symbol)],
-       volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
-prices[symbol %in% prices[days_around>30, unique(symbol)],
-       close_avg:= SMA(shift(close,1,type='lag'), n = 30, ),symbol ]
-prices[,low_running:= frollapply(lag1close, min, n = 50 ),symbol ]
-prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
-         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
-         shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_day_rise",    "lag2_day_rise", "future_day_rise"   ):=shift(day_rise,    n = c(1:2,-1), type = "lag"),symbol]
-prices[,future_day_delta_ltd:=ifelse(future_day_rise>1.2, 1.2, future_day_delta )]
-delta_window=25
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
-         frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
-
+lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
+rally(prices)
+# rally_avg(prices,200)
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -93,6 +70,28 @@ prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
 #####
 
 #####updownmorn
+# perf drawdown days_traded
+# 1: 0.01705263     -0.5        2444
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2004   0.008     -0.1   0.3     32          21             1            28
+# 2: 2005   0.010     -0.1   1.2    117          84             1            93
+# 3: 2006   0.007     -0.2   1.2    168         107             1           106
+# 4: 2007   0.009     -0.3   1.5    158          92             1            99
+# 5: 2008   0.019     -0.2   4.4    229         113             1           134
+# 6: 2009   0.023     -0.1   6.7    286         136             1           171
+# 7: 2010   0.015     -0.2   2.3    150          99             1           109
+# 8: 2011   0.035     -0.2   3.6    103          76             1            79
+# 9: 2012   0.015     -0.1   1.8    121          86             1            75
+# 10: 2013   0.012     -0.2   2.0    164         121             1            99
+# 11: 2014   0.017     -0.1   3.3    192         130             1           109
+# 12: 2015   0.010     -0.5   2.0    201         130             1           107
+# 13: 2016   0.018     -0.4   3.9    217         122             1           121
+# 14: 2017   0.016     -0.3   5.4    335         154             1           212
+# 15: 2018   0.023     -0.3  13.7    598         210             1           363
+# 16: 2019   0.021     -0.4  14.2    681         225             1           379
+# 17: 2020   0.025     -0.3  17.7    715         202             1           372
+# 18: 2021   0.019     -0.3  11.1    570         209             1           328
+# 19: 2022   0.022     -0.4   8.5    391         127             1           249
 prices[
   close/open>1.025 & spy_future_night_delta>.99 & 
     volume%between%c(10000,20000) & close>5 & future_night_delta<.975]%>%
@@ -100,24 +99,44 @@ prices[
 
 prices[
   volume/volume_avg <.75 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & future_night_delta<.975
-  ,.(mean(future_day_delta, na.rm=T), .N), 
-  .(year(date))][order(year)] 
+    volume%between%c(10000,20000) & close>5 & future_night_delta<.975]%>%
+  with(performance(date,future_day_delta-1,1,symbol))
 
 prices[
-  (volume/volume_avg <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & future_night_delta<.975
-  ,.(mean(future_day_delta, na.rm=T), .N), 
-  .(year(date))][order(year)] 
+  (volume/avg_volume <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
+    volume%between%c(10000,20000) & close>5 & (lead1open/close)<.975]%>%
+  with(performance(date,(lead1close/lead1open)-1,1,symbol))
 
 #At open, buy stocks that climbed yesterday but fell overnight today unless the index fell overnight
 #####
 
 #####overbought
+# perf drawdown days_traded
+# 1: 0.01910526       -2        1158
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2004   0.028      0.0   0.1      2           2             1             2
+# 2: 2005   0.018     -0.1   0.1      5           5             1             5
+# 3: 2006   0.001     -0.2   0.0     11          11             1            10
+# 4: 2007   0.010     -0.4   0.2     21          17             1            19
+# 5: 2008   0.014     -1.4   1.8    125          67             1           103
+# 6: 2009   0.006     -2.0   0.7    115          72             1            90
+# 7: 2010   0.010     -0.7   0.2     20          20             1            20
+# 8: 2011   0.020     -0.7   0.5     23          19             1            22
+# 9: 2012   0.000     -0.5   0.0     24          23             1            18
+# 10: 2013   0.041     -0.4   0.9     21          19             1            17
+# 11: 2014   0.007     -0.5   0.2     26          21             1            22
+# 12: 2015   0.006     -0.3   0.3     47          41             1            37
+# 13: 2016  -0.002     -1.4  -0.1     68          50             1            51
+# 14: 2017   0.051     -0.6   5.3    104          72             1            84
+# 15: 2018   0.043     -0.7   7.7    179         131             1           136
+# 16: 2019   0.021     -1.7   4.3    200         131             1           153
+# 17: 2020   0.032     -1.7  13.9    431         207             1           318
+# 18: 2021   0.035     -1.6  12.1    350         179             1           251
+# 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  day_delta>1.20 & close>7 & (night_delta)>1 & 
+  (close/open)>1.20 & close>7 & (open/lag1close)>1 & 
     volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
-  with(performance(date,1-future_day_delta,1,symbol))
+  with(performance(date,1-lead1close/lead1open,1,symbol))
 
 
 #At open, sell stocks that climbed yesterday too much
@@ -142,36 +161,7 @@ prices[
 #        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 ######
 
-prices[symbol %in% prices[days_around>7, unique(symbol)], 
-       lagging_corr:=
-         runCor( day_delta, night_delta, 7),
-       symbol]
 
-prices[symbol %in% prices[days_around>7, unique(symbol)],
-       corr_lag_rise:=
-         runCor( day_delta, lag1_day_rise, 7),
-       symbol]
-prices[symbol %in% prices[days_around>7, unique(symbol)],
-       corr_lag_delta:=
-         runCor( day_delta, lag1_day_delta, 7),
-       symbol]
-prices[symbol %in% prices[days_around>7, unique(symbol)],
-       corr_lag_fall:=
-         runCor( day_delta, lag1_day_fall, 7),
-       symbol]
-
-prices[symbol %in% prices[days_around>350, unique(symbol)],
-       corr_lag_rise_long:=
-         runCor( day_delta, lag1_day_rise, 350),
-       symbol]
-prices[symbol %in% prices[days_around>350, unique(symbol)],
-       corr_lag_delta_long:=
-         runCor( day_delta, lag1_day_delta, 350),
-       symbol]
-prices[symbol %in% prices[days_around>350, unique(symbol)],
-       corr_lag_fall_long:=
-         runCor( day_delta, lag1_day_fall, 350),
-       symbol]
 
 sq=function(x)x^2
 
@@ -181,7 +171,7 @@ prices[,reg_predict := NA]
 for (yr in 2008:2021 ){
   IS = prices[year(date) %between% c(yr-3, yr-1) & volume>75000 & close>7 ]
   lm1 = lm(future_day_delta ~
-             day_delta + night_delta + day_fall + day_rise + lag1_day_delta
+             day_delta + night_delta + day_fall + day_rise 
            ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
   )
   print(yr)
@@ -200,7 +190,7 @@ prices[year(date)==2022,
        reg_predict:=predict(lm1,data.frame(.SD))  ]
 
 prices[,reg_predict:=ifelse(is.na(reg_predict),1,reg_predict)]
-prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=7),.995), date]
+prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=1),.995), date]
 
 # year        V1   N
 # 1: 2015 1.0015948 320
@@ -212,9 +202,8 @@ prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=7),
 # 7: 2021 0.9858612 677
 # 8: 2022 0.9796050  85
 prices[reg_predict<threshold  & #!day_delta>1.2 &
-         volume>75000 & close>7,
-       .(mean(future_day_delta,na.rm=T),.N),
-       year(date)][order(year)]
+         volume>75000 & close>7]%>% 
+  with(performance(date,1-lead1close/lead1open,1,symbol))
 
 prices[!is.na(future_day_delta) & reg_predict<threshold  & volume>75000 & close>7][order(date, symbol)][
            ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
@@ -248,3 +237,44 @@ prices[future_night_delta>1.04 & lagging_corr< -.4 & !is.na(future_day_delta_ltd
 abline(h=1)
 abline(h=1.01)
 abline(h=0.99)
+
+
+
+######
+rally_avg(prices,100)
+# perf drawdown days_traded
+# 1: 0.02611111     -2.1         698
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2005   0.021      0.0   0.0      2           2      9.000000             2
+# 2: 2006   0.019     -0.1   0.2     10           9      3.300000             7
+# 3: 2007   0.065     -0.1   1.6     25          18      7.080000            19
+# 4: 2008   0.039     -0.7   6.9    177          66      6.570621            99
+# 5: 2009   0.007     -1.4   2.0    306          78      6.150327           121
+# 6: 2010   0.022     -0.1   0.9     44          27      4.386364            32
+# 7: 2011   0.030     -0.2   1.3     45          28      5.755556            32
+# 8: 2012   0.014     -0.3   0.6     47          26     27.787234            30
+# 9: 2013   0.028     -0.2   1.0     36          23      9.750000            16
+# 10: 2014   0.043     -0.2   1.3     30          23      9.100000            18
+# 11: 2015   0.008     -0.6   0.4     58          36      5.241379            29
+# 12: 2016  -0.013     -2.1  -1.2     91          40      5.978022            51
+# 13: 2017   0.007     -1.5   0.3     43          33      4.581395            28
+# 14: 2018   0.082     -1.2   2.9     36          27      7.666667            25
+# 15: 2019   0.009     -1.0   1.1    117          63      6.786325            67
+# 16: 2020   0.026     -1.6   7.0    271          83      6.036900           157
+# 17: 2021   0.030     -1.3   6.8    226          74      6.243363            99
+# 18: 2022   0.033     -1.4   3.7    111          42      7.711712            65
+
+prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+         close<lag1high & sell_rally_day>6 & 
+         ((sell_rally_avg-avg_delta)/sell_rally_avg) %between% c(.02,.05)][
+         ][order(-high/close),head(.SD,5),date] %>%
+  rbind(
+    prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+             close>lag1high & sell_rally_day<2 & 
+             ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03][
+             ][order(high/close),head(.SD,5),date]
+  )%>%
+  with(performance(date,
+                   ifelse(close<lag1high,lead1sellrally/lead1open-1,1-lead1sellrally/lead1open),
+                   lead1sellrallydate-date,symbol))
+

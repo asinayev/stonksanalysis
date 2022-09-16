@@ -6,8 +6,11 @@ if(length(args)==0){
 }
 
 source("implement/imports.R", local=T)
+source("features.R", local=T)
 prices = fread('/tmp/prices.csv')
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
+rally(prices)
+rally_avg(prices,100)
 
 prices[date==max(date, na.rm=T) & 
          (volume/avg_volume <.75 | close/open>1.025) & 
@@ -27,3 +30,26 @@ prices[date==max(date, na.rm=T) &
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='overbought')
+
+prices[date==max(date, na.rm=T) & 
+         close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+         close<lag1high & sell_rally_day>6 & 
+         ((sell_rally_avg-avg_delta)/sell_rally_avg) %between% c(.02,.05) ,
+       .(date, symbol, close, volume)][order(high/close,decreasing=T)] %>%
+  head(5) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='stockrally_long')
+
+
+prices[date==max(date, na.rm=T) & 
+         close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+         close>lag1high & sell_rally_day<2 & 
+         ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03 ,
+       .(date, symbol, close, volume)][order(high/close,decreasing=T)] %>%
+  head(5) %>%
+  dplyr::mutate( action='SELL', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='stockrally_short')
