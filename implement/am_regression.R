@@ -8,50 +8,8 @@ source("implement/imports.R", local=T)
 
 prices = fread('/tmp/prices.csv')
 
-prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
-setorder(prices, symbol, date)
-prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag"),symbol]
-prices[,c("lag1open",  "lag2open" ):=shift(open,  n = 1:2, type = "lag"),symbol]
-prices[,c("lag1high",  "lag2high" ):=shift(high,  n = 1:2, type = "lag"),symbol]
-prices[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
-prices[,day_delta:= close/open]
-prices[,day_fall:= low/open]
-prices[,day_rise:= high/open]
-prices[,night_delta:= open/lag1close]
-prices[!is.na(volume),volume_avg:= SMA(shift(volume,1,type='lag'), n = 30, ),symbol ]
-prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
-         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_night_delta",  "lag2_night_delta" ):=shift(night_delta,  n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_day_fall",    "lag2_day_fall"   ):=shift(day_fall,    n = 1:2, type = "lag"),symbol]
-prices[,c("lag1_day_rise",    "lag2_day_rise"   ):=shift(day_rise,    n = 1:2, type = "lag"),symbol]
-
-# prices[!is.na(day_delta) & !is.na(lag1_day_rise),
-#        corr_lag_rise:=
-#          runCor( day_delta, lag1_day_rise, 7),
-#        symbol]
-# prices[!is.na(day_delta) & !is.na(lag1_day_delta),
-#        corr_lag_delta:=
-#          runCor( day_delta, lag1_day_delta, 7),
-#        symbol]
-# prices[!is.na(day_delta) & !is.na(lag1_day_fall),
-#        corr_lag_fall:=
-#          runCor( day_delta, lag1_day_fall, 7),
-#        symbol]
-
-prices[!is.na(day_delta) & !is.na(lag1_day_rise),
-       corr_lag_rise_long:=
-         runCor( day_delta, lag1_day_rise, 350),
-       symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_delta),
-       corr_lag_delta_long:=
-         runCor( day_delta, lag1_day_delta, 350),
-       symbol]
-prices[!is.na(day_delta) & !is.na(lag1_day_fall),
-       corr_lag_fall_long:=
-         runCor( day_delta, lag1_day_fall, 350),
-       symbol]
-
-sq=function(x)x^2
+lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
+regression_features(prices)
 
 lm1 = lm(future_day_delta~
            day_delta + night_delta + day_fall + day_rise

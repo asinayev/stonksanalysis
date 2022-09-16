@@ -6,15 +6,6 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
-sell_rally_avg = function(price_dat){
-  days=nrow(price_dat)
-  return( mean(ifelse(price_dat[,1]>price_dat[days,5], 
-                      price_dat[days,2], price_dat[,4])/price_dat[,3]))
-}
-
-sell_rally_window=200
-delta_window=25
-corr_window=100
 splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
@@ -32,49 +23,14 @@ prices = prices[, .SD[1], by=.(stock, Date)][
   merge(stocklist[,.(symbol=ticker, name)], all.x=T)
 setorder(prices, symbol, date)
 
-prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-prices[,c("lag1high"):=shift(high, n = c(1), type = "lag"),symbol]
-prices[,sell_rally_increment:=ifelse(lag1close <  shift(high,n = 2, type="lag") | 
-                                       is.na(shift(high,n = 2, type="lag")), 
-                                     0, 1),symbol]
-prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
-
-
-prices[symbol %in% prices[,.N,symbol][N>sell_rally_window,symbol],
-       sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
-                                                   close,open,sell_rally,
-                                                   date=as.integer(date))],
-                                       FUN=sell_rally_avg,
-                                       width=sell_rally_window, align='right',by.column = FALSE,fill=NA
-       ),symbol ]
-
-
-
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
-       delta_avg:= SMA(close/lag1close, n = delta_window ),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol],
-       delta_avg_short:= SMA(close/lag1close, n = 5 ),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,running_low:= zoo::rollapply(low,min,width=delta_window, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>(corr_window+5), unique(symbol)],
-       lagging_corr_long:=
-         runCor( close/open, delta_avg_short, corr_window),
-       symbol]
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,RSI:= frollmean(pmax(0, close-lag1close) ,n = delta_window, align='right',fill=NA)/
-         frollmean(pmax(0, lag1close-close) ,n = delta_window, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,avg_range:= frollmean(high-low ,n = delta_window, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>delta_window,symbol]
-       ,avg_volume:= frollmean(volume ,n = delta_window, align='right',fill=NA),symbol ]
+lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
+rally(prices)
+rally_avg(prices,200)
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
          !grepl('short|bear|inverse', name, ignore.case = T) &
          close<lag1high & sell_rally_day>2 & 
-         ((sell_rally_avg-delta_avg)/sell_rally_avg)>.018,
+         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='rally_etfs')
@@ -93,19 +49,9 @@ prices[order(RSI,decreasing=F)][
   write_strat(strat_name='revert_etfs')
 
 prices[order(lagging_corr_long, decreasing = F)][
-  date==max(date, na.rm=T) & avg_volume>250000 & close>7 &
-    delta_avg_short<.97 & lagging_corr_long> .4,
+  date==max(date, na.rm=T) & volume>250000 & close>7 &
+    avg_delta_short<.975 & lagging_corr_long> .35,
   .(date, symbol, close, volume)] %>%
   head(5) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='corr_long_etfs')
-
-# 
-# prices[date==max(date, na.rm=T) &
-#          lagging_corr< -.3 & volume%between%c(10000,100000) & close>7,
-#        .(date, symbol, close,
-#          buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-#   dplyr::mutate( stock=symbol, action='SELL',
-#                  strike_price=sell,
-#                  order_type='LMT', time_in_force='OPG') %>%
-#   write_strat(strat_name='corr_short_etfs')

@@ -4,51 +4,13 @@ if(length(args)==0){
 } else {
   setwd(args[1]) 
 }
+
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
-delta_window=25
-correlation_window=100
-
-prices = prices[symbol %in% prices[!is.na(close) & !is.na(open),.N,symbol][N>365, symbol]]
-setorder(prices, symbol, date)
-prices[,c("lag1close", "lag2close"):=shift(close, n = 1:2, type = "lag"),symbol]
-prices[,day_delta:= close/open]
-prices[,night_delta:= open/lag1close]
-prices[!is.na(volume),volume_avg:= SMA(volume, n = 30), symbol ]
-prices[,lag1volume:=shift(close, n = 1, type = "lag"),symbol]
-prices[,c("lag1_day_delta",    "lag2_day_delta" , "future_day_delta"  ):=
-         shift(day_delta,    n = c(1,2,-1), type = "lag"),symbol]
-prices[,c("lag1_night_delta",  "lag2_night_delta" , "future_night_delta" ):=
-         shift(night_delta,  n = c(1,2,-1), type = "lag"),symbol]
-
-
-prices[!is.na(day_delta) & !is.na(night_delta),
-       lagging_corr:=
-         runCor( day_delta, night_delta, correlation_window),
-       symbol]
+lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
 prices[date==max(date, na.rm=T) & 
-         volume%between%c(10000,50000) & close>5 & 
-         lagging_corr< -.45 ,
-       .(date, symbol, close,
-         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-  dplyr::mutate( stock=symbol, action='BUY', 
-                 strike_price=buy, 
-                 order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='correlated_long')
-
-prices[date==max(date, na.rm=T) & 
-         volume%between%c(10000,50000) & close>5 & 
-         lagging_corr< -.45 ,
-       .(date, symbol, close,
-         buy = trunc(close*97,3)/100 , sell = (trunc(close*103,3)+1)/100)] %>%
-  dplyr::mutate( stock=symbol, action='SELL', 
-                 strike_price=sell, 
-                 order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='correlated_short')
-
-prices[date==max(date, na.rm=T) & 
-         (volume/volume_avg <.75 | close/open>1.025) & 
+         (volume/avg_volume <.75 | close/open>1.025) & 
          volume%between%c(10000,20000) & close>5 ,
        .(date, symbol, close)] %>%
   dplyr::mutate( stock=symbol, action='BUY', 
@@ -56,9 +18,8 @@ prices[date==max(date, na.rm=T) &
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='updownmorn')
 
-
 prices[date==max(date, na.rm=T) & 
-         close/open>1.2 & night_delta>1 &
+         close/open>1.2 & open/lag1close>1 &
          volume>100000 & close>7 ,
        .(date, symbol, close, volume)][order(close*volume,decreasing=T)] %>%
   head(3) %>%
