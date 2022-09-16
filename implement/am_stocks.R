@@ -6,7 +6,6 @@ if(length(args)==0){
 }
 
 source("implement/imports.R", local=T)
-source("features.R", local=T)
 prices = fread('/tmp/prices.csv')
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
