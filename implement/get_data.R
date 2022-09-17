@@ -1,13 +1,10 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
 args = commandArgs(trailingOnly=TRUE)
-if(length(args)==0){args='~/stonksanalysis'}
-setwd(args[1])
-source("polygon.R", local=T)
-POLYKEY = Sys.getenv('POLYGONKEY')
-
-stopifnot(POLYKEY!='')
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 
 splits = 16
 
