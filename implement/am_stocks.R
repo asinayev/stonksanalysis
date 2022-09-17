@@ -39,7 +39,7 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
-  write_strat(strat_name='stockrally_long')
+  write_strat(strat_name='correlated_long')
 
 
 prices[date==max(date, na.rm=T) & 
@@ -51,4 +51,4 @@ prices[date==max(date, na.rm=T) &
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
-  write_strat(strat_name='stockrally_short')
+  write_strat(strat_name='correlated_short')
