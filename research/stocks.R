@@ -278,3 +278,21 @@ prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
                    ifelse(close<lag1high,lead1sellrally/lead1open-1,1-lead1sellrally/lead1open),
                    lead1sellrallydate-date,symbol))
 
+##############
+# weekday reversal strategy
+prices[symbol %in% prices[,.N,symbol][N>10,symbol],
+       max_delta_day := zoo::rollapply(data=shift(lead1close/close,1,type='lag'),
+                                       max, width = 5, align='right',fill=NA ),
+       .(symbol,wday(date)) ]
+prices[symbol %in% prices[,.N,symbol][N>10,symbol],
+       min_delta_day := zoo::rollapply(data=shift(lead1close/close,1,type='lag'),
+                                       min, width = 5, align='right',fill=NA ),
+       .(symbol,wday(date)) ]
+
+
+prices[min_delta_day>1.02 & avg_volume>100000 & lead1open/close>1.015 ][order(-min_delta_day),.SD[1:5],date]%>%
+  with(performance(date,1-lead1close/lead1open,
+                   1,symbol))
+prices[max_delta_day<.98  & avg_volume>100000 & lead1open/close>1.015 ][order(min_delta_day),.SD[1:5],date]%>%
+  with(performance(date,1-lead1close/lead1open,
+                   1,symbol))
