@@ -44,14 +44,14 @@ rally_avg(prices,200)
 # 5: 2022   0.039     -0.2  14.6    375          95 3.512000 days            45
 
 setorder(prices, symbol, date)
-prices[,lead1sellmono:= shift(sell_mono,1,type='lead'),symbol ]
 
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
+prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-prices[volume>75000 & close>7 & !short &
+prices[volume>75000 & close>7 & !short & !lever &
          lead1sellrally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
-         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018]%>%
+         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.012]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
 # revert ETFs

@@ -28,9 +28,9 @@ rally(prices)
 rally_avg(prices,200)
 
 prices[date==max(date, na.rm=T) & volume>75000 & close>7 & 
-         !grepl('short|bear|inverse', name, ignore.case = T) &
+         !grepl('short|bear|inverse|2x|3x|leverag|ultra', name, ignore.case = T) &
          close<lag1high & sell_rally_day>2 & 
-         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
+         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.012,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='rally_etfs')
