@@ -48,10 +48,11 @@ setorder(prices, symbol, date)
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-prices[volume>75000 & close>7 & !short & !lever &
+prices[volume>75000 & close>7 & !short & 
          lead1sellrally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
-         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.012]%>%
+         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
+           order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T),head(.SD,3),date] %>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
 # revert ETFs
@@ -116,5 +117,5 @@ prices[,rownum:=order(lagging_corr_long, decreasing = F),date]
 
 prices[volume>250000 & close>7 & !short &
          avg_delta_short<.975 & lagging_corr_long> .35][
-           order(rownum),.SD[1:5],date]%>%
+           order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
