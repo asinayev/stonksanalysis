@@ -5,6 +5,7 @@ require(ggplot2)
 
 setwd('~/stonksanalysis')
 source("polygon.R", local=T)
+source("implement/features.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
@@ -279,7 +280,7 @@ prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
                    lead1sellrallydate-date,symbol))
 
 ##############
-# weekday reversal strategy
+# weekday trend strategy
 prices[symbol %in% prices[,.N,symbol][N>10,symbol],
        max_delta_day := zoo::rollapply(data=shift(lead1close/close,1,type='lag'),
                                        max, width = 5, align='right',fill=NA ),
@@ -289,10 +290,11 @@ prices[symbol %in% prices[,.N,symbol][N>10,symbol],
                                        min, width = 5, align='right',fill=NA ),
        .(symbol,wday(date)) ]
 
-
-prices[min_delta_day>1.02 & avg_volume>100000 & lead1open/close>1.015 ][order(-min_delta_day),.SD[1:5],date]%>%
-  with(performance(date,1-lead1close/lead1open,
+#of those that have been failing every similar weekday, take the top 5 by premarket gain and set a limit sell on open
+#should also try adjusting for overall performance (e.g., stocks doing bad on that day, but ok in general)
+prices[min_delta_day>1.01 & avg_volume>500000 & lead1open/close<.985 ][order(-lead1open/close,decreasing=T),.SD[1:5],date]%>%
+  with(performance(date,lead1close/lead1open-1,
                    1,symbol))
-prices[max_delta_day<.98  & avg_volume>100000 & lead1open/close>1.015 ][order(min_delta_day),.SD[1:5],date]%>%
+prices[max_delta_day<.98  & avg_volume>500000 & lead1open/close>1.015 ][order(lead1open/close,decreasing=T),.SD[1:5],date]%>%
   with(performance(date,1-lead1close/lead1open,
                    1,symbol))
