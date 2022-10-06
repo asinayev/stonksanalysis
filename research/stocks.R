@@ -280,7 +280,7 @@ prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
                    lead1sellrallydate-date,symbol))
 
 ##############
-# overnight overbought
+# nightbot
 
 prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1.005 ]%>%
   with(performance(date,1-lead1close/lead1open,
