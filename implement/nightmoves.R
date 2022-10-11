@@ -14,6 +14,6 @@ current_moves_dt = data.table(current_moves$tickers)
 
 current_moves_dt[todaysChangePerc>15 & min.av>10000 & min.c>5] %>%
   dplyr::mutate( stock=ticker, action='SELL', 
-                 strike_price=trunc(prevDay.c*115,3)/1000, 
+                 strike_price=trunc(prevDay.c*1150,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
   write_strat(strat_name='nightbot')
