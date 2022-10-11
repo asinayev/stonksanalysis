@@ -5,6 +5,7 @@ require(ggplot2)
 
 setwd('~/stonksanalysis')
 source("polygon.R", local=T)
+source("implement/features.R", local=T)
 source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
