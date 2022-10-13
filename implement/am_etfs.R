@@ -53,7 +53,7 @@ prices[order(RSI,decreasing=F)][
   write_strat(strat_name='revert_etfs')
 
 prices[order(lagging_corr_long, decreasing = F)][
-  date==max(date, na.rm=T) & volume>250000 & close>7 &
+  date==max(date, na.rm=T) & ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 &
     avg_delta_short<.975 & lagging_corr_long> .35,
   .(date, symbol, close, volume)] %>%
   head(5) %>%

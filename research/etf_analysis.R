@@ -79,12 +79,7 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
-potential_buys = prices[volume>75000 & close>7 & !short &
-                          lead1sellrally/lead1open<2]
-potential_buys[!is.na(sell_rally_avg),
-               rownum:=order(RSI, decreasing = F),date] 
-
-potential_buys[
+prices[volume>75000 & close>7 & !short &
   lead1sellrally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
@@ -116,7 +111,7 @@ potential_buys[
 # 17: 2022   0.024     -2.1   6.3    264          78      4.776515            79         80       87
 prices[,rownum:=order(lagging_corr_long, decreasing = F),date] 
 
-prices[volume>250000 & close>7 & !short &
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
