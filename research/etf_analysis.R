@@ -116,3 +116,16 @@ prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 # 
+
+# Different selling approach for short etfs
+setorder(prices, symbol, date)
+prices[,sell_rally_increment:=ifelse((lag1close-lag2close) <  avg_range*.5 | 
+                                       is.na(avg_range), 
+                                     0, 1),symbol]
+prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
+prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
+prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
+prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
+
