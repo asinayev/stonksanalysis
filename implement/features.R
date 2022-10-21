@@ -34,16 +34,18 @@ regression_features = function(stock_dat){
 }
 
 rally = function(stock_dat,
-                 sell_rule=function(dat){dat$close>=dat$lag1high}){
+                 sell_rule=function(dat){dat$close>=dat$lag1high},
+                 varnames=c('sell_rally','sell_rally_date','sell_rally_day'),
+                 leadvarnames=c('lead1sellrally','lead1sellrallydate')){
   setorder(stock_dat, symbol, date)
   stock_dat[,sell_rally_increment:=shift(sell_rule(.SD),n=1,type='lag'),symbol]
   stock_dat[,sell_rally_increment:=ifelse(is.na(sell_rally_increment),0,sell_rally_increment)]
   stock_dat[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-  stock_dat[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
-  stock_dat[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
-  stock_dat[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
-  stock_dat[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
-  stock_dat[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
+  stock_dat[,c(varnames):=list(close[.N],
+                               date[.N],
+                               seq_len(.N)),.(sell_rally_increment,symbol)]
+  stock_dat[,c(leadvarnames):= list(shift(sell_rally,1,type='lead'),
+                                shift(sell_rally_date,1,type='lead')),symbol ]
 }
 
 
