@@ -40,11 +40,10 @@ rally = function(stock_dat,
   stock_dat[,sell_rally_increment:=shift(sell_rule(.SD),n=1,type='lag'),symbol]
   stock_dat[,sell_rally_increment:=ifelse(is.na(sell_rally_increment),0,sell_rally_increment)]
   stock_dat[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-  stock_dat[,paste0(varname,c('','_date','_day')):=list(close[.N],
-                               date[.N],
-                               seq_len(.N)),.(sell_rally_increment,symbol)]
-  stock_dat[,paste0(c('lead1','lead1'),varname,c('','date')):= list(shift(sell_rally,1,type='lead'),
-                                shift(sell_rally_date,1,type='lead')),symbol ]
+  varnames = paste0(varname,c('','_date','_day'))
+  stock_dat[,c(varnames):=list(close[.N],date[.N],seq_len(.N)),
+            .(sell_rally_increment,symbol)]
+  stock_dat[,sell_rally_increment:=NULL]
 }
 
 

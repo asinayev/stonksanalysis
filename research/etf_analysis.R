@@ -22,6 +22,21 @@ prices=fread("~/datasets/etf_prices_15y.csv")
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
+prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
+prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
+
+rally(prices,
+      sell_rule=function(dat){(dat$close-dat$lag1close)>=dat$avg_range*.5},
+      varname='sell_range_up')
+prices[,lead1sell_range_up:= shift(sell_range_up,1,type='lead'),symbol]
+prices[,lead1sell_range_update:= shift(sell_range_up_date,1,type='lead'),symbol]
+                                                                  
+rally(prices,
+      sell_rule=function(dat){(dat$lag1close-dat$close)>=dat$avg_range*.5},
+      varname='sell_range_down')
+prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
+prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
+
 rally_avg(prices,200)
 
 # Rally ETFs
@@ -50,11 +65,11 @@ prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
 prices[volume>75000 & close>7 & !short & 
-         lead1sellrally/lead1open<2 & 
+         lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
            order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T),head(.SD,3),date] %>%
-  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 # revert ETFs
 # perf drawdown days_traded
@@ -80,13 +95,13 @@ prices[volume>75000 & close>7 & !short &
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
 prices[volume>75000 & close>7 & !short &
-  lead1sellrally/lead1open<2 & 
+         lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
        ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
        ) 
     )][order(RSI,decreasing=F),head(.SD,5),date]%>%
-  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
 # perf drawdown days_traded
@@ -115,17 +130,5 @@ prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
-# 
 
 # Different selling approach for short etfs
-setorder(prices, symbol, date)
-prices[,sell_rally_increment:=ifelse((lag1close-lag2close) <  avg_range*.5 | 
-                                       is.na(avg_range), 
-                                     0, 1),symbol]
-prices[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-prices[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
-prices[,sell_rally_day:=rowid(sell_rally_increment,symbol)]
-prices[,lead1sellrally:= shift(sell_rally,1,type='lead'),symbol ]
-prices[,lead1sellrallydate:= shift(sell_rally_date,1,type='lead'),symbol ]
-
