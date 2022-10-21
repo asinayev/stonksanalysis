@@ -216,16 +216,16 @@ window = 100
 prices[,lagging_corr_long:=NULL]
 prices[symbol %in% prices[days_around>window, unique(symbol)], 
        lagging_corr_long:=
-         runCor( day_delta, night_delta, window),
+         runCor( close/open, open/lag1close, window),
        symbol]
 
 min_corr = .45
-prices[future_night_delta<.97 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
+prices[lead1open/close<.97 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
          volume%between%c(10000,50000) & close>7,
-          .(mean(future_day_delta,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
-prices[future_night_delta>1.03 & lagging_corr_long< -min_corr & 
+          .(mean(lead1close/lead1open,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
+prices[lead1open/close>1.03 & lagging_corr_long< -min_corr & 
          volume%between%c(10000,50000) & close>7,
-       .(mean(future_day_delta,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
+       .(mean(lead1close/lead1open,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
        .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
