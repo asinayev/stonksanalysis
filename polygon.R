@@ -207,7 +207,7 @@ get_hours_for_stocks = function(stocknames,
                                     origin="1970-01-01", tz = 'EST')]
   stockdat[,bar_date:=as_date(DateTime)]
   stockdat[,bar_hour:=lubridate::hour(DateTime)]
-  dcast(stockdat, stock+bar_date~bar_hour, value.var = c('AdjClose','Open')) %>%
+  dcast(stockdat, stock+bar_date~bar_hour, value.var = c('AdjClose','Open'), fun.aggregate=mean) %>%
     return
 }
 
