@@ -131,4 +131,3 @@ prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
 
-# Different selling approach for short etfs
