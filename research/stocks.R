@@ -76,13 +76,13 @@ rally(prices)
 # 19: 2022   0.022     -0.4   8.5    391         127             1           249
 prices[
   close/open>1.025 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & future_night_delta<.975]%>%
-    with(performance(date,future_day_delta-1,1,symbol))
+    volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
+    with(performance(date,lead1close/lead1open-1,1,symbol))
 
 prices[
-  volume/volume_avg <.75 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & future_night_delta<.975]%>%
-  with(performance(date,future_day_delta-1,1,symbol))
+  volume/avg_volume <.75 & spy_future_night_delta>.99 & 
+    volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
+  with(performance(date,lead1close/lead1open-1,1,symbol))
 
 prices[
   (volume/avg_volume <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
@@ -116,7 +116,7 @@ prices[
 # 18: 2021   0.035     -1.6  12.1    350         179             1           251
 # 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  (close/open)>1.20 & close>7 & (open/lag1close)>1 & 
+  (close/open)>1.20 & close>7 & (open/lag1close)>1 & spy_future_night_delta%between%c(.98,.99) &
     volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
@@ -150,6 +150,7 @@ sq=function(x)x^2
 # Regression strategy
 prices[,reg_predict := as.numeric(32)]
 prices[,reg_predict := NA]
+regression_features(prices)
 for (yr in 2008:2021 ){
   IS = prices[year(date) %between% c(yr-3, yr-1) & volume>75000 & close>7 ]
   lm1 = lm(future_day_delta ~
@@ -201,12 +202,13 @@ prices[symbol %in% prices[days_around>window, unique(symbol)],
        symbol]
 
 min_corr = .45
-prices[lead1open/close<.97 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
-         volume%between%c(10000,50000) & close>7,
-          .(mean(lead1close/lead1open,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
-prices[lead1open/close>1.03 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,50000) & close>7,
-       .(mean(lead1close/lead1open,na.rm=T),.N, length(unique(date))), year(date)][order(year)]
+prices[lead1open/close<.98 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
+         volume%between%c(10000,50000) & close>7]%>% 
+  with(performance(date,lead1close/lead1open-1,1,symbol))
+
+prices[lead1open/close>1.02 & lagging_corr_long< -min_corr & 
+         volume%between%c(10000,50000) & close>7]%>% 
+  with(performance(date,1-lead1close/lead1open,1,symbol))
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
        .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
@@ -257,8 +259,8 @@ prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
              ][order(high/close),head(.SD,5),date]
   )%>%
   with(performance(date,
-                   ifelse(close<lag1high,lead1sellrally/lead1open-1,1-lead1sellrally/lead1open),
-                   lead1sellrallydate-date,symbol))
+                   ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead1sell_rally/lead1open),
+                   lead1sell_rallydate-date,symbol))
 
 ##############
 # nightbot
