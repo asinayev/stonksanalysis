@@ -194,6 +194,7 @@ x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 # Overnight strategy makes money over 50 trades (either long or short) with few exceptions
+# There must be a way to get this to work by lowering thresholds
 window = 100
 prices[,lagging_corr_long:=NULL]
 prices[symbol %in% prices[days_around>window, unique(symbol)], 
