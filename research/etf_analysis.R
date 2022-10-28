@@ -20,6 +20,10 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 prices=fread("~/datasets/etf_prices_15y.csv")
 
+prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
+prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
+
+
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
@@ -36,6 +40,14 @@ rally(prices,
       varname='sell_range_down')
 prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
 prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
+
+prices[symbol %in% prices[,.N,symbol][N>10,symbol],
+       ma10:= SMA(close, n = 5 ),symbol ]
+rally(prices,
+      sell_rule=function(dat){(dat[,ma10<shift(ma10,n=1,type='lag') & shift(ma10,n=1,type='lag')>shift(ma10,n=2,type='lag')] ) },
+      varname='sell_slope')
+prices[,lead1sell_slope:= shift(sell_slope,1,type='lead'),symbol]
+prices[,lead1sell_slopedate:= shift(sell_slope_date,1,type='lead'),symbol]
 
 rally_avg(prices,200)
 
@@ -60,16 +72,19 @@ rally_avg(prices,200)
 # 15: 2022   0.032     -3.1   6.0    186          95      4.451613            28        45
 
 setorder(prices, symbol, date)
-
-prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
-prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
-
 prices[volume>75000 & close>7 & !short & 
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
            order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T),head(.SD,3),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+#also works
+prices[volume>75000 & close>7 & !short & 
+         lead1sell_rally/lead1open<2 & 
+         close<lag1high & sell_rally_day>2 &
+         ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
+           order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T),head(.SD,3),date] %>%
+  with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_range_update-date,symbol))
 
 # revert ETFs
 # perf drawdown days_traded
@@ -129,5 +144,9 @@ prices[,rownum:=order(lagging_corr_long, decreasing = F),date]
 prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(-rownum),head(.SD,5),date]%>%
-  with(performance(date,lead1sellrally/lead1open-1,lead1sellrallydate-date,symbol))
-
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+#also works
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
+         avg_delta_short<.975 & lagging_corr_long> .35][
+           order(-rownum),head(.SD,5),date]%>%
+  with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_rallydate-date,symbol))
