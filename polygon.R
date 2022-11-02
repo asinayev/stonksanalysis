@@ -230,7 +230,3 @@ sampled_data=function(key, date, end_date = as.Date(date)+365,
       return
   }
 }
-
-
-
-
