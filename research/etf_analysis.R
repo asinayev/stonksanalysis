@@ -9,6 +9,10 @@ source("implement/features.R", local=T)
 source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
+key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
+           'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
+           'near term bonds'='SPSB', 'small cap value'='AVUV')
+
 # prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
 #   rbindlist(fill=T) %>%
 #   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
@@ -50,6 +54,16 @@ prices[,lead1sell_slope:= shift(sell_slope,1,type='lead'),symbol]
 prices[,lead1sell_slopedate:= shift(sell_slope_date,1,type='lead'),symbol]
 
 rally_avg(prices,200)
+
+prices_wide = prices %>%
+  dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
+price_corrs = data.frame(prices_wide)[,names(prices_wide) != 'date']%>% 
+  cor(use='pairwise.complete') %>%
+  data.table
+
+price_corrs=price_corrs[,!apply(price_corrs[,is.na(.SD),.SDcols=key_etfs],1,all)]
+data.table(key_etf = key_etfs[unlist(apply(price_corrs[,.SD,.SDcols=key_etfs],1,which.max))],
+           symbol = names(price_corrs))
 
 # Rally ETFs
 # perf drawdown days_traded
