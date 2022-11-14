@@ -9,10 +9,6 @@ source("implement/features.R", local=T)
 source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
-           'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
-           'near term bonds'='SPSB', 'small cap value'='AVUV')
-
 # prices=lapply(Sys.Date()-365*10:1, sampled_data, key=POLYKEY, ticker_type='ETF', details=T) %>%   
 #   rbindlist(fill=T) %>%
 #   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
@@ -55,15 +51,7 @@ prices[,lead1sell_slopedate:= shift(sell_slope_date,1,type='lead'),symbol]
 
 rally_avg(prices,200)
 
-prices_wide = prices %>%
-  dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
-price_corrs = data.frame(prices_wide)[,names(prices_wide) != 'date']%>% 
-  cor(use='pairwise.complete') %>%
-  data.table
-
-price_corrs=price_corrs[,!apply(price_corrs[,is.na(.SD),.SDcols=key_etfs],1,all)]
-data.table(key_etf = key_etfs[unlist(apply(price_corrs[,.SD,.SDcols=key_etfs],1,which.max))],
-           symbol = names(price_corrs))
+prices=key_etfs(prices)
 
 # Rally ETFs
 # perf drawdown days_traded
@@ -86,7 +74,7 @@ data.table(key_etf = key_etfs[unlist(apply(price_corrs[,.SD,.SDcols=key_etfs],1,
 # 15: 2022   0.032     -3.1   6.0    186          95      4.451613            28        45
 
 setorder(prices, symbol, date)
-prices[volume>75000 & close>7 & !short & 
+prices[volume>75000 & close>7 & !short & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
@@ -123,7 +111,7 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
-prices[volume>75000 & close>7 & !short &
+prices[volume>75000 & close>7 & !short  & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
@@ -155,12 +143,12 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2022   0.019     -2.2   8.4    449         136      5.031180            87         28        79         80       87
 prices[,rownum:=order(lagging_corr_long, decreasing = F),date]
 
-prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 #also works
-prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & #!short &
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(-rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_rallydate-date,symbol))

@@ -62,3 +62,27 @@ rally_avg = function(stock_dat, window){
                                             width=window, align='right',by.column = FALSE,fill=NA
             ),symbol ]
   }
+
+key_etfs = function(stock_dat, 
+                    key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
+                               'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
+                               'near term bonds'='SPSB', 'small cap value'='AVUV')){
+  which_max_nulls=function(x){
+    y=which.max(x)
+    if(length(y)>0){return(y)}else{return(NA)}
+  }
+  
+  stock_dat[,fullday_delta:=close/lag1close]
+  prices_wide = stock_dat %>%
+    dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
+  price_corrs = data.frame(prices_wide)[,names(prices_wide) != 'date']%>% 
+    cor(use='pairwise.complete') %>%
+    data.table
+  
+  price_corrs=price_corrs[,!apply(price_corrs[,is.na(.SD),.SDcols=key_etfs],1,all)]
+  etf_mapper=data.table(key_etf = key_etfs[unlist(apply(price_corrs[,.SD,.SDcols=key_etfs],1,which_max_nulls))],
+                        symbol = names(price_corrs))
+  stock_dat=merge(stock_dat,etf_mapper)
+  setorder(stock_dat, symbol, date)
+  return(stock_dat)
+}
