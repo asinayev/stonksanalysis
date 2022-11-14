@@ -67,22 +67,18 @@ key_etfs = function(stock_dat,
                     key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
                                'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
                                'near term bonds'='SPSB', 'small cap value'='AVUV')){
-  which_max_nulls=function(x){
-    y=which.max(x)
-    if(length(y)>0){return(y)}else{return(NA)}
-  }
-  
   stock_dat[,fullday_delta:=close/lag1close]
   prices_wide = stock_dat %>%
     dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
   price_corrs = data.frame(prices_wide)[,names(prices_wide) != 'date']%>% 
-    cor(use='pairwise.complete') %>%
-    data.table
-  
-  price_corrs=price_corrs[,!apply(price_corrs[,is.na(.SD),.SDcols=key_etfs],1,all)]
-  etf_mapper=data.table(key_etf = key_etfs[unlist(apply(price_corrs[,.SD,.SDcols=key_etfs],1,which_max_nulls))],
-                        symbol = names(price_corrs))
-  stock_dat=merge(stock_dat,etf_mapper)
-  setorder(stock_dat, symbol, date)
-  return(stock_dat)
+    cor(use='pairwise.complete')
+  rows_w_values = !apply(price_corrs,1,function(x)all(is.na(x)))
+  price_corrs=price_corrs[rows_w_values,rows_w_values]
+  etf_mapper=data.table(key_etf = key_etfs[unlist(apply(price_corrs[,key_etfs],1,which.max))],
+                        symbol = colnames(price_corrs))
+  print("deleting %s ETFs due to no correlation" %>%
+          sprintf(sum(!rows_w_values)))
+  out=merge(stock_dat, etf_mapper)
+  setorder(out, symbol, date)
+  return(out)
 }

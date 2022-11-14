@@ -11,7 +11,7 @@ splits = 16
 stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                    financials=F, cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
-                               financials=F, cores=splits, ticker_type='INDEX'))
+                               financials=F, cores=splits, ticker_type='ETV'))
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
@@ -35,7 +35,7 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 prices[,key_segments:=key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI')]
 
 prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
-  date==max(date, na.rm=T) & volume>75000 & close>7 & !short &
+  date==max(date, na.rm=T) & volume>75000 & close>7 & !short & key_segments &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
        .(date, symbol, close, volume)] %>%
@@ -44,7 +44,7 @@ prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
   write_strat(strat_name='rally_etfs')
 
 prices[order(RSI,decreasing=F)][
-  date==max(date, na.rm=T) & volume>75000 & close>7 & 
+  date==max(date, na.rm=T) & volume>75000 & close>7 & key_segments &
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.075 |
             ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
@@ -57,7 +57,7 @@ prices[order(RSI,decreasing=F)][
   write_strat(strat_name='revert_etfs')
 
 prices[order(lagging_corr_long, decreasing = F)][
-  date==max(date, na.rm=T) & ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 &
+  date==max(date, na.rm=T) & ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_segments &
     avg_delta_short<.975 & lagging_corr_long> .35,
   .(date, symbol, close, volume)] %>%
   head(5) %>%
