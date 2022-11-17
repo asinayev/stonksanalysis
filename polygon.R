@@ -16,12 +16,24 @@ hit_polygon = function(link, tries = 3,results_contain=F){
   return(counter)
 }
 
+get_all_results = function(link,results_contain=F){
+  response = hit_polygon(link,results_contain = F)
+  if(!'results' %in% names(response)){return(NULL)}
+  results=response$results
+  while('next_url' %in% names(response)){
+    response=hit_polygon(response$next_url,results_contain = F)
+    if(!'results' %in% names(response)){break}
+    results=rbind(results,response$results)
+  }
+  return(results)
+}
+
 select_field = function(response, field){
     return(response[['results']][[field]])
 }
 
 stock_deets = function( key, stockname, date){
-  x = "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
+  x = "https://api.polygon.io/v3/reference/tickers/%s?date=%s&apiKey=%s" %>%
     sprintf(stockname, date, key) %>%
     hit_polygon
   if(!'results' %in% names(x)){return(NULL)}

@@ -13,14 +13,14 @@ get_day = function(date, key, yesterday_news=F){
                                       unlist(lapply(tickers, function(x)x[[1]])),
                                       NA)]
     today_news = today_news[!sapply(tickers, is.null)]
-    today_news[sapply(keywords, is.null),keywords:=list("") ]
     if('keywords' %in% names(today_news)){
-      today_news = today_news[,.(ticker=unlist(tickers) ),
+      today_news[sapply(keywords, is.null),keywords:=list("") ]
+      today_news = today_news[,.(ticker=as.character(unlist(tickers)) ),
                               .(id, publisher.name, published_utc, title, author, single_ticker)] %>%
         merge(today_news[,.(keywords=first(keywords) ),
                          .(id, publisher.name, published_utc, title, author, single_ticker)], all.x=T)
     } else {
-      today_news = today_news[,.(ticker=unlist(tickers), keywords='None' ),
+      today_news = today_news[,.(ticker=as.character(unlist(tickers)), keywords='None' ),
                               .(id, publisher.name, published_utc, title, author, single_ticker)]
     }
     today_news[,date:=date]
@@ -51,12 +51,15 @@ get_day = function(date, key, yesterday_news=F){
   today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&apiKey=%s&limit=1000" %>%
     sprintf(open %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"),
             close %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"), key) %>%
-    hit_polygon(results_contain = 'published_utc')
+    get_all_results(results_contain = 'published_utc')
   yesterday_moves = "https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/%s?adjusted=true&apiKey=%s" %>%
     sprintf(yesterday, key) %>%
     hit_polygon
+  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
+    return(NULL)
+  }
   day_moves = day_moves$results%>%data.table
-  today_news = today_news$results%>%data.table
+  today_news = today_news%>%data.table
   
   yesterday_moves = yesterday_moves$results%>%data.table
   
@@ -67,9 +70,9 @@ get_day = function(date, key, yesterday_news=F){
 
 days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
-# news_moves = sample(days_to_look_at, 20) %>%
-#   lapply(get_day, key=POLYKEY) %>%
-#   rbindlist(use.names=TRUE, fill=T)
+news_moves = as.Date(as.Date("2022-04-20"):as.Date("2022-04-29"),origin='1970-01-01') %>%
+  lapply(get_day, key=POLYKEY) %>%
+  rbindlist(use.names=TRUE, fill=T)
 
 news_moves = parallel::mclapply(
   days_to_look_at,
@@ -77,7 +80,7 @@ news_moves = parallel::mclapply(
   yesterday_news=F
 ) %>%
   rbindlist(use.names=TRUE, fill=T)
-financials = stock_deets_v(POLYKEY, news_moves$ticker, 16)
+financials = stock_deets_v(POLYKEY, news_moves$ticker, 16, Sys.Date()-1)
 news_moves = merge(news_moves,data.frame(financials)[,!is.na(names(financials))],
                    by='ticker')
 
@@ -90,7 +93,7 @@ byword = news_moves[!sapply(keywords, is.null),
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(month,decreasing = T)]
+         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(year,month,decreasing = T)]
 # short penny stocks with GlobeNewswire's "Health" keywords
 pennyshort_trades = byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
                            .(date,ticker,open,delta)]
@@ -138,7 +141,7 @@ byword[log(market_cap)<21 & publisher.name=='Benzinga' &
          overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
-         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(month,decreasing = T)]
+         length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(year,month,decreasing = T)]
 # short Benzinga's penny stocks with Penny Stocks and Small Cap keywords and upward movement >1%
 
 
