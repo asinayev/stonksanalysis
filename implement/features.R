@@ -73,7 +73,7 @@ key_etfs = function(stock_dat,
   price_corrs = data.frame(prices_wide)[,names(prices_wide) != 'date']%>% 
     cor(use='pairwise.complete')
   rows_w_values = !apply(price_corrs,1,function(x)all(is.na(x)))
-  price_corrs=price_corrs[rows_w_values,rows_w_values]
+  price_corrs=abs(price_corrs[rows_w_values,rows_w_values])
   etf_mapper=data.table(key_etf = key_etfs[unlist(apply(price_corrs[,key_etfs],1,which.max))],
                         symbol = colnames(price_corrs))
   print("deleting %s ETFs due to no correlation" %>%

@@ -32,7 +32,7 @@ prices=key_etfs(prices)
 
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
-prices[,key_segments:=key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI')]
+prices[,key_segments := (key_etf != "USO")]
 
 prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
   date==max(date, na.rm=T) & volume>75000 & close>7 & !short & key_segments &

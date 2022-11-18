@@ -74,7 +74,7 @@ prices=key_etfs(prices)
 # 15: 2022   0.032     -3.1   6.0    186          95      4.451613            28        45
 
 setorder(prices, symbol, date)
-prices[volume>75000 & close>7 & !short & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[volume>75000 & close>7 & !short & #key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
@@ -111,7 +111,7 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
-prices[volume>75000 & close>7 & !short  & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[volume>75000 & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
