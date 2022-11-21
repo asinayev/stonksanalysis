@@ -27,7 +27,7 @@ prices[,days_around:=cumsum(!is.na(close)),symbol]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-# rally_avg(prices,200)
+# rally_avg(prices,100)
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -116,7 +116,7 @@ prices[
 # 18: 2021   0.035     -1.6  12.1    350         179             1           251
 # 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  (close/open)>1.20 & close>7 & (open/lag1close)>1 & spy_future_night_delta%between%c(.98,.99) &
+  (close/open)>1.20 & close>7 & (open/lag1close)>1 & spy_future_night_delta<1.005 &
     volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
@@ -270,7 +270,7 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
   with(performance(date,1-lead1close/lead1open,
                    1,symbol))
 
-################
+##############
 # No working strategies here yet
 wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
   pennyshort_hours = get_hours_for_stocks(trade_data$symbol,
