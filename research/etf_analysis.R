@@ -42,9 +42,9 @@ prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
 prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
 
 prices[symbol %in% prices[,.N,symbol][N>10,symbol],
-       ma10:= SMA(close, n = 5 ),symbol ]
+       ma5:= SMA(close, n = 5 ),symbol ]
 rally(prices,
-      sell_rule=function(dat){(dat[,ma10<shift(ma10,n=1,type='lag') & shift(ma10,n=1,type='lag')>shift(ma10,n=2,type='lag')] ) },
+      sell_rule=function(dat){(dat[,ma5<shift(ma5,n=1,type='lag') & shift(ma5,n=1,type='lag')>shift(ma5,n=2,type='lag')] ) },
       varname='sell_slope')
 prices[,lead1sell_slope:= shift(sell_slope,1,type='lead'),symbol]
 prices[,lead1sell_slopedate:= shift(sell_slope_date,1,type='lead'),symbol]
