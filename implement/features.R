@@ -82,3 +82,16 @@ key_etfs = function(stock_dat,
   setorder(out, symbol, date)
   return(out)
 }
+
+clean_news = function(news){
+  news[,single_ticker:=ifelse(lapply(tickers, length)==1,
+                              unlist(lapply(tickers, function(x)x[[1]])),
+                              NA)]
+  news[sapply(keywords, is.null),keywords:=list("") ]
+  news[sapply(tickers, is.logical),tickers:=list("") ]
+  news = news[,.(symbol=unlist(tickers) ),
+              .(id, publisher.name, date, title, author, single_ticker)]%>%
+    merge(news[,.(keywords=first(keywords) ),
+               .(id, publisher.name, date, title, author, single_ticker)], all.x=T)
+  news
+}

@@ -242,3 +242,33 @@ sampled_data=function(key, date, end_date = as.Date(date)+365,
       return
   }
 }
+
+get_newsday = function(date, key, yesterday_news=T, apply_=F){
+  
+  if(!lubridate::wday(date) %between% c(2,6)){
+    return(NULL)
+  } else if (lubridate::wday(date)==2){
+    yesterday = date-3
+  } else {
+    yesterday = date-1
+  }
+  if(yesterday_news){
+    open = lubridate::as_datetime(paste(yesterday,"12:00:00",collapse = "T"),tz='America/New_York')
+  } else {
+    open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')
+  }
+  if(apply_){
+    close = lubridate::as_datetime(paste(date,"09:30:00",collapse = "T"),tz='America/New_York')
+  } else {
+    close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
+  }
+  today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&apiKey=%s&limit=1000" %>%
+    sprintf(open %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"),
+            close %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"), key) %>%
+    get_all_results(results_contain = 'published_utc')
+  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
+    return(NULL)
+  }
+  today_news$date=yesterday
+  today_news%>%data.table
+}

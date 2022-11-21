@@ -5,61 +5,22 @@ setwd('~/stonksanalysis')
 source("polygon.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-get_day = function(date, key, yesterday_news=F){
-  
-  if(!lubridate::wday(date) %between% c(2,6)){
-    return(NULL)
-  } else if (lubridate::wday(date)==2){
-    yesterday = date-3
-  } else {
-    yesterday = date-1
-  }
-  if(yesterday_news){
-    open = lubridate::as_datetime(paste(yesterday,"09:30:00",collapse = "T"),tz='America/New_York')
-    close = lubridate::as_datetime(paste(yesterday,"15:00:00",collapse = "T"),tz='America/New_York')
-  } else {
-    open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')
-    close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
-  }
-  today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&apiKey=%s&limit=1000" %>%
-    sprintf(open %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"),
-            close %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"), key) %>%
-    get_all_results(results_contain = 'published_utc')
-  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
-    return(NULL)
-  }
-  today_news$date=date
-  today_news%>%data.table
-}
-
-clean_news = function(news){
-  news[,single_ticker:=ifelse(lapply(tickers, length)==1,
-                              unlist(lapply(tickers, function(x)x[[1]])),
-                              NA)]
-  news[sapply(keywords, is.null),keywords:=list("") ]
-  news[sapply(tickers, is.logical),tickers:=list("") ]
-  news = news[,.(symbol=unlist(tickers) ),
-                    .(id, publisher.name, date, title, author, single_ticker)]%>%
-    merge(news[,.(keywords=first(keywords) ),
-                     .(id, publisher.name, date, title, author, single_ticker)], all.x=T)
-  news
-}
-
 days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
-just_news = as.Date(as.Date("2022-04-20"):as.Date("2022-04-29"),origin='1970-01-01') %>%
-  lapply(get_day, key=POLYKEY) %>%
-  rbindlist(use.names=TRUE, fill=T)
+# just_news = as.Date(as.Date("2022-04-20"):as.Date("2022-04-29"),origin='1970-01-01') %>%
+#   lapply(get_newsday, key=POLYKEY) %>%
+#   rbindlist(use.names=TRUE, fill=T)
 
 just_news = parallel::mclapply(
   days_to_look_at,
-  get_day, key=POLYKEY,mc.cores = 16,
+  get_newsday, key=POLYKEY,mc.cores = 16,
   yesterday_news=F
 ) %>%
   rbindlist(use.names=TRUE, fill=T)
 
-news_moves = merge(clean_news(just_news),
-                   prices, by=c('date','symbol'), all.x=T)
+news_moves = just_news %>%
+  clean_news %>%
+  merge(prices, by=c('date','symbol'), all.x=T)
 
 byword = news_moves[!sapply(keywords, is.null),
                     .(keywords=unlist(keywords) ),
@@ -135,24 +96,16 @@ unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,pu
 ##
 ## WINNING
 ##
-news_moves[grepl('top|beat|surpass', title, ignore.case = T) &
-           grepl('earning', title, ignore.case = T) &
+news_moves[grepl('earning', title, ignore.case = T) &
            grepl('revenue', title, ignore.case = T) &
-           #& !grepl('financ', name, ignore.case = T)
            publisher.name=='Zacks Investment Research' &
-           lag1volume>50000 & lag1close>5 &
-           lag1close<100 & 
-           lag1close/lag1open <.99 & 
-           open/lag1close <= 1
+           avg_volume>50000 & volume>50000 & close>5 & 
+           (close/open <.99  )
            #& !is.na(single_ticker)
            ,
            max(date),
-           .(date,symbol,sell_rally,open)][, .(mean(sell_rally/open),.N), .(year(date))][order(year)]
-
-news_moves[grepl('(earnings).*(revenue)', title, ignore.case = T) &
-             o/prev_close>1 & prev_vol>100000 
-           & !is.na(single_ticker),max(date),
-           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N),.(year(date),month(date))][order(year,month)]
+           .(date,symbol,lead1sell_rally,lead1open)][, .(mean(lead1sell_rally/lead1open),.N), 
+                                           .(year(date))]#,month(date))][order(year,month)]
 
 
 news_moves[grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T) & 
