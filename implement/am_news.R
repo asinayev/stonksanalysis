@@ -1,15 +1,12 @@
-require(tidyquant, quietly = T)
-require(data.table, quietly = T)
-
 args = commandArgs(trailingOnly=TRUE)
-if(length(args)==0){args='~/stonksanalysis'}
-setwd(args[1])
-source("polygon.R", local=T)
-POLYKEY = Sys.getenv('POLYGONKEY')
-
-stopifnot(POLYKEY!='')
-
+if(length(args)==0){
+  setwd('~/stonksanalysis')
+} else {
+  setwd(args[1]) 
+}
+source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
+
 setorder(prices, symbol, date)
 prices = prices[!is.na(close), tail(.SD,126), by=symbol]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
