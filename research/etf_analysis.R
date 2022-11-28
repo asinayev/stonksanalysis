@@ -51,7 +51,7 @@ prices[,lead1sell_slopedate:= shift(sell_slope_date,1,type='lead'),symbol]
 
 rally_avg(prices,200)
 
-prices=key_etfs(prices)
+prices=key_etfs(prices,low_corr_thresh=.33)
 
 # Rally ETFs
 # perf drawdown days_traded
@@ -111,7 +111,7 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
-prices[volume>75000 & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[volume>75000 & close>7 & #key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
          lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |

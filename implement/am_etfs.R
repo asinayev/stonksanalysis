@@ -28,11 +28,11 @@ prices = prices[, .SD[1], by=.(stock, Date)][
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,200)
-prices=key_etfs(prices)
+prices=key_etfs(prices, low_corr_thresh=.33)
 
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
-prices[,key_segments := (key_etf != "USO")]
+prices[,key_segments := !(key_etf %in% c("USO","none"))]
 
 prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
   date==max(date, na.rm=T) & volume>75000 & close>7 & !short & key_segments &

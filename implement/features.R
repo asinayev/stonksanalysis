@@ -66,7 +66,8 @@ rally_avg = function(stock_dat, window){
 key_etfs = function(stock_dat, 
                     key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
                                'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
-                               'near term bonds'='SPSB', 'small cap value'='AVUV')){
+                               'near term bonds'='SPSB', 'small cap value'='AVUV'),
+                    low_corr_thresh=.5){
   stock_dat[,fullday_delta:=close/lag1close]
   prices_wide = stock_dat %>%
     dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
@@ -74,8 +75,10 @@ key_etfs = function(stock_dat,
     cor(use='pairwise.complete')
   rows_w_values = !apply(price_corrs,1,function(x)all(is.na(x)))
   price_corrs=abs(price_corrs[rows_w_values,rows_w_values])
+  low_corr = apply(price_corrs[,key_etfs] ,1,max,na.rm=T)<low_corr_thresh
   etf_mapper=data.table(key_etf = key_etfs[unlist(apply(price_corrs[,key_etfs],1,which.max))],
                         symbol = colnames(price_corrs))
+  etf_mapper[low_corr,key_etf:='none']
   print("deleting %s ETFs due to no correlation" %>%
           sprintf(sum(!rows_w_values)))
   out=merge(stock_dat, etf_mapper)
