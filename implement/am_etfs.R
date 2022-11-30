@@ -33,9 +33,10 @@ prices=key_etfs(prices, low_corr_thresh=.33)
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 prices[,key_segments := !(key_etf %in% c("USO","none"))]
+prices[,us_stocks := (key_etf %in% c("AVUV","JEPI","WCLD"))]
 
 prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
-  date==max(date, na.rm=T) & volume>75000 & close>7 & !short & key_segments &
+  date==max(date, na.rm=T) & volume>75000 & close>7 & ifelse(short, us_stocks, T) &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
        .(date, symbol, close, volume)] %>%
@@ -44,7 +45,7 @@ prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
   write_strat(strat_name='rally_etfs')
 
 prices[order(RSI,decreasing=F)][
-  date==max(date, na.rm=T) & volume>75000 & close>7 & key_segments &
+  date==max(date, na.rm=T) & volume>75000 & close>7 &  key_segments &
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.075 |
             ((running_low == low | RSI<.6) & ((avg_range/close) > .05)

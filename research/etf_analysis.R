@@ -23,6 +23,24 @@ prices=fread("~/datasets/etf_prices_15y.csv")
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
+prices[,RSI2:=NULL ]
+prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+       RSI2:=SMA(pmax(0, close-lag1close) ,n = 2, align='right',fill=NA)/
+         SMA(pmax(0, lag1close-close) ,n = 2, align='right',fill=NA),symbol ]
+
+prices[,PDM:=NULL ]
+prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+       PDM:=SMA(pmax(0, high-lag1high) ,n = 3, align='right',fill=NA),
+       symbol ]
+prices[,NDM:=NULL ]
+prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+       NDM:=SMA(pmax(0, lag1low-low  ) ,n = 3, align='right',fill=NA),
+       symbol ]
+prices[,ADX:=NULL ]
+prices[(symbol %in% prices[!is.na((PDM-NDM)/(PDM+NDM)),.N,symbol][N>30,symbol]) & !is.na((PDM-NDM)/(PDM+NDM)),
+       ADX:=EMA((PDM-NDM)/(PDM+NDM) ,n = 30, align='right',fill=NA),
+       symbol ]
+
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
@@ -74,7 +92,7 @@ prices=key_etfs(prices,low_corr_thresh=.33)
 # 15: 2022   0.032     -3.1   6.0    186          95      4.451613            28        45
 
 setorder(prices, symbol, date)
-prices[volume>75000 & close>7 & !short & #key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[volume>75000 & close>7 & 
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
