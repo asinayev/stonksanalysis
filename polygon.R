@@ -243,7 +243,7 @@ sampled_data=function(key, date, end_date = as.Date(date)+365,
   }
 }
 
-get_newsday = function(date, key, yesterday_news=T, apply_=F){
+get_prev_day_news = function(date, key, full_prevday=T, apply_=F){
   
   if(!lubridate::wday(date) %between% c(2,6)){
     return(NULL)
@@ -252,7 +252,7 @@ get_newsday = function(date, key, yesterday_news=T, apply_=F){
   } else {
     yesterday = date-1
   }
-  if(yesterday_news){
+  if(full_prevday){
     open = lubridate::as_datetime(paste(yesterday,"12:00:00",collapse = "T"),tz='America/New_York')
   } else {
     open = lubridate::as_datetime(paste(yesterday,"16:00:00",collapse = "T"),tz='America/New_York')

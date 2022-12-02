@@ -13,8 +13,8 @@ days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
 just_news = parallel::mclapply(
   days_to_look_at,
-  get_newsday, key=POLYKEY,mc.cores = 16,
-  yesterday_news=F
+  get_prev_day_news, key=POLYKEY,mc.cores = 16,
+  full_prevday=F
 ) %>%
   rbindlist(use.names=TRUE, fill=T)
 

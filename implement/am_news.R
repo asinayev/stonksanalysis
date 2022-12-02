@@ -11,7 +11,7 @@ setorder(prices, symbol, date)
 prices = prices[!is.na(close), tail(.SD,126), by=symbol]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
-just_news = get_newsday(Sys.Date(),key=POLYKEY,yesterday_news=F, apply_=T)
+just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
 
 news_moves = just_news %>%
   clean_news %>%
@@ -23,6 +23,8 @@ news_moves[grepl('earning', title, ignore.case = T) &
            publisher.name=='Zacks Investment Research' &
            avg_volume>50000 & volume>50000 & close>5  & 
            close/open <.99] %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(dplyr::row_number()==1) %>%
   dplyr::mutate(action='BUY', 
                 order_type='MKT',
                 time_in_force='OPG') %>%
