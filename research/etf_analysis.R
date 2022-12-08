@@ -81,30 +81,30 @@ prices=key_etfs(prices,low_corr_thresh=.33)
 
 # Rally ETFs
 # perf drawdown days_traded
-# 1: 0.02193333     -5.8        1078
+# 1: 0.02186667     -4.6        1256
 # year average drawdown total trades days_traded avg_days_held stocks_traded
-# 1: 2008   0.057     -0.5   3.6     62          36      4.741935            11
-# 2: 2009   0.008     -0.9   1.1    140          82      4.685714            11
+# 1: 2008   0.054     -0.5   3.3     62          36      4.467742            14
+# 2: 2009   0.006     -0.9   0.9    140          82      4.592857            11
 # 3: 2010   0.011     -0.3   1.3    117          96      3.777778             8
-# 4: 2011   0.030     -0.6   4.1    140          83      4.192857            10
-# 5: 2012   0.019      0.0   0.4     19          15      2.157895             8
-# 6: 2013   0.031     -0.2   0.5     17          15      7.117647             3
-# 7: 2014  -0.015     -1.5  -0.6     40          32      3.800000             8
-# 8: 2015   0.074     -1.3   4.1     55          35      3.345455            11
-# 9: 2016   0.005     -2.8   1.3    263         121      5.494297            18
-# 10: 2017   0.018     -1.6   1.4     78          68      3.448718             8
-# 11: 2018   0.018     -0.6   0.9     51          49      5.215686            10
-# 12: 2019   0.034     -0.5   3.4    100          72      4.440000             7
-# 13: 2020  -0.017     -5.8  -3.7    219         109      5.232877            28
-# 14: 2021   0.024     -4.9   9.2    390         170      4.794872            34
-# 15: 2022   0.032     -3.1   6.0    186          95      4.451613            28        45
+# 4: 2011   0.029     -0.6   4.1    141          84      4.219858            11
+# 5: 2012   0.018      0.0   0.3     19          15      2.157895             7
+# 6: 2013   0.030     -0.2   0.6     19          16      6.684211             4
+# 7: 2014  -0.009     -1.5  -0.4     47          37      3.957447             9
+# 8: 2015   0.049     -1.3   3.3     68          47      3.882353            15
+# 9: 2016   0.007     -4.4   2.0    267         124      5.827715            23
+# 10: 2017   0.019     -2.5   1.5     79          68      3.481013            10
+# 11: 2018   0.033     -1.2   3.4    103          83      4.466019            14
+# 12: 2019   0.016     -2.4   3.0    188         131      5.340426            12
+# 13: 2020   0.016     -4.6   4.5    283         139      4.936396            40
+# 14: 2021   0.023     -0.5   9.0    399         173      4.503759            35
+# 15: 2022   0.026     -3.3   7.1    274         125      4.489051            35       28        45
 
 setorder(prices, symbol, date)
-prices[volume>75000 & close>7 & 
+prices[volume>75000 & close>7 & ifelse(short, (key_etf %in% c("AVUV","JEPI","WCLD")), T) &
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
-           order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T),head(.SD,3),date] %>%
+           order(-lever, lagging_corr_long,decreasing = F),head(.SD,3),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 #also works
 prices[volume>75000 & close>7 & !short & 
@@ -143,7 +143,7 @@ prices[volume>75000 & close>7 & !(key_etf %in% c("USO","none")) &
     ((high/close) > 1.075 |
        (!short & (high/close) > 1.05 & (running_low == low | MACD_slow<.975) 
        ) 
-    )][order(MACD_slow,decreasing=F),head(.SD,5),date]%>%
+    )][order(lever, lagging_corr_long,decreasing=F),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
@@ -167,14 +167,13 @@ prices[volume>75000 & close>7 & !(key_etf %in% c("USO","none")) &
 # 15: 2020   0.025     -2.0   8.1    327         129      4.758410           106
 # 16: 2021   0.012     -2.2   4.3    357         163      6.302521            55
 # 17: 2022   0.019     -2.2   8.4    449         136      5.031180            87         28        79         80       87
-prices[,rownum:=order(lagging_corr_long, decreasing = F),date]
 
-prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf %in% c("USO","none")) &
          avg_delta_short<.975 & lagging_corr_long> .35][
-           order(-rownum),head(.SD,5),date]%>%
+           order(lagging_corr_long),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 #also works
-prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf %in% c("USO","none")) &
          avg_delta_short<.975 & lagging_corr_long> .35][
-           order(-rownum),head(.SD,5),date]%>%
+           order(rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_rallydate-date,symbol))

@@ -35,7 +35,7 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 prices[,key_segments := !(key_etf %in% c("USO","none"))]
 prices[,us_stocks := (key_etf %in% c("AVUV","JEPI","WCLD"))]
 
-prices[order(lever, MACD_slow,decreasing = F)][
+prices[order(lever, lagging_corr_long,decreasing = F)][
   date==max(date, na.rm=T) & volume>75000 & close>7 & ifelse(short, us_stocks, T) &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
@@ -44,7 +44,7 @@ prices[order(lever, MACD_slow,decreasing = F)][
   head(3) %>%
   write_strat(strat_name='rally_etfs')
 
-prices[order(MACD_slow,decreasing=F)][
+prices[order(lever, lagging_corr_long,decreasing=F)][
   date==max(date, na.rm=T) & volume>75000 & close>7 &  key_segments &
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.075 |
@@ -55,9 +55,10 @@ prices[order(MACD_slow,decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
-prices[order(lagging_corr_long, decreasing = F)][
-  date==max(date, na.rm=T) & ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & key_segments &
-    avg_delta_short<.975 & lagging_corr_long> .35,
+prices[order(lever, lagging_corr_long, decreasing = F)][
+  date==max(date, na.rm=T) & 
+    ifelse(short, avg_volume>100000, avg_volume>500000) & 
+    close>7 & key_segments & avg_delta_short<.975 & lagging_corr_long> .35,
   .(date, symbol, close, volume)] %>%
   head(5) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
