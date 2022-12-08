@@ -137,13 +137,13 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
 # 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
 
-prices[volume>75000 & close>7 & #key_etf %in% c('OUNZ','AVUV','FXI','WCLD','JEPI') &
+prices[volume>75000 & close>7 & !(key_etf %in% c("USO","none")) &
          lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
-       ((running_low == low | RSI<.6) & ((avg_range/close) > .05)
+       (!short & (high/close) > 1.05 & (running_low == low | MACD_slow<.975) 
        ) 
-    )][order(RSI,decreasing=F),head(.SD,5),date]%>%
+    )][order(MACD_slow,decreasing=F),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 

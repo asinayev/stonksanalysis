@@ -23,14 +23,20 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window)
   stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
             ,RSI:= frollmean(pmax(0, close-lag1close) ,n = roll_window, align='right',fill=NA)/
               frollmean(pmax(0, lag1close-close) ,n = roll_window, align='right',fill=NA),symbol ]
+  stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
+         MACD:=EMA(close ,n = 12, align='right',fill=NA)/
+           EMA(close ,n = 26, align='right',fill=NA),symbol ]
+  stock_dat[(symbol %in% stock_dat[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
+         MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
+  
 }
 
 regression_features = function(stock_dat){
-  prices[,day_delta:= close/open]
-  prices[,day_fall:= low/open]
-  prices[,day_rise:= high/open]
-  prices[,night_delta:= open/lag1close]
-  prices[,future_day_delta:= lead1close/lead1open]
+  stock_dat[,day_delta:= close/open]
+  stock_dat[,day_fall:= low/open]
+  stock_dat[,day_rise:= high/open]
+  stock_dat[,night_delta:= open/lag1close]
+  stock_dat[,future_day_delta:= lead1close/lead1open]
 }
 
 rally = function(stock_dat,
