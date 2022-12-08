@@ -35,7 +35,7 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 prices[,key_segments := !(key_etf %in% c("USO","none"))]
 prices[,us_stocks := (key_etf %in% c("AVUV","JEPI","WCLD"))]
 
-prices[order(-lever, (sell_rally_avg-avg_delta)/sell_rally_avg,decreasing = T)][
+prices[order(lever, MACD_slow,decreasing = F)][
   date==max(date, na.rm=T) & volume>75000 & close>7 & ifelse(short, us_stocks, T) &
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
