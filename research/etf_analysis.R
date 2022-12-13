@@ -23,14 +23,6 @@ prices=fread("~/datasets/etf_prices_15y.csv")
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-
-prices[,MACD:=NULL ]
-prices[(symbol %in% prices[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
-       MACD:=EMA(close ,n = 12, align='right',fill=NA)/
-             EMA(close ,n = 26, align='right',fill=NA),symbol ]
-prices[(symbol %in% prices[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
-       MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
-
 prices[,RSI2:=NULL ]
 prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
        RSI2:=SMA(pmax(0, close-lag1close) ,n = 2, align='right',fill=NA)/
