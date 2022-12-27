@@ -48,10 +48,10 @@ prices[order(lever, lagging_corr_long,decreasing=F)][
   date==max(date, na.rm=T) & volume>75000 & close>7 &  key_segments &
          (((close-low)/(high-low))<.05 ) & 
          ((high/close) > 1.075 |
-            (!short & (high/close) > 1.05 & (running_low == low | MACD_slow<.975)) 
+            (!short & (avg_range/close) > .05 & (running_low == low | MACD_slow<.975)) 
           ),
        .(date, symbol, close, volume)]%>%
-  head(5) %>%
+  head(3) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
