@@ -107,35 +107,35 @@ prices[volume>75000 & close>7 & !short &
   with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_range_update-date,symbol))
 
 # revert ETFs
-# perf drawdown days_traded
-# 1: 0.02105556     -2.7         649
+# perf drawdown drawdown_days days_traded
+# 1: 0.02033333     -2.5           876         980
 # year average drawdown total trades days_traded avg_days_held stocks_traded
-# 1: 2005   0.009      0.0   0.0      3           3      5.666667             2
-# 2: 2006   0.013      0.0   0.0      1           1      5.000000             1
-# 3: 2007   0.014      0.0   0.1     10          10      3.900000             5
-# 4: 2008   0.012     -2.7   1.5    125          41      6.648000            56
-# 5: 2009   0.036     -0.7   2.5     71          34      7.042254            34
-# 6: 2010   0.053     -0.2   3.4     64          30      4.718750            36
-# 7: 2011   0.009     -2.2   0.8     97          41      5.298969            42
-# 8: 2012   0.023     -0.1   0.8     34          17      5.029412            17
-# 9: 2013   0.011     -0.2   0.4     33          21      6.242424            22
-# 10: 2014   0.010     -1.6   0.6     59          29      5.949153            29
-# 11: 2015   0.037     -0.8   3.6     97          55      5.463918            41
-# 12: 2016   0.041     -1.3   5.0    121          58      6.801653            38
-# 13: 2017  -0.012     -0.6  -0.3     26          15      6.500000            17
-# 14: 2018   0.015     -1.7   1.8    117          52      6.923077            45
-# 15: 2019   0.041     -0.4   2.1     51          33      4.745098            20
-# 16: 2020   0.022     -1.8   5.2    232          83      5.547414           108
-# 17: 2021   0.026     -0.6   3.7    142          71      6.253521            61
-# 18: 2022   0.019     -1.7   3.1    168          55      6.517857            71
+# 1: 2005   0.014      0.0   0.1      4           4      4.750000             3
+# 2: 2006   0.040      0.0   0.2      4           3      3.000000             4
+# 3: 2007   0.030      0.0   0.5     17           8      3.294118            15
+# 4: 2008   0.019     -2.5   3.1    165          48      6.303030            63
+# 5: 2009   0.035     -0.7   3.2     90          41      6.355556            54
+# 6: 2010   0.049     -0.2   4.1     83          37      6.012048            39
+# 7: 2011  -0.004     -2.0  -0.5    128          55      6.023438            68
+# 8: 2012   0.015     -1.2   0.7     49          22      5.938776            29
+# 9: 2013   0.010     -0.4   0.5     48          27      5.666667            34
+# 10: 2014   0.007     -1.7   0.7     95          37      6.231579            47
+# 11: 2015   0.023     -0.7   3.1    134          60      5.597015            63
+# 12: 2016   0.036     -1.0   5.2    144          69      6.847222            60
+# 13: 2017   0.014     -1.0   1.0     72          44      7.208333            33
+# 14: 2018   0.007     -1.4   1.4    191          79      7.298429            95
+# 15: 2019   0.030     -1.2   4.5    150          87      5.993333            39
+# 16: 2020   0.019     -1.5   7.7    403         138      5.885856           174
+# 17: 2021   0.008     -1.5   2.0    246         115      6.853659           103
+# 18: 2022   0.014     -2.1   4.9    340         106      6.532353           113          71
 
 prices[volume>75000 & close>7 & !(key_etf %in% c("USO","none")) &
          lead1sell_rally/lead1open<2 & 
     (((close-low)/(high-low))<.05 ) & 
     ((high/close) > 1.075 |
-       (!short & (high/close) > 1.05 & (running_low == low | MACD_slow<.975) 
+       (!short & (avg_range/close) > .05 & (running_low == low | MACD_slow<.975) 
        ) 
-    )][order(lever, lagging_corr_long,decreasing=F),head(.SD,5),date]%>%
+    )][order(lever, lagging_corr_long,decreasing=F),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
@@ -160,7 +160,7 @@ prices[volume>75000 & close>7 & !(key_etf %in% c("USO","none")) &
 # 16: 2021   0.012     -2.2   4.3    357         163      6.302521            55
 # 17: 2022   0.019     -2.2   8.4    449         136      5.031180            87         28        79         80       87
 
-prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf %in% c("USO","none")) &
+prices[ifelse(short, avg_volume>50000, avg_volume>500000) & close>7 & !(key_etf %in% c("USO","none")) &
          avg_delta_short<.975 & lagging_corr_long> .35][
            order(lagging_corr_long),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))

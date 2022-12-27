@@ -57,7 +57,8 @@ data.table(as.data.frame.matrix(x$loadings),keep.rownames = T)[order(RC1),.(rn,R
 #PROMAX#
 key_etfs = c('safe large cap'='MGK', 'large govnt bonds'='IEF', 'oil'='USO', 
   'gold'='RING', 'china'='FXI', 'tech'='ARKK', 
-  'near term bonds'='SPSB', 'small cap value'='AVUV', 'utilities'='XLU')
+  'near term bonds'='SLQD', 'small cap value'='IJS', 'utilities'='XLU')
 data.table(key_etf = key_etfs[apply(etf_corrs[,.SD,.SDcols=key_etfs],1,which.max)],
-           etf_name = names(etf_corrs))
+           key_etf_corr = apply(etf_corrs[,.SD,.SDcols=key_etfs],1,function(x)max(abs(x)) ),
+           etf_name = names(etf_corrs))[,.(mean(key_etf_corr>.5),mean(key_etf_corr))]
 
