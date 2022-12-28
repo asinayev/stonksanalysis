@@ -6,7 +6,7 @@ key_etfs = prices[,
                     vol2021 = sd(ifelse(year(date)==2021, fullday_delta, NA),na.rm=T),
                     N2021 = length(na.omit(ifelse(year(date)==2021,fullday_delta,NA))),
                     years = length(unique(year(date)))),
-       symbol][v2021>100000 & N2021>50 & symbol!='DWFI' & years>7]
+       symbol][v2021>1000000 & N2021>50 & symbol!='DWFI' & years>7]
 key_etf_wide = prices[symbol %in% key_etfs$symbol & !is.na(fullday_delta) ] %>%
   dcast(date~symbol, value.var='fullday_delta',fun.aggregate = mean) 
 
@@ -16,11 +16,11 @@ max_=1
 etf_corrs = data.frame(key_etf_wide)[,!names(key_etf_wide) %in% cols_to_exclude]%>% 
   cor(use='pairwise.complete') %>%
   data.table
-while(max_>.9){
-  etf_corrs_incl = etf_corrs[!colnames(etf_corrs) %in% cols_to_exclude,!colnames(etf_corrs) %in% cols_to_exclude]
+while(max_>.6){
+  etf_corrs_incl = data.frame(etf_corrs)[!colnames(etf_corrs) %in% cols_to_exclude,!colnames(etf_corrs) %in% cols_to_exclude]
   most_correlated_var_i = which.max(apply(etf_corrs_incl,1,max_not_one))
   corrs_to_most_correlated = etf_corrs_incl[,most_correlated_var_i]
-  cols_to_exclude=c(cols_to_exclude,colnames(etf_corrs_incl)[corrs_to_most_correlated>.9 & corrs_to_most_correlated<1])
+  cols_to_exclude=c(cols_to_exclude,colnames(etf_corrs_incl)[corrs_to_most_correlated>.6 & corrs_to_most_correlated<1])
   print(length(c('excluding:',cols_to_exclude)))
   max_=max(ifelse(etf_corrs_incl[,most_correlated_var_i]==1,0,etf_corrs_incl[,most_correlated_var_i]))
   print(max_)
@@ -53,6 +53,14 @@ c('VT','VIXM','KBWB')
 x = psych::principal(key_etf_wide[,.SD,.SDcols=key_etfs$symbol] 
                      ,nfactors=10,rotate='promax')
 data.table(as.data.frame.matrix(x$loadings),keep.rownames = T)[order(RC1),.(rn,RC1)]
+# QQQ <> PSQ -- NASDAQ 100
+# VGIT <> TTT -- treasuries
+# USO <> SCO -- Oil
+# YINN <> YANG -- China
+# ARKK <
+# XLU
+# GDXJ <> DUST
+# SLQD
 
 #PROMAX#
 key_etfs = c('safe large cap'='MGK', 'large govnt bonds'='IEF', 'oil'='USO', 

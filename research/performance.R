@@ -24,7 +24,7 @@ performance=function(date,outcome,days_held,symbol){
                      stocks_traded=length(unique(symbol))),
                   year(date)])
   with(results_daily, plot(date,drawdown,type='l', 
-                           ylim=c(-10,sum(results_daily$outcome ))))
+                           ylim=c(-10,max(cumsum(outcome) ))))
   with(results_daily, points(date,cumsum(outcome),type='l'))
   abline(v = seq(as.Date("2000-01-01"), as.Date("2025-12-31"), by = "year"),lty=2,col='gray')
   max_drawdown_days = max(results_daily[,.(datediff=max(date)-min(date)),drawdown_i][,datediff])
