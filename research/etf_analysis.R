@@ -23,62 +23,43 @@ prices=fread("~/datasets/etf_prices_15y.csv")
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-prices[,RSI2:=NULL ]
-prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-       RSI2:=SMA(pmax(0, close-lag1close) ,n = 2, align='right',fill=NA)/
-         SMA(pmax(0, lag1close-close) ,n = 2, align='right',fill=NA),symbol ]
-
-prices[,PDM:=NULL ]
-prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-       PDM:=SMA(pmax(0, high-lag1high) ,n = 3, align='right',fill=NA),
-       symbol ]
-prices[,NDM:=NULL ]
-prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-       NDM:=SMA(pmax(0, lag1low-low  ) ,n = 3, align='right',fill=NA),
-       symbol ]
-prices[,ADX:=NULL ]
-prices[(symbol %in% prices[!is.na((PDM-NDM)/(PDM+NDM)),.N,symbol][N>30,symbol]) & !is.na((PDM-NDM)/(PDM+NDM)),
-       ADX:=EMA((PDM-NDM)/(PDM+NDM) ,n = 30, align='right',fill=NA),
-       symbol ]
-
-prices[(symbol %in% prices[!is.na(close),.N,symbol][N>50,symbol]),
-       DEMA_s:=2*EMA(close ,n = 25, align='right',fill=NA)-
-         EMA(EMA(close ,n = 25, align='right',fill=NA) ,n = 5, align='right',fill=NA),
-       symbol ]
-prices[,lag1dema_s:= shift(DEMA_s,1,type='lag'),symbol]
-
-prices[(symbol %in% prices[!is.na(close),.N,symbol][N>650,symbol]),
-       DEMA_l:=2*EMA(close ,n = 200, align='right',fill=NA)-
-         EMA(EMA(close ,n = 200, align='right',fill=NA) ,n = 200, align='right',fill=NA),
-       symbol ]
-prices[,lag1dema_l:= shift(DEMA_l,1,type='lag'),symbol]
-prices[,lead30close:= shift(close,30,type='lead'),symbol]
-
+# prices[,RSI2:=NULL ]
+# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+#        RSI2:=SMA(pmax(0, close-lag1close) ,n = 2, align='right',fill=NA)/
+#          SMA(pmax(0, lag1close-close) ,n = 2, align='right',fill=NA),symbol ]
+# 
+# prices[,PDM:=NULL ]
+# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+#        PDM:=SMA(pmax(0, high-lag1high) ,n = 3, align='right',fill=NA),
+#        symbol ]
+# prices[,NDM:=NULL ]
+# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
+#        NDM:=SMA(pmax(0, lag1low-low  ) ,n = 3, align='right',fill=NA),
+#        symbol ]
+# prices[,ADX:=NULL ]
+# prices[(symbol %in% prices[!is.na((PDM-NDM)/(PDM+NDM)),.N,symbol][N>30,symbol]) & !is.na((PDM-NDM)/(PDM+NDM)),
+#        ADX:=EMA((PDM-NDM)/(PDM+NDM) ,n = 30, align='right',fill=NA),
+#        symbol ]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
-rally(prices,
-      sell_rule=function(dat){(dat$close-dat$lag1close)>=dat$avg_range*.5},
-      varname='sell_range_up')
-prices[,lead1sell_range_up:= shift(sell_range_up,1,type='lead'),symbol]
-prices[,lead1sell_range_update:= shift(sell_range_up_date,1,type='lead'),symbol]
-                                                                  
-rally(prices,
-      sell_rule=function(dat){(dat$lag1close-dat$close)>=dat$avg_range*.5},
-      varname='sell_range_down')
-prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
-prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
-
-prices[symbol %in% prices[,.N,symbol][N>10,symbol],
-       ma5:= SMA(close, n = 5 ),symbol ]
-rally(prices,
-      sell_rule=function(dat){(dat[,DEMA_s<shift(DEMA_s,n=1,type='lag')] ) },
-      varname='sell_trend')
-prices[,lead1sell_trend:= shift(sell_trend,1,type='lead'),symbol]
-prices[,lead1sell_trenddate:= shift(sell_trend_date,1,type='lead'),symbol]
+# rally(prices,
+#       sell_rule=function(dat){(dat$close-dat$lag1close)>=dat$avg_range*.5},
+#       varname='sell_range_up')
+# prices[,lead1sell_range_up:= shift(sell_range_up,1,type='lead'),symbol]
+# prices[,lead1sell_range_update:= shift(sell_range_up_date,1,type='lead'),symbol]
+#                                                                   
+# rally(prices,
+#       sell_rule=function(dat){(dat$lag1close-dat$close)>=dat$avg_range*.5},
+#       varname='sell_range_down')
+# prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
+# prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
+# 
+# prices[symbol %in% prices[,.N,symbol][N>10,symbol],
+#        ma5:= SMA(close, n = 5 ),symbol ]
 
 rally_avg(prices,200)
 
@@ -181,3 +162,5 @@ prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf
          avg_delta_short<.98 & lagging_corr_long> .35][
            order(rownum),head(.SD,5),date]%>%
   with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_rallydate-date,symbol))
+
+

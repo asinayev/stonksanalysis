@@ -291,3 +291,54 @@ wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
                                   delta = mean(close/open,na.rm=T),.N)])
   res
 }
+
+
+
+
+
+
+DEMA = function(x,period){
+  2*EMA(x, n=period, align='right', fill=NA)-
+    EMA(EMA(x, n=period, align='right', fill=NA), n=period, align='right', fill=NA)
+}
+
+prices[(symbol %in% prices[!is.na((high+low)/2),.N,symbol][N>50,symbol]),
+       DEMA_s:=DEMA((high+low)/2 ,period = 25),
+       symbol ]
+prices[,lag1dema_s:= shift(DEMA_s,1,type='lag'),symbol]
+prices[,lag2dema_s:= shift(DEMA_s,2,type='lag'),symbol]
+
+prices[(symbol %in% prices[!is.na(close),.N,symbol][N>650,symbol]),
+       DEMA_l:=SMA(close ,n = 300, align='right', fill=NA),
+       symbol ]
+prices[,lag1dema_l:= shift(DEMA_l,1,type='lag'),symbol]
+prices[,lag2dema_l:= shift(DEMA_l,2,type='lag'),symbol]
+prices[,lead30close:= shift(close,30,type='lead'),symbol]
+
+rally(prices,
+      sell_rule=function(dat){(dat[,DEMA_s>DEMA_l & lag1dema_s<lag1dema_l] ) },
+      varname='sell_trend')
+prices[,lead1sell_trend:= shift(sell_trend,1,type='lead'),symbol]
+prices[,lead1sell_trenddate:= shift(sell_trend_date,1,type='lead'),symbol]
+
+prices[,avg_sl_ratio:=NULL]
+prices[avg_volume>500000 & close>7,avg_sl_ratio:=median(DEMA_s/DEMA_l,na.rm=T),date]
+
+setorder(prices, symbol, date)
+prices[,purchase_i:=NULL]
+prices[ (DEMA_s/DEMA_l-avg_sl_ratio) < -.4 & DEMA_s>lag1dema_s  & lag1dema_s<lag2dema_s, 
+        purchase_i := rowid(symbol)]
+prices[avg_volume>1000000 & close>7 & #lead1sell_trend/lead1open<2 &
+         purchase_i==1 & year(date)==2018 & days_around>600,
+       .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)]
+prices[symbol=='NLSN' & year(date) %in% c(2016,2017,2018),.(date,close)] %>%plot
+prices[symbol=='NLSN',.(date,DEMA_s)] %>%points(type='l',col='yellow')
+prices[symbol=='NLSN',.(date,DEMA_l)] %>%points(type='l',col='blue')
+abline(v=as.Date('2018-08-13'))
+
+setorder(prices, symbol, date)
+prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
+         purchase_i==1 ][
+           order(DEMA_s/DEMA_l),head(.SD,5), date ]%>%
+  with(performance(date,lead1sell_trend/lead1open-1,lead1sell_trenddate-date,symbol))
+
