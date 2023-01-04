@@ -54,6 +54,10 @@ rally = function(stock_dat,
 
 
 rally_avg = function(stock_dat, window){
+  #The true sell_rally value is not known
+  #before the sell_rally_date. If we use the
+  #true value to compute the rolling average,
+  #this will leak some data into our calculation.
   sell_rally_avg_column = function(price_dat){
     days=nrow(price_dat)
     return( mean(ifelse(price_dat[,1]>price_dat[days,5], 

@@ -324,6 +324,10 @@ prices[,lag1dema_l:= shift(DEMA_l,1,type='lag'),symbol]
 prices[,lag2dema_l:= shift(DEMA_l,2,type='lag'),symbol]
 prices[,lead30close:= shift(close,30,type='lead'),symbol]
 
+prices[symbol %in% prices[,.N,symbol][N>300,symbol],
+                  avg_delta_trend:= SMA(ifelse(DEMA_s>DEMA_l, close/lag1close-1, 1-close/lag1close), n = 25 ),symbol ]
+prices[volume>1000000 & close>7 & DEMA_s/DEMA_l<.95 & abs(avg_delta_trend-avg_delta+1)>.025]
+
 rally(prices,
       sell_rule=function(dat){(dat[,DEMA_s<lag1dema_s & lag1dema_s>lag2dema_s] ) },
       varname='sell_trend')
