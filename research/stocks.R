@@ -23,7 +23,8 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 prices=fread("~/datasets/stock_prices_15y.csv")
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
-prices[,days_around:=cumsum(!is.na(close)),symbol]
+prices[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
+prices[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
@@ -316,7 +317,7 @@ prices[,lag2dema_l:= shift(DEMA_l,2,type='lag'),symbol]
 prices[,lead30close:= shift(close,30,type='lead'),symbol]
 
 rally(prices,
-      sell_rule=function(dat){(dat[,DEMA_s>DEMA_l & lag1dema_s<lag1dema_l] ) },
+      sell_rule=function(dat){(dat[,DEMA_s<lag1dema_s & lag1dema_s>lag2dema_s] ) },
       varname='sell_trend')
 prices[,lead1sell_trend:= shift(sell_trend,1,type='lead'),symbol]
 prices[,lead1sell_trenddate:= shift(sell_trend_date,1,type='lead'),symbol]
@@ -326,19 +327,19 @@ prices[avg_volume>500000 & close>7,avg_sl_ratio:=median(DEMA_s/DEMA_l,na.rm=T),d
 
 setorder(prices, symbol, date)
 prices[,purchase_i:=NULL]
-prices[ (DEMA_s/DEMA_l-avg_sl_ratio) < -.4 & DEMA_s>lag1dema_s  & lag1dema_s<lag2dema_s, 
+prices[ (DEMA_s/DEMA_l-avg_sl_ratio) < -.35 & DEMA_s>lag1dema_s  & lag1dema_s<lag2dema_s & days_around>350, 
         purchase_i := rowid(symbol)]
-prices[avg_volume>1000000 & close>7 & #lead1sell_trend/lead1open<2 &
+x=prices[avg_volume>1000000 & close>7 & #lead1sell_trend/lead1open<2 &
          purchase_i==1 & year(date)==2018 & days_around>600,
-       .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)]
-prices[symbol=='NLSN' & year(date) %in% c(2016,2017,2018),.(date,close)] %>%plot
-prices[symbol=='NLSN',.(date,DEMA_s)] %>%points(type='l',col='yellow')
-prices[symbol=='NLSN',.(date,DEMA_l)] %>%points(type='l',col='blue')
-abline(v=as.Date('2018-08-13'))
+       .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)][sample(.N, 1)]
+prices[symbol==x$symbol & year(date) %in% c(2016,2017,2018),.(date,close)] %>%plot
+prices[symbol==x$symbol,.(date,DEMA_s)] %>%points(type='l',col='yellow')
+prices[symbol==x$symbol,.(date,DEMA_l)] %>%points(type='l',col='blue')
+abline(v=as.Date(x$date))
 
 setorder(prices, symbol, date)
 prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
-         purchase_i==1 ][
-           order(DEMA_s/DEMA_l),head(.SD,5), date ]%>%
-  with(performance(date,lead1sell_trend/lead1open-1,lead1sell_trenddate-date,symbol))
+         purchase_i==1 & days_around>350][
+           order(-DEMA_s/DEMA_l),head(.SD,5), date ]%>%
+  with(performance(date,lead30close/lead1open-1,lead1sell_trenddate-date,symbol))
 
