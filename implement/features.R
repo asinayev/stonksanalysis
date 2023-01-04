@@ -6,6 +6,9 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window)
   stock_dat[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
   stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
   
+  stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
+  stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
+  
   stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
             avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
   stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
@@ -20,9 +23,6 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window)
             lagging_corr_long:=
               runCor( close/open, avg_delta_short, corr_window),
             symbol]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
-            ,RSI:= frollmean(pmax(0, close-lag1close) ,n = roll_window, align='right',fill=NA)/
-              frollmean(pmax(0, lag1close-close) ,n = roll_window, align='right',fill=NA),symbol ]
   stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
          MACD:=EMA(close ,n = 12, align='right',fill=NA)/
            EMA(close ,n = 26, align='right',fill=NA),symbol ]

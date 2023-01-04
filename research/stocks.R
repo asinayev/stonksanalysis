@@ -28,7 +28,6 @@ prices[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-# rally_avg(prices,100)
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -250,16 +249,25 @@ rally_avg(prices,100)
 # 17: 2021   0.030     -1.3   6.8    226          74      6.243363            99
 # 18: 2022   0.033     -1.4   3.7    111          42      7.711712            65
 
-prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+prices[close>7 & volume>5000000 & 
          close<lag1high & sell_rally_day>6 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg) %between% c(.02,.05)][
-         ][order(-high/close),head(.SD,5),date] %>%
+         ][order(days_around, decreasing=T),head(.SD,5),date] %>%
   rbind(
-    prices[close>7 & volume>5000000 & wday(date) %in% c(6,2) &
+    prices[close>7 & volume>5000000 & 
              close>lag1high & sell_rally_day<2 & 
              ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03][
-             ][order(high/close),head(.SD,5),date]
+             ][order(days_around, decreasing=T),head(.SD,5),date]
   )%>%
+  with(performance(date,
+                   ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead1sell_rally/lead1open),
+                   lead1sell_rallydate-date,symbol))
+
+
+prices[close>7 & volume>5000000 & 
+         close>lag1high & sell_rally_day<2 & 
+         ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03][
+         ][order(high/close, decreasing=T),head(.SD,5),date]%>%
   with(performance(date,
                    ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead1sell_rally/lead1open),
                    lead1sell_rallydate-date,symbol))
