@@ -311,22 +311,36 @@ DEMA = function(x,period){
     EMA(EMA(x, n=period, align='right', fill=NA), n=period, align='right', fill=NA)
 }
 
-prices[(symbol %in% prices[!is.na((high+low)/2),.N,symbol][N>50,symbol]),
-       DEMA_s:=DEMA((high+low)/2 ,period = 25),
+prices[(symbol %in% prices[!is.na((open)/2),.N,symbol][N>50,symbol]),
+       DEMA_s:=DEMA((open)/2 ,period = 10),
        symbol ]
 prices[,lag1dema_s:= shift(DEMA_s,1,type='lag'),symbol]
 prices[,lag2dema_s:= shift(DEMA_s,2,type='lag'),symbol]
 
-prices[(symbol %in% prices[!is.na(close),.N,symbol][N>650,symbol]),
-       DEMA_l:=SMA(close ,n = 300, align='right', fill=NA),
+prices[(symbol %in% prices[!is.na(open),.N,symbol][N>650,symbol]),
+       DEMA_l:=SMA(open ,n = 50, align='right', fill=NA),
        symbol ]
 prices[,lag1dema_l:= shift(DEMA_l,1,type='lag'),symbol]
 prices[,lag2dema_l:= shift(DEMA_l,2,type='lag'),symbol]
 prices[,lead30close:= shift(close,30,type='lead'),symbol]
 
-prices[symbol %in% prices[,.N,symbol][N>300,symbol],
+prices[,avg_delta_trend:=NULL]
+prices[symbol %in% prices[,.N,symbol][N>1000,symbol],
                   avg_delta_trend:= SMA(ifelse(DEMA_s>DEMA_l, close/lag1close-1, 1-close/lag1close), n = 25 ),symbol ]
-prices[volume>1000000 & close>7 & DEMA_s/DEMA_l<.95 & abs(avg_delta_trend-avg_delta+1)>.025]
+
+prices[,daily_delta_trend:=NULL]
+prices[avg_volume>500000 & close>7,
+       daily_delta_trend:=median(avg_delta,na.rm=T),date]
+
+prices[symbol %in% prices[,.N,symbol][N>50,symbol],
+          avg_delta:= SMA(close/lag1close, n = 10 ),symbol ]
+prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
+
+prices[volume>1000000 & close>7 & avg_delta<.95 ][
+           order(avg_delta,decreasing = F),head(.SD,5),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+# same as correlated long?
+
 
 rally(prices,
       sell_rule=function(dat){(dat[,DEMA_s<lag1dema_s & lag1dema_s>lag2dema_s] ) },
