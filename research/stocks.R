@@ -28,6 +28,8 @@ prices[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
+prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
+prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -264,14 +266,6 @@ prices[close>7 & volume>5000000 &
                    lead1sell_rallydate-date,symbol))
 
 
-prices[close>7 & volume>5000000 & 
-         close>lag1high & sell_rally_day<2 & 
-         ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03][
-         ][order(high/close, decreasing=T),head(.SD,5),date]%>%
-  with(performance(date,
-                   ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead1sell_rally/lead1open),
-                   lead1sell_rallydate-date,symbol))
-
 ##############
 # nightbot
 
@@ -332,12 +326,25 @@ prices[,daily_delta_trend:=NULL]
 prices[avg_volume>500000 & close>7,
        daily_delta_trend:=median(avg_delta,na.rm=T),date]
 
+setorder(prices, symbol, date)
 prices[symbol %in% prices[,.N,symbol][N>50,symbol],
-          avg_delta:= SMA(close/lag1close, n = 10 ),symbol ]
-prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
+          avg_delta5:= SMA(close/lag1close, n = 10 ),symbol ]
+setorder(prices, symbol, date)
+prices[symbol %in% prices[,.N,symbol][N>50,symbol],
+       avg_delta25:= SMA(close/lag1close, n = 25 ),symbol ]
 
-prices[volume>1000000 & close>7 & avg_delta<.95 ][
-           order(avg_delta,decreasing = F),head(.SD,5),date] %>%
+#prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
+
+prices[volume>500000 & close>7 & (avg_delta5<.95|avg_delta25<.96) 
+       & days_around>100 &
+         close<lag1high & sell_rally_day>5 ][
+           order(avg_delta5,decreasing = F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+
+prices[volume>500000 & close>7 & (avg_delta5<.95|avg_delta25<.96) 
+       & days_around>100 &
+         close<lag1high & sell_rally_day>5 ][
+           order(avg_delta5,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 # same as correlated long?
 
