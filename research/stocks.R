@@ -23,8 +23,6 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 prices=fread("~/datasets/stock_prices_15y.csv")
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
-prices[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
-prices[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
@@ -227,38 +225,38 @@ abline(h=0.99)
 
 
 
-######
+###### Correlated long and short
 rally_avg(prices,100)
-# perf drawdown days_traded
-# 1: 0.02611111     -2.1         698
+# perf drawdown drawdown_days days_traded
+# 1: 0.032     -8.5          1010        1583
 # year average drawdown total trades days_traded avg_days_held stocks_traded
-# 1: 2005   0.021      0.0   0.0      2           2      9.000000             2
-# 2: 2006   0.019     -0.1   0.2     10           9      3.300000             7
-# 3: 2007   0.065     -0.1   1.6     25          18      7.080000            19
-# 4: 2008   0.039     -0.7   6.9    177          66      6.570621            99
-# 5: 2009   0.007     -1.4   2.0    306          78      6.150327           121
-# 6: 2010   0.022     -0.1   0.9     44          27      4.386364            32
-# 7: 2011   0.030     -0.2   1.3     45          28      5.755556            32
-# 8: 2012   0.014     -0.3   0.6     47          26     27.787234            30
-# 9: 2013   0.028     -0.2   1.0     36          23      9.750000            16
-# 10: 2014   0.043     -0.2   1.3     30          23      9.100000            18
-# 11: 2015   0.008     -0.6   0.4     58          36      5.241379            29
-# 12: 2016  -0.013     -2.1  -1.2     91          40      5.978022            51
-# 13: 2017   0.007     -1.5   0.3     43          33      4.581395            28
-# 14: 2018   0.082     -1.2   2.9     36          27      7.666667            25
-# 15: 2019   0.009     -1.0   1.1    117          63      6.786325            67
-# 16: 2020   0.026     -1.6   7.0    271          83      6.036900           157
-# 17: 2021   0.030     -1.3   6.8    226          74      6.243363            99
-# 18: 2022   0.033     -1.4   3.7    111          42      7.711712            65
+# 1: 2005   0.018     -0.4   0.7     37          33      3.837838            13
+# 2: 2006   0.059     -0.2   1.8     31          20      3.322581            14
+# 3: 2007   0.011     -5.9   1.3    114          61      5.736842            39
+# 4: 2008   0.018     -6.4   7.9    430         160      6.725581           171
+# 5: 2009   0.014     -6.0   2.1    149          76      6.255034            70
+# 6: 2010   0.041     -2.9   1.4     34          34      5.000000            19
+# 7: 2011   0.033     -1.8   1.9     59          45      4.135593            34
+# 8: 2012   0.086     -0.1   2.8     33          30      6.818182            14
+# 9: 2013   0.052     -0.7   1.3     25          24      5.560000            16
+# 10: 2014   0.035     -1.6   3.6    104          70      6.442308            34
+# 11: 2015   0.035     -2.1   4.6    130          85      6.753846            43
+# 12: 2016   0.006     -4.2   1.0    154          91      8.129870            50
+# 13: 2017   0.062     -1.9   5.3     86          63      7.779070            55
+# 14: 2018   0.025     -2.4   4.4    181         118      7.381215            97
+# 15: 2019   0.010     -1.9   2.0    195         131      8.117949           105
+# 16: 2020   0.046     -2.0  29.2    635         203      6.729134           330
+# 17: 2021   0.011     -8.5   6.5    569         222      6.861160           273
+# 18: 2022   0.014     -3.4   4.6    322         117      7.416149           125
 
-prices[close>7 & volume>5000000 & 
+prices[close>7 & volume>500000 & 
          close<lag1high & sell_rally_day>6 & 
-         ((sell_rally_avg-avg_delta)/sell_rally_avg) %between% c(.02,.05)][
-         ][order(days_around, decreasing=T),head(.SD,5),date] %>%
+         avg_delta<.975][
+         ][order(high/close, decreasing=T),head(.SD,5),date] %>%
   rbind(
-    prices[close>7 & volume>5000000 & 
+    prices[close>7 & volume>500000 & 
              close>lag1high & sell_rally_day<2 & 
-             ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03][
+             avg_delta_short>1.1][
              ][order(days_around, decreasing=T),head(.SD,5),date]
   )%>%
   with(performance(date,
@@ -266,7 +264,7 @@ prices[close>7 & volume>5000000 &
                    lead1sell_rallydate-date,symbol))
 
 
-##############
+#############
 # nightbot
 
 prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1.005 ]%>%
@@ -326,19 +324,12 @@ prices[,daily_delta_trend:=NULL]
 prices[avg_volume>500000 & close>7,
        daily_delta_trend:=median(avg_delta,na.rm=T),date]
 
-setorder(prices, symbol, date)
-prices[symbol %in% prices[,.N,symbol][N>50,symbol],
-          avg_delta5:= SMA(close/lag1close, n = 10 ),symbol ]
-setorder(prices, symbol, date)
-prices[symbol %in% prices[,.N,symbol][N>50,symbol],
-       avg_delta25:= SMA(close/lag1close, n = 25 ),symbol ]
-
 #prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
 
-prices[volume>500000 & close>7 & (avg_delta5<.95|avg_delta25<.96) 
-       & days_around>100 &
+prices[avg_volume>500000 & close>7 & (avg_delta_short<.95|avg_delta<.96) &
+       days_around>100 &
          close<lag1high & sell_rally_day>5 ][
-           order(avg_delta5,decreasing = F),head(.SD,1),date] %>%
+           order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 prices[volume>500000 & close>7 & (avg_delta5<.95|avg_delta25<.96) 

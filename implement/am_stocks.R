@@ -31,10 +31,10 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='overbought')
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & volume>5000000 & 
+         close>7 & volume>500000 & 
          close<lag1high & sell_rally_day>6 & 
-         ((sell_rally_avg-avg_delta)/sell_rally_avg) %between% c(.02,.05) ,
-       .(date, symbol, close, volume, high, days_around)][order(days_around,decreasing=T)] %>%
+         avg_delta<.975 ,
+       .(date, symbol, close, volume, high)][order(high/close,decreasing=T)] %>%
   head(5) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
@@ -43,9 +43,9 @@ prices[date==max(date, na.rm=T) &
 
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & volume>5000000 & 
-         close>lag1high & sell_rally_day<2 & 
-         ((sell_rally_avg-avg_delta)/sell_rally_avg) < -.03 ,
+         close>7 & volume>500000 & 
+             close>lag1high & sell_rally_day<2 & 
+             avg_delta_short>1.1 ,
        .(date, symbol, close, volume, high, days_around)][order(days_around,decreasing=T)] %>%
   head(5) %>%
   dplyr::mutate( action='SELL', 
