@@ -33,7 +33,7 @@ prices=key_etfs(prices, low_corr_thresh=.33)
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-prices[order(lever, lagging_corr_long,decreasing = F)][
+prices[order(lever, avg_volume,decreasing = F)][
   date==max(date, na.rm=T) & volume>500000 & close>7 & 
          close<lag1high & sell_rally_day>2 & 
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018,
@@ -42,10 +42,10 @@ prices[order(lever, lagging_corr_long,decreasing = F)][
   head(3) %>%
   write_strat(strat_name='rally_etfs')
 
-prices[order(lever, lagging_corr_long,decreasing=F)][
+prices[order(lever, avg_volume,decreasing=F)][
   date==max(date, na.rm=T) & avg_volume>1000000 & close>7 &  
          (((close-low)/(high-low))<.2 ) & 
-         ((high/close) > 1.075 |
+         ((high/close) > 1.075 | avg_delta<.99 |
             (!short & (avg_range/close) > .05 & (running_low == low | MACD_slow<.975)) 
           ),
        .(date, symbol, close, volume)]%>%
@@ -53,7 +53,7 @@ prices[order(lever, lagging_corr_long,decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
-prices[order(lever, lagging_corr_long, decreasing = F)][
+prices[order(lever, avg_volume, decreasing = F)][
   date==max(date, na.rm=T) & 
     avg_volume>500000 & close>7 & 
     avg_delta_short<.975 & lagging_corr_long> .35,

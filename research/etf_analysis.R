@@ -86,11 +86,11 @@ prices=key_etfs(prices,low_corr_thresh=.33)
 # 15: 2022   0.027     -3.2   7.3    272         124      4.496324            34          35       28        45
 
 setorder(prices, symbol, date)
-prices[avg_volume>500000 & close>7 & 
+prices[volume>500000 & close>7 & 
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          ((sell_rally_avg-avg_delta)/sell_rally_avg)>.018][
-           order(-lever, lagging_corr_long,decreasing = F),head(.SD,3),date] %>%
+           order(lever, avg_volume,decreasing = T),head(.SD,3),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 #also works
 prices[volume>75000 & close>7 & !short & 
@@ -123,12 +123,12 @@ prices[volume>75000 & close>7 & !short &
 # 17: 2021   0.007     -3.7   4.5    649         220      6.759630            67
 # 18: 2022   0.029     -3.1  21.2    730         162      6.439726           100       85         113          71
 
-prices[avg_volume>750000 & close>7 & (lead1sell_rally/lead1open<2)  &
-    (((close-low)/(high-low))<.2 ) & 
-    ((high/close) > 1.075 
-       |(!short & (avg_range/close) > .05 & (running_low == low) ) 
-       #|(DEMA_s/lag1dema_s <.985) 
-    )][order(lever, lagging_corr_long,decreasing=F),head(.SD,3),date]%>%
+prices[avg_volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
+         (((close-low)/(high-low))<.2 ) & 
+         ((high/close) > 1.075 | avg_delta<.99 |
+            (!short & (avg_range/close) > .05 & (running_low == low | MACD_slow<.975)) 
+         )
+    ][order( lagging_corr_long,decreasing=T),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
@@ -155,7 +155,7 @@ prices[avg_volume>750000 & close>7 & (lead1sell_rally/lead1open<2)  &
 
 prices[avg_volume>500000 & close>7 & 
          avg_delta_short<.975 & lagging_corr_long> .35][
-           order(lagging_corr_long),head(.SD,3),date]%>%
+           order(avg_volume),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 #also works
 prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf %in% c("USO","none")) &
