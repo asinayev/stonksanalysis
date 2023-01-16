@@ -367,3 +367,12 @@ prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
            order(-DEMA_s/DEMA_l),head(.SD,5), date ]%>%
   with(performance(date,lead30close/lead1open-1,lead1sell_trenddate-date,symbol))
 
+# Seems to work
+prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+       ,running_low:= zoo::rollapply(low,min,width=25, align='right',fill=NA),symbol ]
+
+megacap = prices[order(market_cap,decreasing=T),head(.SD,10),date]
+megacap[low==running_low & lead1sell_rally/lead1open<1.5][
+  order(avg_delta_short,decreasing = F),head(.SD,3),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+
