@@ -7,6 +7,7 @@ if(length(args)==0){
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
 
+prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,100)
@@ -52,3 +53,13 @@ prices[date==max(date, na.rm=T) &
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='correlated_short')
+
+
+prices[low<running_low*1.001 & cap_order<10 & 
+         date==max(date, na.rm=T)][
+           order(avg_delta_short,decreasing = F)]  %>%
+  head(5) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='megacap')
