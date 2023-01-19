@@ -145,9 +145,9 @@ prices[
 
 
 
-sq=function(x)x^2
-
+######
 # Regression strategy
+sq=function(x)x^2
 prices[,reg_predict := as.numeric(32)]
 prices[,reg_predict := NA]
 regression_features(prices)
@@ -272,6 +272,16 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
                    1,symbol))
 
 ##############
+# megacap
+prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+prices[low<running_low*1.001 & cap_order<10 & 
+         lead1sell_rally/lead1open<1.5][
+           order(avg_delta_short,decreasing = F),head(.SD,3),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
+
+
+
+##############
 # No working strategies here yet
 wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
   pennyshort_hours = get_hours_for_stocks(trade_data$symbol,
@@ -366,11 +376,3 @@ prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
          purchase_i==1 & days_around>350][
            order(-DEMA_s/DEMA_l),head(.SD,5), date ]%>%
   with(performance(date,lead30close/lead1open-1,lead1sell_trenddate-date,symbol))
-
-# Seems to work
-prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
-prices[low<running_low*1.001 & cap_order<10 & 
-        lead1sell_rally/lead1open<1.5][
-  order(avg_delta_short,decreasing = F),head(.SD,3),date] %>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
-
