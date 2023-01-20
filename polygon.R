@@ -114,6 +114,14 @@ ticker_info_from_polygon = function( key, stockname, date, field=F) {
     select_field(field=field)
 }
 
+
+stock_splits = function( key, stockname) {
+  out="https://api.polygon.io/v3/reference/splits?ticker=%s&order=asc&limit=1000&sort=execution_date&apiKey=%s" %>%
+    sprintf(stockname, key) %>%
+    hit_polygon
+  out$results
+}
+
 stock_history = function(stockname, start_date, end_date, key, print=F, check_ticker=T){
   if(check_ticker){
     start_cik = end_cik = 'none'
