@@ -376,3 +376,15 @@ prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
          purchase_i==1 & days_around>350][
            order(-DEMA_s/DEMA_l),head(.SD,5), date ]%>%
   with(performance(date,lead30close/lead1open-1,lead1sell_trenddate-date,symbol))
+
+
+# stock splits
+all_splits= prices$symbol %>% unique %>%
+  parallel::mclapply(
+    stock_splits,
+    key=POLYKEY,
+    mc.cores = 16) %>% 
+  rbindlist(use.names=TRUE, fill=T)
+
+merge(prices,
+        all_splits[,.(date=as.Date(execution_date),split_from,split_to,symbol=ticker)])
