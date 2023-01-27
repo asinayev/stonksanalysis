@@ -1,4 +1,4 @@
-lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window){
+lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window, rolling_features=T){
   setorder(stock_dat, symbol, date)
   stock_dat[,c("lag1close", "lag2close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,-1,-2,-5), type = "lag"),symbol]
   stock_dat[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
@@ -6,29 +6,30 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window)
   stock_dat[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
   stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
   
-  stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
-  stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
-  
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-            avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-            avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol ]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
-            ,running_low:= zoo::rollapply(low,min,width=roll_window, align='right',fill=NA),symbol ]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
-            ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol ]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
-            ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+short_roll_window), unique(symbol)],
-            lagging_corr_long:=
-              runCor( close/open, avg_delta_short, corr_window),
-            symbol]
-  stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
-         MACD:=EMA(close ,n = 12, align='right',fill=NA)/
-           EMA(close ,n = 26, align='right',fill=NA),symbol ]
-  stock_dat[(symbol %in% stock_dat[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
-         MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
-  
+  if(rolling_features){
+    stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
+    stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
+    
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
+              avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
+              avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+              ,running_low:= zoo::rollapply(low,min,width=roll_window, align='right',fill=NA),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+              ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+              ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+short_roll_window), unique(symbol)],
+              lagging_corr_long:=
+                runCor( close/open, avg_delta_short, corr_window),
+              symbol]
+    stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
+           MACD:=EMA(close ,n = 12, align='right',fill=NA)/
+             EMA(close ,n = 26, align='right',fill=NA),symbol ]
+    stock_dat[(symbol %in% stock_dat[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
+           MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
+  }
 }
 
 regression_features = function(stock_dat){
@@ -75,9 +76,9 @@ rally_avg = function(stock_dat, window){
   }
 
 key_etfs = function(stock_dat, 
-                    key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='FLCB', 'oil'='USO', 
+                    key_etfs=c('safe large cap'='JEPI', 'large govnt bonds'='AGG', 'oil'='USO', 
                                'gold'='OUNZ', 'china'='FXI', 'tech'='WCLD', 
-                               'near term bonds'='SPSB', 'small cap value'='AVUV'),
+                               'near term bonds'='SPSB', 'small cap value'='VBR'),
                     low_corr_thresh=.5){
   stock_dat[,fullday_delta:=close/lag1close]
   prices_wide = stock_dat %>%
@@ -108,4 +109,14 @@ clean_news = function(news){
     merge(news[,.(keywords=first(keywords) ),
                .(id, publisher.name, date, title, author, single_ticker)], all.x=T)
   news
+}
+
+only_passing = function(stock_dat, min_close, min_volume, last_n, passing_date=max(stock_dat$date,na.rm=T)){
+  passing_symbols=stock_dat[close>min_close & volume>min_volume & date==passing_date, symbol]
+  passing_dat = stock_dat[symbol %in% passing_symbols]
+  if(last_n){
+    passing_dat = passing_dat[,head(.SD[order(date,decreasing=T)],last_n) ,symbol]
+    }
+  setorder(passing_dat, symbol, date)
+  passing_dat
 }
