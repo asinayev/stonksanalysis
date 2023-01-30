@@ -11,6 +11,6 @@ RUN install2.r --error \
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
     cd stonksanalysis && \
-    git checkout 62ffd36a950b4d0b08cf9b5db1a633b65f694f27 
+    git checkout e97a5d37086b5ac1f48b94287230a82b31f66db9 
  
 CMD bash /home/repos/stonksanalysis/launch.sh
