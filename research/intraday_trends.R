@@ -22,34 +22,46 @@ rally_m = function(stock_dat,
   stock_dat[,sell_rally_increment:=NULL]
 }
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, details=T, financials=F, cores=16)
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-365*3, details=T, financials=F, cores=16)
+
+prices = stocklist[order(market_cap,decreasing=T),head(ticker,20)]  %>%
+  parallel::mclapply(
+    stock_history,
+    start_date = Sys.Date()-3*365, end_date = Sys.Date()+2, key = POLYKEY, 
+    print=F, check_ticker=F,mc.cores = 20) %>% 
+  rbindlist(use.names=TRUE, fill=T)
+
+prices = prices[, .SD[1], by=.(stock, Date)][
+  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)]
+lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
 prices_m = 
   stocklist[order(market_cap,decreasing=T),head(ticker,20)] %>%
   unique %>%
   parallel::mclapply(
     stock_day,
-    start_date='2022-01-01',
-    end_date='2023-01-30',
-    key=POLYKEY,
+    start_date = Sys.Date()-3*365, end_date = Sys.Date()+2, key = POLYKEY, 
     interval='minute',
     day_buffer = 7,
     mc.cores = 20) %>% 
   rbindlist(fill = T)
 colnames(prices_m)=c('symbol','close','high','low','volume','TimeStamp','DateTime','open')
 
-setorder(prices_m, symbol, DateTime)
-
-prices_m[, DateTime := as.POSIXct(TimeStamp/1000, 
+prices_m2=data.table(prices)
+prices_m2[, DateTime := as.POSIXct(TimeStamp/1000, 
                                   origin="1970-01-01", tz = 'EST')]
-prices_m[,bar_date:=as_date(DateTime)]
-prices_m[,bar_hour:=lubridate::hour(DateTime)]
+prices_m2[,date:=as_date(DateTime)]
 
+prices_m2=merge(prices_m,
+                prices[,.(symbol,date,avg_delta_short,lag1close,lag1open,day_open=open, day_close=close)], 
+                by=c('symbol','date'))
+setorder(prices_m2, symbol, DateTime)
 
-prices_m[,ema_long:=EMA(close ,n = 200, align='right',fill=NA),symbol ]
-prices_m[,ema_short:=EMA(close ,n = 25, align='right',fill=NA),symbol ]
-prices_m[,rsi_short:=RSI(close ,n = 10, align='right',fill=NA),symbol ]
+prices_m2[,ema_long:=EMA(close ,n = 200, align='right',fill=NA),symbol ]
+prices_m2[,ema_short:=EMA(close ,n = 25, align='right',fill=NA),symbol ]
+prices_m2[,rsi_short:=RSI(close ,n = 10, align='right',fill=NA),symbol ]
 
-rally_m(prices_m,
-      sell_rule=function(dat){(dat$ema_long>dat$ema_short)|dat$bar_hour==16},
+prices_m2[,bar_hour:=lubridate::hour(DateTime)]
+rally_m(prices_m2,
+      sell_rule=function(dat){dat$bar_hour==16},
       varname='sell_crossover')
