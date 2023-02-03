@@ -10,9 +10,6 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1636253557582.csv") #from https://www.nasdaq.com/market-activity/stocks/screener
 
-fieldslink = "https://app.endpoints.levelfields.ai//scenarios.php?key=tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJMRVZFTEZJRUxEUyIsImlhdCI6MTY1NzM4MTc5NCwibmJmIjoxNjU3MzgxNzk0LCJleHAiOjE2NTc0MTc3OTQsImRhdGEiOnsiZmlyc3RuYW1lIjoiQWxla3NhbmRyIiwibGFzdG5hbWUiOiJTaW5heWV2IiwiZW1haWwiOiJhc2luYXlldkBnbWFpbC5jb20iLCJyb2xlIjoiVVNFUiIsInJlY3VybHlfdXNlcl9hY2NvdW50X2lkIjoiQWxla3NhbmRyU2luYXlldi02NjdhOGVjZjhkNTRhZWI4NDU4NiIsInJlY3VybHlfcGxhbl9pZCI6ImJldGEwNTkiLCJyZWN1cmx5X3N1YnNjcmlwdGlvbl9pZCI6InB0aDY2OHJ2bGk0cyIsInJlY3VybHlfc3Vic2NyaXB0aW9uX2VuZF9kYXRlIjoiMjAyMi0wOC0wMiAxODo0NToyOSIsImZpc3J0X2xvZ2luIjpmYWxzZSwiaXNfY2FuY2VsbGVkIjpmYWxzZSwic2hvd19wbGFuX3VwZ3JhZGVfb3B0aW9uIjp0cnVlfX0.2SLw3fiRo3KDsPXfcuNCLV79Z8q7rgGqnursA3P3Nzkrg5p3hvT-elwcS9mFhrdC-AOrpnu45KK-XM619-Va4g"
-jwt = strsplit(fieldslink,"=")[[1]]
-jwt=jwt[length(jwt)]
 scenarios = c('share_buybacks'=164,
               'dividend_creations'=168,
               'dividend_increase'=121,
@@ -22,29 +19,10 @@ scenarios = c('share_buybacks'=164,
               'ceo_departs'=41,
               'class_act'=116,
               'removed_sp'=163)
-get_scenario = function(scenario_id,jwt){
-  "https://app.endpoints.levelfields.ai/scenarios.php?scenario_id=%s&key=%s&start_date=%s&end_date=%s&jwt=%s" %>%
-    sprintf(scenario_id, 'tmqBmVwcf7Qd5K7LCdBDLG2WV3Uywb', Sys.Date()-10*365, Sys.Date()+1, jwt) %>%
-    fromJSON()
-}
-process_scenario = function(i, scenario_dat_list, cols_to_get){
-  scenario_dat_list[[i]]=data.frame(scenario_dat_list[[i]][cols_to_get])
-  scenario_dat_list[[i]]$eventtype=names(scenarios)[i]
-  scenario_dat_list[[i]]
-}
 
-scenario_dat = lapply(scenarios, get_scenario, jwt=jwt)
-scenario_dat = lapply(1:length(scenarios), process_scenario, scenario_dat_list=scenario_dat,
-           cols_to_get=c('symbol','event_date_est','event_source','sector','marketcap','filter_volume')
-)
-
-eventsdf = rbindlist(scenario_dat)
-
-eventsdf$event_date_est=lubridate::ymd_hms(eventsdf$event_date_est, tz = "EST")
-eventsdf$is_after_hours = lubridate::hour(eventsdf$event_date_est)>9
-eventsdf$during_trading = lubridate::hour(eventsdf$event_date_est)<16 & lubridate::hour(eventsdf$event_date_est)>9
-eventsdf$event_date = as.Date(eventsdf$event_date_est, tz = "EST")
-
+file_str <- paste(readLines("~/datasets/ceo-departs.mhtml"), collapse="")%>%
+  gsub(pattern='=',replacement = '',fixed = T)
+stringr::str_extract_all(file_str, 'levelfields\\.ai/e[a-zA-Z/0-9=_]*')
 
 system.time(stockdat <- parallel::mclapply(unique(eventsdf$symbol),
                                            stock_history,
