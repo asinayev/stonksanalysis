@@ -47,21 +47,18 @@ prices_m =
   rbindlist(fill = T)
 colnames(prices_m)=c('symbol','close','high','low','volume','TimeStamp','DateTime','open')
 
-prices_m2=data.table(prices)
+prices_m2=data.table(prices_m)
 prices_m2[, DateTime := as.POSIXct(TimeStamp/1000, 
                                   origin="1970-01-01", tz = 'EST')]
 prices_m2[,date:=as_date(DateTime)]
-
-prices_m2=merge(prices_m,
-                prices[,.(symbol,date,avg_delta_short,lag1close,lag1open,day_open=open, day_close=close)], 
-                by=c('symbol','date'))
-setorder(prices_m2, symbol, DateTime)
-
-prices_m2[,ema_long:=EMA(close ,n = 200, align='right',fill=NA),symbol ]
-prices_m2[,ema_short:=EMA(close ,n = 25, align='right',fill=NA),symbol ]
-prices_m2[,rsi_short:=RSI(close ,n = 10, align='right',fill=NA),symbol ]
-
 prices_m2[,bar_hour:=lubridate::hour(DateTime)]
-rally_m(prices_m2,
-      sell_rule=function(dat){dat$bar_hour==16},
-      varname='sell_crossover')
+prices_m2[,bar_minute:=lubridate::minute(DateTime)]
+
+prices_m2 = prices_m2[(bar_hour*60+bar_minute) %between% c(9*60+30, 11*60),
+          .(morn_low=min(low),morn_high=max(high),morn_open=open[1],morn_close=close[.N]),
+          .(symbol,date)] %>% 
+  merge(prices_m2[(bar_hour*60+bar_minute) %between% c(11*60, 16*60),
+                  .(afternoon_low=min(low),afternoon_high=max(high),afternoon_open=open[1],afternoon_close=close[.N]),
+                  .(symbol,date)])
+
+prices_m2[]
