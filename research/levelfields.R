@@ -6,28 +6,49 @@ args = commandArgs(trailingOnly=TRUE)
 if(length(args)==0){args='~/stonksanalysis'}
 setwd(args[1])
 source("polygon.R", local=T)
+source("implement/features.R", local=T)
+source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
-fundamentals = fread("~/stonksanalysis/other_datasources/nasdaq_screener_1636253557582.csv") #from https://www.nasdaq.com/market-activity/stocks/screener
-
-scenarios = c('share_buybacks'=164,
-              'dividend_creations'=168,
-              'dividend_increase'=121,
+scenarios = c('stock-buybacks'=164,
+              #'dividend_creations'=168,
+              #'dividend_increase'=121,
               'mass_layoffs'=119,
-              'dividend_reduction'=118,
-              'short_seller'=161,
-              'ceo_departs'=41,
-              'class_act'=116,
-              'removed_sp'=163)
+              'dividend-reduction'=118,
+              #'short-seller'=161,
+              'ceo-departs'=41,
+              'class-action-lawsuit'=116#,
+              #'removed_sp'=163
+              )
+pull_scenario = function(scenario){
+  links = paste0("~/datasets/",scenario,".mhtml",collapse='') %>%
+    readLines()%>%
+    paste(collapse='')%>%
+    gsub(pattern='=',replacement = '',fixed = T)%>%
+    stringr::str_extract_all('levelfields\\.ai/e[a-zA-Z/0-9=_]*')%>%
+    unlist
+  print(mean(sapply(strsplit(links,'/'), length)==7))
+  tabled = links[sapply(strsplit(links,'/'), length)==7]%>%
+    strsplit('/')%>%
+    do.call(what=data.table)%>%
+    t
+  data.table(symbol=tabled[,3],
+             source=tabled[,4],
+             time=tabled[,7],
+             eventtype=scenario,
+             event_time=as.POSIXct(as.numeric(tabled[,7])/1000, 
+                                   origin="1970-01-01", tz = 'EST'),
+             event_date=as_date(as.POSIXct(as.numeric(tabled[,7])/1000, 
+                                           origin="1970-01-01", tz = 'EST'))
+             )
 
-file_str <- paste(readLines("~/datasets/ceo-departs.mhtml"), collapse="")%>%
-  gsub(pattern='=',replacement = '',fixed = T)
-stringr::str_extract_all(file_str, 'levelfields\\.ai/e[a-zA-Z/0-9=_]*')
+}
+eventsdf = scenarios %>% names %>% lapply(pull_scenario) %>% rbindlist(fill=T) 
 
 system.time(stockdat <- parallel::mclapply(unique(eventsdf$symbol),
                                            stock_history,
                                            start_date=min(eventsdf$event_date, na.rm=T)-10,
-                                           end_date=max(eventsdf$event_date, na.rm=T)+3,
+                                           end_date=Sys.Date(),
                                            key=POLYKEY,print=F, check_ticker=F,
                                            mc.cores = 8))
 
@@ -37,62 +58,46 @@ stockdat = stockdat[, .SD[1], by=.(stock, Date)][
 
 setorder(stockdat, symbol, date)
 
-stockdat[,sell_rally_increment:=ifelse(shift(close,n=1,type='lag') <  shift(high,n = 2, type="lag") | 
-                                         is.na(shift(high,n = 2, type="lag")), 
-                                       0, 1),symbol]
-stockdat[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
-stockdat[,sell_rally:=close[.N], .(sell_rally_increment,symbol)]
-stockdat[,sell_rally_date:=date[.N], .(sell_rally_increment,symbol)]
+lag_lead_roll(stockdat, corr_window=100, roll_window=25, short_roll_window=5)
+rally(stockdat)
+stockdat[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
+stockdat[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
+stockdat[,c("lead20close"  ):=shift(close,   n = 20, type = "lead"),symbol]
 
-stockdat[,nextopen   :=shift(open, -1),symbol]
-stockdat[,nextclose  :=shift(close,-1),symbol]
-stockdat[,nexthigh   :=shift(high, -1),symbol]
-stockdat[,nextlow    :=shift(low,  -1),symbol]
-stockdat[,nextsellrally    :=shift(sell_rally,  -1),symbol]
-stockdat[,next2open  :=shift(open, -2),symbol]
-stockdat[,next2close :=shift(close,-2),symbol]
-stockdat[,next2high  :=shift(high, -2),symbol]
-stockdat[,next2low   :=shift(low,  -2),symbol]
-stockdat[,next5close  :=shift(close,-5),symbol]
-stockdat[,next20close  :=shift(close,-20),symbol]
-stockdat[,prevclose  :=shift(close, 1),symbol]
-stockdat[,prevvolume :=shift(volume,1),symbol]
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, details=T, financials=F, cores=16)
 
 events_prices = merge(data.table(eventsdf),
                       stockdat,
                       by.x = c('symbol', "event_date"),
                       by.y = c('symbol','date'),
-                      all.x=T )
-# events_prices = merge(events_prices,
-#                       fundamentals[,c('Symbol','Market Cap', 'Country', 'IPO Year', 'Volume', 'Sector', 'Industry')],
-#                       by.x = c('symbol'),
-#                       by.y = c('Symbol'),
-#                       all.x=T )
+                      all.x=T ) %>% 
+  merge(stocklist[,.(symbol=ticker, market_cap)],
+        by='symbol',all.x=T)
 
-events_prices[,gain_day_1:=ifelse( is_after_hours, (nextclose-nextopen)/nextopen, (close-open)/open )]
-events_prices[,gain_day_5:=ifelse( is_after_hours, (next5close-nextopen)/nextopen, (next5close-open)/open )]
-events_prices[,gain_day_20:=ifelse( is_after_hours, (next20close-nextopen)/nextopen, (next20close-open)/open )]
-events_prices[,gain_rally:=ifelse( is_after_hours, (nextsellrally-nextopen)/nextopen, (sell_rally-open)/open )]
+events_prices[,is_after_hours:=hour(event_time)>15]
+events_prices[,during_trading:=hour(event_time)%between%c(9,15)]
+events_prices[,gain_day_1:=ifelse( is_after_hours, (lead1close-lead1open)/lead1open, (close-open)/open )]
+events_prices[,gain_day_5:=ifelse( is_after_hours, (lead5close-lead1open)/lead1open, (lead5close-open)/open )]
+events_prices[,gain_day_20:=ifelse( is_after_hours, (lead20close-lead1open)/lead1open, (lead20close-open)/open )]
+events_prices[,gain_rally:=ifelse( is_after_hours, (lead1sell_rally-lead1open)/lead1open, (sell_rally-open)/open )]
 events_prices[,gain_wait:=ifelse(gain_day_1>-.02, gain_day_1, gain_day_5)]
 events_prices[,gain_wait_rally:=ifelse(gain_day_1>-.02, gain_day_1, gain_rally)]
 events_prices[,gain_wait_fall:=ifelse(gain_day_1> 0, gain_day_1, gain_day_5)]
-events_prices[,gain_overnight:= ifelse( is_after_hours, (nextopen-close)/close, (open-prevclose)/prevclose )]
-events_prices[,marketcap_num:= as.numeric(marketcap)]
-events_prices[,volume_num:= as.numeric(filter_volume)]
-events_prices[,prev_vol:= ifelse( is_after_hours, volume*close, prevvolume*prevclose )]
-events_prices[sector %in% events_prices[,.N,sector][N<150, sector], sector:='Other']
+events_prices[,gain_overnight:= ifelse( is_after_hours, (lead1open-close)/close, (open-lag1close)/lag1close )]
+events_prices[,prev_vol:= ifelse( is_after_hours, volume*close, lag1volume*lag1close )]
 
 
-events_prices[,.(day1 = mean(gain_day_1,na.rm=T),
-                 day5 = mean(gain_day_5,na.rm=T),  
-                 rally = mean(gain_rally,na.rm=T), 
-                 rally_days = mean(sell_rally_date-event_date,na.rm=T), 
-                 wait1_5 = mean(gain_wait,na.rm=T),
-                 wait_rally = mean(gain_wait_rally,na.rm=T),
-                 wait_fall = mean(gain_wait_fall,na.rm=T),
-                 wait_fall = median(gain_wait_fall,na.rm=T),
-                 day20 = mean(gain_day_20,na.rm=T), .N),
-              .( eventtype)]
+events_prices[lag1close>6&lag1volume>50000,.(day1 = round(mean(gain_day_1,na.rm=T),3),
+                 day5 = round(mean(gain_day_5,na.rm=T),3),  
+                 rally = round(mean(gain_rally,na.rm=T),3), 
+                 #rally_days = mean(sell_rally_date-event_date,na.rm=T), 
+                 #wait1_5 = mean(gain_wait,na.rm=T),
+                 #wait_rally = mean(gain_wait_rally,na.rm=T),
+                 #wait_fall = mean(gain_wait_fall,na.rm=T),
+                 #wait_fall = median(gain_wait_fall,na.rm=T),
+                 day20 = round(mean(gain_day_20,na.rm=T),3), 
+                 .N),
+              .( eventtype, market_cap<10000000000, gain_overnight> -.02)][order(eventtype,market_cap,gain_overnight)]
 events_prices[,.(mean(gain_day_1,na.rm=T),mean(gain_day_5,na.rm=T), 
                  mean(gain_rally,na.rm=T), mean(gain_day_20,na.rm=T), .N),
               .(eventtype,log(volume_num)>14)][order(eventtype,log)]
