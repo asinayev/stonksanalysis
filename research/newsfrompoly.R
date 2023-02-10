@@ -2,7 +2,7 @@ require(tidyquant, quietly = T)
 require(data.table, quietly = T)
 
 setwd('~/stonksanalysis')
-source("polygon.R", local=T)
+source("implement/imports.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
@@ -21,6 +21,16 @@ just_news = parallel::mclapply(
 news_moves = just_news %>%
   clean_news %>%
   merge(prices, by=c('date','symbol'), all.x=T)
+
+x=sapply(unique(floor_date(news_moves$date,'month')),function(yrmth) {
+  top_authors = news_moves[order(close/lag1close)][close>6 & date<as.Date(yrmth),head(.SD,5),.(date,author)][, 
+                           .(median(lead5close/lead1open),.N),author][
+                             V1>1.01 & N>50, author]
+  news_moves[close>6 & floor_date(date,'month')==as.Date(yrmth) & author %in% top_authors,
+                   head(.SD,5),date][,.(as.Date(yrmth),mean(lead1sell_rally/lead1close,na.rm=T),.N)]
+})
+x = data.table(t(x))
+x[,.(sum(as.numeric(V2)*unlist(N),na.rm=T)/sum(unlist(N)),sum(unlist(N)))]
 
 byword = news_moves[!sapply(keywords, is.null),
                     .(keywords=unlist(keywords) ),
@@ -76,7 +86,7 @@ merge(pennyshort_trades, pennyshort_hours,
 
 byword[log(market_cap)<21 & publisher.name=='Benzinga' &
          keywords%in%c('Small Cap','Penny Stocks') &
-         overnight_delta>1.01,
+         # overnight_delta>1.01,
        .(mean(delta,na.rm=T),
          median(delta,na.rm=T),
          length(unique(paste(date,ticker)))),.(year(date),month(date) )][order(year,month,decreasing = T)]
