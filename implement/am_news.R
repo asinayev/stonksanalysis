@@ -25,6 +25,8 @@ news_moves[grepl('earning', title, ignore.case = T) &
            close/open <.99] %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
+  dplyr::arrange(avg_delta) %>%
+  head(5)  %>%
   dplyr::mutate(action='BUY', 
                 order_type='MKT',
                 time_in_force='OPG') %>%
