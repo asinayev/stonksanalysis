@@ -135,7 +135,16 @@ prices[
 prices[symbol %in% prices[,.N,symbol][N>100,symbol]
           ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
 # did not fall too far?
-prices[close>6 & avg_volume>1000000 & volume==max_volume & lag1volume<avg_volume*2 & close/lag1close>.95 & avg_delta_short<.99][order(-date),.(mean(lead1sell_rally/lead1open,na.rm=T),.N)]
+prices[close>6 & avg_volume>1000000 & volume==max_volume & lag1volume<avg_volume*2 & 
+         close/lag1close>.99 & avg_delta_short<.9925][
+  order(avg_delta),head(.SD,5),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
+
+prices[close>6 & avg_volume>1000000 & volume>=pmin(max_volume,avg_volume*3) & 
+         close/lag1close>pmin(avg_delta_short^.1,.995) & avg_delta_short<.99][
+  order(avg_delta),head(.SD,5),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
+
 ###### volumelong -- incorporated into updownmorn
 # prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
 #          lag1volume%between%c(10000,100000),
