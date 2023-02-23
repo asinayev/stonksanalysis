@@ -30,4 +30,5 @@ news_moves[grepl('earning', title, ignore.case = T) &
   dplyr::mutate(action='BUY', 
                 order_type='MKT',
                 time_in_force='OPG') %>%
+  data.table %>%
   write_strat(strat_name='zacks_earn')
