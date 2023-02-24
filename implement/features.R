@@ -24,6 +24,8 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               lagging_corr_long:=
                 runCor( close/open, avg_delta_short, corr_window),
               symbol]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
+           RSI_short:=RSI(close,n=short_roll_window),symbol ]
     stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
            MACD:=EMA(close ,n = 12, align='right',fill=NA)/
              EMA(close ,n = 26, align='right',fill=NA),symbol ]

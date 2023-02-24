@@ -46,11 +46,11 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
-# rally(prices,
-#       sell_rule=function(dat){(dat$close-dat$lag1close)>=dat$avg_range*.5},
-#       varname='sell_range_up')
-# prices[,lead1sell_range_up:= shift(sell_range_up,1,type='lead'),symbol]
-# prices[,lead1sell_range_update:= shift(sell_range_up_date,1,type='lead'),symbol]
+rally(prices,
+      sell_rule=function(dat){dat$RSI_short>.5},
+      varname='sell_rsi')
+prices[,lead1sell_rsi:= shift(sell_rsi,1,type='lead'),symbol]
+prices[,lead1sell_rsi_date:= shift(sell_rsi_date,1,type='lead'),symbol]
 #                                                                   
 # rally(prices,
 #       sell_rule=function(dat){(dat$lag1close-dat$close)>=dat$avg_range*.5},
@@ -155,7 +155,7 @@ prices[avg_volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 18: 2022   0.017     -2.5   7.7    444         159      6.168919            64  87         28        79         80       87
 
 prices[avg_volume>500000 & close>7 & 
-         avg_delta_short<.975 & lagging_corr_long> .35][
+         (avg_delta_short<.975) & lagging_corr_long> .35][
            order(avg_volume),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 # also works
@@ -165,3 +165,9 @@ prices[ifelse(short, avg_volume>100000, avg_volume>500000) & close>7 & !(key_etf
   with(performance(date,lead1sell_range_up/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
+# oversold_etfs
+prices[!short & lever & close>6 & avg_volume>500000 & 
+         RSI_short<25 & 
+         lead1sell_rally/lead1open<2][
+           order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))

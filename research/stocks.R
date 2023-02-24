@@ -289,7 +289,7 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
 prices[low<running_low*1.001 & cap_order<10 & 
          lead1sell_rally/lead1open<1.5][
-           order(avg_delta_short,decreasing = F),head(.SD,3),date] %>%
+           order(avg_delta_short,decreasing = F),head(.SD,5),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 

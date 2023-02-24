@@ -60,7 +60,7 @@ prices[date==max(date, na.rm=T) &
 prices[low<running_low*1.001 & cap_order<10 &
         date==max(date, na.rm=T)][
           order(avg_delta_short,decreasing = F)]  %>%
- head(5) %>%
+ head(3) %>%
  dplyr::mutate( action='BUY',
                 order_type='MKT',
                 time_in_force='OPG') %>%
