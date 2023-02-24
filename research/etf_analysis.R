@@ -46,8 +46,9 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
+prices[,lag1RSI:= shift(RSI_short,1,type='lag'),symbol]
 rally(prices,
-      sell_rule=function(dat){dat$RSI_short>.5},
+      sell_rule=function(dat){dat$RSI_short>50 & dat$lag1RSI<50},
       varname='sell_rsi')
 prices[,lead1sell_rsi:= shift(sell_rsi,1,type='lead'),symbol]
 prices[,lead1sell_rsi_date:= shift(sell_rsi_date,1,type='lead'),symbol]
