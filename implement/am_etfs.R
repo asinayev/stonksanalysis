@@ -29,7 +29,7 @@ prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,200)
-prices=key_etfs(prices, low_corr_thresh=.33)
+#prices=key_etfs(prices, low_corr_thresh=.33)
 
 prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
