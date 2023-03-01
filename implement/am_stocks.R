@@ -9,7 +9,13 @@ prices = fread('/tmp/prices.csv')
 
 prices = only_passing(prices, min_volume=10000, min_close=5, last_n = 150)
 
+prices[symbol %in% prices[,.N,symbol][N>100,symbol]
+       ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+       ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
+prices[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,100)
@@ -65,3 +71,15 @@ prices[low<running_low*1.001 & cap_order<10 &
                 order_type='MKT',
                 time_in_force='OPG') %>%
  write_strat(strat_name='megacap')
+
+
+prices[close>5 & volume>100000 & 
+         (volume>=max_volume & avg_delta_short<.98) & 
+         (log(vp_order)-log(cap_order))>.35 &
+         date==max(date, na.rm=T)][
+           order(avg_delta_short)]%>%
+  head(5)%>%
+  dplyr::mutate( action='BUY',
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='volumelong')

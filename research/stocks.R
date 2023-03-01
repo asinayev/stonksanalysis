@@ -134,20 +134,16 @@ prices[
 
 prices[symbol %in% prices[,.N,symbol][N>100,symbol]
           ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
-# did not fall too far?
-prices[close>6 & avg_volume>1000000 & volume==max_volume & lag1volume<avg_volume*2 & cap_order<100 &
-         low/lag1close<.9 & close/open>.975][
-  order(avg_delta_short),head(.SD,5),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
-
-prices[close>6 & avg_volume>1000000 & volume>=pmin(max_volume,avg_volume*3) & 
-         close/lag1close>pmin(avg_delta_short^.1,.995) & avg_delta_short<.99][
-  order(avg_delta),head(.SD,5),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
+prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+          ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
+prices[order(avg_vp,decreasing=T),vp_order:=seq_len(.N),date]
 
 #Interesting variation with "boring" stocks
-prices[(low<running_low*1.001 & volume==max_volume) & 
-         avg_volume>1000000 & avg_volume*close < market_cap/500]
+prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
+         (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
+         (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
+           order(avg_delta_short),head(.SD,5),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
 
 ###### volumelong -- incorporated into updownmorn
 # prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
