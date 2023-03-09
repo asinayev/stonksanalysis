@@ -29,6 +29,16 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
+prices[(symbol %in% prices[!is.na(close),.N,symbol][N>106,symbol]) & !is.na(close),
+          MACD:=EMA(close ,n = 5, align='right',fill=NA)/
+            EMA(close ,n = 100, align='right',fill=NA),symbol ]
+prices[(symbol %in% prices[!is.na(MACD),.N,symbol][N>11,symbol]) & !is.na(MACD),
+          MACD_slow:=EMA(MACD ,n = 10, align='right',fill=NA),symbol ]
+prices[,lag1MACD:= shift(MACD,1,type='lag'),symbol]
+prices[,lag1MACD_slow:= shift(MACD_slow,1,type='lag'),symbol]
+
+
+
 #####bandlong
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
@@ -139,6 +149,12 @@ prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 prices[order(avg_vp,decreasing=T),vp_order:=seq_len(.N),date]
 
 #Interesting variation with "boring" stocks
+prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
+         (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
+         (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
+           order(avg_delta_short),head(.SD,5),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
+
 prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
          (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
          (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
@@ -287,14 +303,15 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
 ##############
 # megacap
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
-prices[low<running_low*1.001 & cap_order<10 & 
+prices[((low<running_low*1.001)|(avg_delta_short<.98)|((MACD_slow - MACD) > .015)) & 
+         cap_order<10 & 
          lead1sell_rally/lead1open<1.5][
            order(avg_delta_short,decreasing = F),head(.SD,5),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
 
 
-##############
+#############
 # No working strategies here yet
 wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
   pennyshort_hours = get_hours_for_stocks(trade_data$symbol,

@@ -63,7 +63,8 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='correlated_short')
 
 
-prices[low<running_low*1.001 & cap_order<10 &
+prices[((low<running_low*1.001)|(avg_delta_short<.98)|((MACD_slow - MACD) > .015)) &  
+                cap_order<10 &
         date==max(date, na.rm=T)][
           order(avg_delta_short,decreasing = F)]  %>%
  head(3) %>%
