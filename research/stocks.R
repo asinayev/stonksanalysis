@@ -38,6 +38,8 @@ prices[,lag1MACD:= shift(MACD,1,type='lag'),symbol]
 prices[,lag1MACD_slow:= shift(MACD_slow,1,type='lag'),symbol]
 
 
+prices[(symbol %in% prices[,.N,symbol][N>26,symbol]) ,
+       avg_range_p:=SMA(high/low-1 ,n = 25, align='right',fill=NA),symbol ]
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -126,7 +128,7 @@ prices[
 # 18: 2021   0.035     -1.6  12.1    350         179             1           251
 # 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  (close/open)>1.20 & close>7 & (open/lag1close)>1 & spy_future_night_delta<1.005 &
+  (close/open)>1.2 & close>7 & (open/lag1close)>1 & spy_future_night_delta<1.005 &
     volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
@@ -149,12 +151,6 @@ prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 prices[order(avg_vp,decreasing=T),vp_order:=seq_len(.N),date]
 
 #Interesting variation with "boring" stocks
-prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
-         (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
-         (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
-           order(avg_delta_short),head(.SD,5),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
-
 prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
          (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
          (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
@@ -285,7 +281,7 @@ prices[close>7 & volume>500000 &
   rbind(
     prices[close>7 & volume>500000 & 
              close>lag1high & sell_rally_day<2 & 
-             avg_delta_short>1.1][
+             avg_delta_short>(1.1*avg_delta)][
              ][order(days_around, decreasing=T),head(.SD,5),date]
   )%>%
   with(performance(date,
@@ -303,7 +299,7 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
 ##############
 # megacap
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
-prices[((low<running_low*1.001)|(avg_delta_short<.98)|((MACD_slow - MACD) > .015)) & 
+prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MACD) > .015)) & 
          cap_order<10 & 
          lead1sell_rally/lead1open<1.5][
            order(avg_delta_short,decreasing = F),head(.SD,5),date] %>%

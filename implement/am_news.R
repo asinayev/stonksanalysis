@@ -22,7 +22,7 @@ news_moves[grepl('earning', title, ignore.case = T) &
            grepl('revenue', title, ignore.case = T) &
            publisher.name=='Zacks Investment Research' &
            avg_volume>50000 & volume>50000 & close>5  & 
-           close/open <.99] %>%
+           open-close > avg_range/3 ] %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
   dplyr::arrange(avg_delta) %>%

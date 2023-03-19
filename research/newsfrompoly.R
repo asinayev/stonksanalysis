@@ -121,7 +121,7 @@ news_moves[grepl('earning', title, ignore.case = T) &
            grepl('revenue', title, ignore.case = T) &
            publisher.name=='Zacks Investment Research' &
            avg_volume>50000 & volume>50000 & close>5 & 
-           (close/open <.99  )
+           (open-close > avg_range/3 )
            #& !is.na(single_ticker)
            ,
            .(delta=max(close/open), avg_delta=max(avg_delta)),

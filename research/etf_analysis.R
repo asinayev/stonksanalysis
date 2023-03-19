@@ -126,7 +126,7 @@ prices[volume>75000 & close>7 & !short &
 
 
 prices[avg_volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
-         (((close-low)/(high-low))<.2 ) & 
+         (((close-low)/avg_range)<.2 ) & 
          (((high/close) > 1.075) | (avg_delta<.99) | 
             (!short & lever &  (MACD_slow<.975 | running_low == low ) ) 
          )

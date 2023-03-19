@@ -45,7 +45,7 @@ prices[order(lever, avg_volume,decreasing = F)][
 
 prices[order(lever, avg_volume,decreasing=F)][
   date==max(date, na.rm=T) & avg_volume>1000000 & close>7 &  
-         (((close-low)/(high-low))<.2 ) & 
+         (((close-low)/avg_range)<.2 ) & 
          ((high/close) > 1.075 | avg_delta<.99 |
             (!short & lever &  (MACD_slow<.975 | running_low == low ) ) 
           ),
