@@ -41,6 +41,12 @@ prices[,lag1MACD_slow:= shift(MACD_slow,1,type='lag'),symbol]
 prices[(symbol %in% prices[,.N,symbol][N>26,symbol]) ,
        avg_range_p:=SMA(high/low-1 ,n = 25, align='right',fill=NA),symbol ]
 
+rally(prices,
+      sell_rule=function(dat){dat$lag1close<dat$lag1low+.2*(dat$lag1high-dat$lag1low) },
+      varname='sell_lowclose',
+      sell_close=F)
+prices[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
+
 #####bandlong
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
