@@ -128,8 +128,8 @@ prices[
 # 18: 2021   0.035     -1.6  12.1    350         179             1           251
 # 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  (close/open)>1.2 & close>7 & (open/lag1close)>1 & spy_future_night_delta<1.005 &
-    volume>100000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
+  (close/open)>1.2 & close>7 & (open/lag1close)>1 & spy_future_night_delta>.99 &
+    vp_order<3000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
 
@@ -285,7 +285,7 @@ prices[close>7 & volume>500000 &
              ][order(days_around, decreasing=T),head(.SD,5),date]
   )%>%
   with(performance(date,
-                   ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead1sell_rally/lead1open),
+                   ifelse(close<lag1high,lead1sell_rally/lead1open-1,1-lead5close/lead1open),
                    lead1sell_rallydate-date,symbol))
 
 

@@ -31,7 +31,7 @@ prices[date==max(date, na.rm=T) &
 
 prices[date==max(date, na.rm=T) & 
          close/open>1.2 & open/lag1close>1 &
-         volume>100000 & close>7 ,
+         vp_order<3000 & close>7 ,
        .(date, symbol, close, volume)][order(close*volume,decreasing=T)] %>%
   head(3) %>%
   dplyr::mutate( action='SELL', 
