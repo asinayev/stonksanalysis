@@ -136,7 +136,7 @@ prices[
 prices[
   (close/open)>1.2 & close>7 & (open/lag1close)>1 & spy_future_night_delta>.99 &
     vp_order<3000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
-  with(performance(date,1-lead1close/lead1open,1,symbol))
+  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol))
 
 
 #At open, sell stocks that climbed yesterday too much
@@ -299,7 +299,7 @@ prices[close>7 & volume>500000 &
 # nightbot
 
 prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1.005 ]%>%
-  with(performance(date,1-lead1close/lead1open,
+  with(performance(date,1-lead1sell_lowclose/lead1open,
                    1,symbol))
 
 ##############

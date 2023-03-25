@@ -80,6 +80,7 @@ events_prices[,gain_day_1:=ifelse( is_after_hours, (lead1close-lead1open)/lead1o
 events_prices[,gain_day_5:=ifelse( is_after_hours, (lead5close-lead1open)/lead1open, (lead5close-open)/open )]
 events_prices[,gain_day_20:=ifelse( is_after_hours, (lead20close-lead1open)/lead1open, (lead20close-open)/open )]
 events_prices[,gain_rally:=ifelse( is_after_hours, (lead1sell_rally-lead1open)/lead1open, (sell_rally-open)/open )]
+events_prices[,gain_lowclose:=ifelse( is_after_hours, (lead1sell_lowclose-lead1open)/lead1open, (sell_lowclose-open)/open )]
 events_prices[,gain_wait:=ifelse(gain_day_1>-.02, gain_day_1, gain_day_5)]
 events_prices[,gain_wait_rally:=ifelse(gain_day_1>-.02, gain_day_1, gain_rally)]
 events_prices[,gain_wait_fall:=ifelse(gain_day_1> 0, gain_day_1, gain_day_5)]
@@ -90,14 +91,17 @@ events_prices[,prev_vol:= ifelse( is_after_hours, volume*close, lag1volume*lag1c
 events_prices[lag1close>6&lag1volume>50000,.(day1 = round(mean(gain_day_1,na.rm=T),3),
                  day5 = round(mean(gain_day_5,na.rm=T),3),  
                  rally = round(mean(gain_rally,na.rm=T),3), 
+                 lowclose = round(mean(gain_lowclose,na.rm=T),3), 
                  #rally_days = mean(sell_rally_date-event_date,na.rm=T), 
                  #wait1_5 = mean(gain_wait,na.rm=T),
                  #wait_rally = mean(gain_wait_rally,na.rm=T),
                  #wait_fall = mean(gain_wait_fall,na.rm=T),
                  #wait_fall = median(gain_wait_fall,na.rm=T),
                  day20 = round(mean(gain_day_20,na.rm=T),3), 
-                 .N),
-              .( eventtype, market_cap<10000000000, gain_overnight> -.02)][order(eventtype,market_cap,gain_overnight)]
+                 .N,  
+                 rally = round(mean(gain_rally,na.rm=T),3), 
+                 lowclose = round(mean(gain_lowclose,na.rm=T),3)),
+              .( eventtype, market_cap<10000000000, gain_overnight> 0)][order(eventtype,market_cap,gain_overnight)]
 events_prices[,.(mean(gain_day_1,na.rm=T),mean(gain_day_5,na.rm=T), 
                  mean(gain_rally,na.rm=T), mean(gain_day_20,na.rm=T), .N),
               .(eventtype,log(volume_num)>14)][order(eventtype,log)]
