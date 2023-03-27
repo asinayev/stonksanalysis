@@ -6,7 +6,6 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
-fwrite(prices[date==max(date)], '/tmp/lastday_prices.csv')
 
 prices = only_passing(prices, min_volume=10000, min_close=5, last_n = 150)
 
