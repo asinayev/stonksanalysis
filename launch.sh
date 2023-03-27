@@ -9,9 +9,11 @@ if [ $run_what == "am" ] || [ $run_what == "am_out" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/am_stocks.R /home/repos/stonksanalysis && \
 	Rscript /home/repos/stonksanalysis/implement/am_etfs.R /home/repos/stonksanalysis 
 fi
-if [ $run_what == "night_snapshot" ] ; then
-	Rscript /home/repos/stonksanalysis/implement/am_news.R /home/repos/stonksanalysis && \ 
+if [ $run_what == "am" ] || [ $run_what == "night_snapshot" ] ; then	
 	Rscript /home/repos/stonksanalysis/implement/nightmoves.R /home/repos/stonksanalysis
+fi
+if [ $run_what == "night_snapshot" ] ; then
+	Rscript /home/repos/stonksanalysis/implement/am_news.R /home/repos/stonksanalysis
 fi
 if [ $run_what == "snapshot" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/get_snapshot.R /home/repos/stonksanalysis
