@@ -46,6 +46,8 @@ rally(prices,
       varname='sell_lowclose',
       sell_close=F)
 prices[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
+prices[,lead1sell_lowclosedate:= shift(sell_lowclose_date,1,type='lead'),symbol]
+
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -134,7 +136,7 @@ prices[
 # 18: 2021   0.035     -1.6  12.1    350         179             1           251
 # 19: 2022   0.022     -1.0   2.8    124          71             1           106
 prices[
-  (close/open)>1.2 & close>7 & (open/lag1close)>1 & spy_future_night_delta>.99 &
+  (close/open)>1.2 & close>7 & (open/lag1close)>1  &
     vp_order<3000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
   with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol))
 
@@ -305,12 +307,23 @@ prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1
 ##############
 # megacap
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+       ,running_high:= zoo::rollapply(high,max,width=25, align='right',fill=NA),symbol ]
 prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MACD) > .015)) & 
          cap_order<10 & 
          lead1sell_rally/lead1open<1.5][
            order(avg_delta_short,decreasing = F),head(.SD,5),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
 
+
+##############
+# bigcap_short
+prices[ volume>500000 & close>7 & 
+        avg_delta>1.0075 & avg_delta_short>1.015 &
+        cap_order<200 & vp_order>50 & 
+        lead1sell_lowclose/lead1open>.5][
+           order(avg_delta_short,decreasing = T),head(.SD,5),date] %>%
+  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol))
 
 
 #############
