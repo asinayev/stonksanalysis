@@ -16,7 +16,7 @@ fwrite(current_moves_dt[ticker=='SPY'], '/tmp/spy_change.csv') #has todaysChange
 
 prices = fread('/tmp/prices.csv')
 
-current_moves_dt[todaysChangePerc>15 & min.av>10000 & min.c>5 & ticker %in% prices$symbol] %>%
+current_moves_dt[todaysChangePerc>15 & prevDay.v>100000 & min.av>10000 & min.c>5 & ticker %in% prices$symbol] %>%
   dplyr::mutate( symbol=ticker, action='SELL', 
                  strike_price=trunc(prevDay.c*1150,3)/1000, 
                  order_type='LMT', time_in_force='OPG') %>%
