@@ -146,7 +146,7 @@ prices[
 
 
 ###### volumeshort
-# prices[lag1volume/volume_avg>7.5 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 & 
+# prices[lag1volume/volume_avg>7.5 & lag1_day_delta>.975 & night_delta>1.01  & open>7.5 &
 #          lag1volume%between%c(10000,100000),
 #        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
 #
