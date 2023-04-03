@@ -43,7 +43,7 @@ prices[ date==max(date, na.rm=T) &
           volume>500000 & close>7 & 
           avg_delta>1.0075 & avg_delta_short>1.015 &
           cap_order<200 & vp_order>50,
-        .(date, symbol, close, volume)][
+        .(date, symbol, close, volume, avg_delta_short)][
             order(avg_delta_short,decreasing = T)]%>%
   head(5) %>%
   dplyr::mutate( action='SELL', 
