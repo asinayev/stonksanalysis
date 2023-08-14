@@ -5,7 +5,7 @@ if [ $run_what == "am" ] || [ $run_what == "am_data" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/get_data.R /home/repos/stonksanalysis
 fi
 if [ $run_what == "am" ] || [ $run_what == "am_out" ] ; then
-	Rscript /home/repos/stonksanalysis/implement/am_regression.R /home/repos/stonksanalysis && \
+	#Rscript /home/repos/stonksanalysis/implement/am_regression.R /home/repos/stonksanalysis && \
 	Rscript /home/repos/stonksanalysis/implement/am_stocks.R /home/repos/stonksanalysis && \
 	Rscript /home/repos/stonksanalysis/implement/am_etfs.R /home/repos/stonksanalysis 
 fi
