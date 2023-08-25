@@ -65,7 +65,4 @@ prices[order(lever, avg_volume, decreasing = F)][
 
 
 prices[date==max(date, na.rm=T) ] %>%
-  dplyr::mutate( action='NONE',
-                 order_type='NONE',
-                 time_in_force='NONE') %>%
-  write_strat(strat_name='all_etfs')
+  fwrite('/tmp/stonksanalysis/all_etfs.csv')

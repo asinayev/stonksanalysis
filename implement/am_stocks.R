@@ -99,8 +99,6 @@ prices[close>5 & volume>100000 &
   write_strat(strat_name='volumelong')
 
 
+
 prices[date==max(date, na.rm=T) ] %>%
-  dplyr::mutate( action='NONE',
-                 order_type='NONE',
-                 time_in_force='NONE') %>%
-  write_strat(strat_name='all_stocks')
+  fwrite('/tmp/stonksanalysis/all_stocks.csv')
