@@ -100,4 +100,7 @@ prices[close>5 & volume>100000 &
 
 
 prices[date==max(date, na.rm=T) ] %>%
+  dplyr::mutate( action='NONE',
+                 order_type='NONE',
+                 time_in_force='NONE') %>%
   write_strat(strat_name='all_stocks')
