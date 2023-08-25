@@ -26,7 +26,8 @@ performance=function(date,outcome,days_held,symbol){
   with(results_daily, plot(date,drawdown,type='l', 
                            ylim=c(-10,max(cumsum(outcome) ))))
   with(results_daily, points(date,cumsum(outcome),type='l'))
-  abline(v = seq(as.Date("2000-01-01"), as.Date("2025-12-31"), by = "year"),lty=2,col='gray')
+  abline(v = seq(as.Date("2000-01-01"), as.Date("2030-12-31"), by = "year"),lty=2,col='gray')
+  abline(v = seq(as.Date("2000-01-01"), as.Date("2030-12-31"), by = "month"),lty=3,col='lightgray')
   max_drawdown_days = max(results_daily[,.(datediff=max(date)-min(date)),drawdown_i][,datediff])
   print(results_overall[,.(avg_year=mean(average), 
                            avg_trade=sum(total)/sum(trades),
