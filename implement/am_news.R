@@ -32,3 +32,10 @@ news_moves[grepl('earning', title, ignore.case = T) &
                 time_in_force='OPG') %>%
   data.table %>%
   write_strat(strat_name='zacks_earn')
+
+news_moves%>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(dplyr::row_number()==1) %>%
+  data.table %>%
+  write_strat(strat_name='all_news')
+  

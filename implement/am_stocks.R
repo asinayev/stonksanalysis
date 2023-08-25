@@ -97,3 +97,7 @@ prices[close>5 & volume>100000 &
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='volumelong')
+
+
+prices[date==max(date, na.rm=T) ] %>%
+  write_strat(strat_name='all_stocks')

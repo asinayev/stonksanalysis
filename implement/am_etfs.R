@@ -62,3 +62,7 @@ prices[order(lever, avg_volume, decreasing = F)][
   head(3) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='corr_long_etfs')
+
+
+prices[date==max(date, na.rm=T) ] %>%
+  write_strat(strat_name='all_etfs')
