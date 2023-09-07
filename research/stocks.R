@@ -289,7 +289,7 @@ prices[close>7 & volume>500000 &
   rbind(
     prices[close>7 & volume>500000 & 
              close>lag1high & sell_rally_day<2 & 
-             avg_delta_short>(1.1*avg_delta)][
+             avg_delta_short>1.1][
              ][order(days_around, decreasing=T),head(.SD,5),date]
   )%>%
   with(performance(date,
