@@ -49,6 +49,14 @@ prices[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
 prices[,lead1sell_lowclosedate:= shift(sell_lowclose_date,1,type='lead'),symbol]
 
 
+prices[symbol %in% prices[,.N,symbol][N>100,symbol]
+       ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
+prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+       ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
+prices[order(avg_vp,decreasing=T),    vp_order:=seq_len(.N),date]
+prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+
+
 #####bandlong
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
@@ -152,20 +160,37 @@ prices[
 #
 ######
 
-prices[symbol %in% prices[,.N,symbol][N>100,symbol]
-          ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>25,symbol]
-          ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
-prices[order(avg_vp,decreasing=T),vp_order:=seq_len(.N),date]
 
-#Interesting variation with "boring" stocks
+#####volumelong -- new version
+# avg_year  avg_trade drawdown drawdown_days days_traded
+# 1: 0.01272222 0.01406322     -5.9          1061        1288
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2005   0.010     -0.4   0.9     90          67             1            81
+# 2: 2006   0.015     -0.4   1.8    123          76             1            94
+# 3: 2007   0.029     -0.2   4.2    147          73             1           119
+# 4: 2008   0.023     -3.0   8.6    368         157             1           272
+# 5: 2009   0.001     -1.7   0.1    158          91             1           131
+# 6: 2010   0.024     -0.6   2.9    120          70             1            99
+# 7: 2011   0.004     -1.5   0.6    146          82             1           100
+# 8: 2012   0.012     -0.3   1.0     86          66             1            73
+# 9: 2013   0.013     -0.1   1.2     90          67             1            81
+# 10: 2014   0.020     -0.5   1.9     94          63             1            73
+# 11: 2015   0.021     -0.8   2.5    123          77             1            93
+# 12: 2016   0.022     -0.3   1.9     88          57             1            71
+# 13: 2017   0.007     -0.3   0.4     47          39             1            38
+# 14: 2018   0.004     -0.7   0.6    153          91             1           119
+# 15: 2019   0.008     -0.9   0.5     64          53             1            47
+# 16: 2020  -0.012     -5.9  -1.4    121          51             1            98
+# 17: 2021  -0.013     -3.1  -0.9     68          53             1            58
+# 18: 2022   0.041     -2.9   3.9     97          55             1            77
+
 prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
          (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
          (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
            order(avg_delta_short),head(.SD,5),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol))
 
-###### volumelong -- incorporated into updownmorn
+##### volumelong -- incorporated into updownmorn
 # prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
 #          lag1volume%between%c(10000,100000),
 #        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
@@ -299,16 +324,35 @@ prices[close>7 & volume>500000 &
 
 #############
 # nightbot
-
-prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1.005 ]%>%
-  with(performance(date,1-lead1sell_lowclose/lead1open,
-                   1,symbol))
+# 
+# prices[close>5 & volume>100000 & lead1open/close>1.15 & spy_future_night_delta<1.005 ]%>%
+#   with(performance(date,1-lead1sell_lowclose/lead1open,
+#                    1,symbol))
 
 ##############
 # megacap
-prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
-prices[symbol %in% prices[,.N,symbol][N>25,symbol]
-       ,running_high:= zoo::rollapply(high,max,width=25, align='right',fill=NA),symbol ]
+# avg_year   avg_trade drawdown drawdown_days days_traded
+# 1: 0.006894737 0.007509767       -3           510        2644
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2004   0.010      0.0   0.1     15          11      4.800000             5
+# 2: 2005   0.008     -0.4   2.9    352         165      5.215909            10
+# 3: 2006   0.004     -1.6   1.4    318         131      4.194969            10
+# 4: 2007   0.006     -0.9   2.6    448         163      4.491071            10
+# 5: 2008   0.014     -3.0   9.5    699         219      5.188841             9
+# 6: 2009   0.022     -2.4  11.2    499         179      4.717435            11
+# 7: 2010   0.003     -1.9   1.6    462         157      4.948052            11
+# 8: 2011   0.003     -1.0   1.2    438         168      4.630137            14
+# 9: 2012   0.002     -1.5   0.6    326         149      5.092025            12
+# 10: 2013   0.004     -0.4   1.0    262         121      4.156489            11
+# 11: 2014   0.005     -0.5   1.7    355         143      4.230986            12
+# 12: 2015   0.004     -0.5   1.5    367         147      4.564033            12
+# 13: 2016   0.003     -0.2   1.2    331         141      5.570997            12
+# 14: 2017   0.004     -0.1   0.9    215         118      4.948837            15
+# 15: 2018   0.005     -1.7   2.3    481         163      5.729730            11
+# 16: 2019   0.004     -1.6   0.9    218          82      4.541284            10
+# 17: 2020   0.016     -0.9   6.1    388         131      4.592784            11
+# 18: 2021   0.006     -1.4   2.3    379         152      5.029024            11
+# 19: 2022   0.008     -1.0   2.9    358         104      4.519553            10
 prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MACD) > .015)) & 
          cap_order<10 & 
          lead1sell_rally/lead1open<1.5][
@@ -318,6 +362,28 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MA
 
 ##############
 # bigcap_short
+# avg_year  avg_trade drawdown drawdown_days days_traded
+# 1: 0.01272222 0.01406322     -5.9          1061        1288
+# year average drawdown total trades days_traded avg_days_held stocks_traded
+# 1: 2005   0.010     -0.4   0.9     90          67             1            81
+# 2: 2006   0.015     -0.4   1.8    123          76             1            94
+# 3: 2007   0.029     -0.2   4.2    147          73             1           119
+# 4: 2008   0.023     -3.0   8.6    368         157             1           272
+# 5: 2009   0.001     -1.7   0.1    158          91             1           131
+# 6: 2010   0.024     -0.6   2.9    120          70             1            99
+# 7: 2011   0.004     -1.5   0.6    146          82             1           100
+# 8: 2012   0.012     -0.3   1.0     86          66             1            73
+# 9: 2013   0.013     -0.1   1.2     90          67             1            81
+# 10: 2014   0.020     -0.5   1.9     94          63             1            73
+# 11: 2015   0.021     -0.8   2.5    123          77             1            93
+# 12: 2016   0.022     -0.3   1.9     88          57             1            71
+# 13: 2017   0.007     -0.3   0.4     47          39             1            38
+# 14: 2018   0.004     -0.7   0.6    153          91             1           119
+# 15: 2019   0.008     -0.9   0.5     64          53             1            47
+# 16: 2020  -0.012     -5.9  -1.4    121          51             1            98
+# 17: 2021  -0.013     -3.1  -0.9     68          53             1            58
+# 18: 2022   0.041     -2.9   3.9     97          55             1            77
+
 prices[ volume>500000 & close>7 & 
         avg_delta>1.0075 & avg_delta_short>1.015 &
         cap_order<200 & vp_order>50 & 
