@@ -268,7 +268,7 @@ get_prev_day_news = function(date, key, full_prevday=T, apply_=F){
   if(apply_){
     close = lubridate::as_datetime(paste(date,"09:30:00",collapse = "T"),tz='America/New_York')
   } else {
-    close = lubridate::as_datetime(paste(date,"09:00:00",collapse = "T"),tz='America/New_York')
+    close = lubridate::as_datetime(paste(date,"07:30:00",collapse = "T"),tz='America/New_York')
   }
   today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&apiKey=%s&limit=1000" %>%
     sprintf(open %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"),
