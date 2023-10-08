@@ -18,7 +18,7 @@ prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-rally_avg(prices,100)
+# rally_avg(prices,100)
 
 prices[date==max(date, na.rm=T) & 
          (volume/avg_volume <.75 | close/open>1.025) & 
