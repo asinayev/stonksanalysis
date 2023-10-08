@@ -7,7 +7,7 @@ if(length(args)==0){
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
 
-prices = only_passing(prices, min_volume=10000, min_close=5, last_n = 150)
+prices = only_passing(prices, min_volume=0, min_close=0, last_n = 150)
 
 prices[symbol %in% prices[,.N,symbol][N>100,symbol]
        ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
