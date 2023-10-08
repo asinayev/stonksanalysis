@@ -7,7 +7,7 @@ if(length(args)==0){
 source("implement/imports.R", local=T)
 
 prices = fread('/tmp/prices.csv')
-prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
+# prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5, rolling_features=F)
 regression_features(prices)
