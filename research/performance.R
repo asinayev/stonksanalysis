@@ -5,19 +5,26 @@ drawdown = function(x){
   x,0, accumulate=T)[-1]
 }
 
-performance=function(date,outcome,days_held,symbol){
-  results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol)
+performance=function(date,outcome,days_held,symbol,sell_date=date){
+  results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol,sell_date=sell_date)
   results=na.omit(results)
   results_daily = results[,.(outcome=sum(outcome,na.rm =T),trades=.N),date]
+  results_daily = merge(results_daily, results[,.(n_sold=.N),sell_date], 
+                        all=T, by.x='date',by.y='sell_date')
+  results_daily[,n_sold:=ifelse(is.na(n_sold),0,n_sold)]
+  results_daily[,outcome:=ifelse(is.na(outcome),0,outcome)]
+  results_daily[,trades:=ifelse(is.na(trades),0,trades)]
   setorder(results_daily, date)
   results_daily[,drawdown:=drawdown(outcome)]
   results_daily[,drawdown_i:=cumsum(drawdown==0)]
+  results_daily[,n_held:=cumsum(trades-n_sold)]
   results_overall= results_daily[,.(
     average=round(sum(outcome)/sum(trades),3),
     drawdown=round(min(drawdown,na.rm=T),1),
     total=round(sum(outcome),1),
     trades=sum(trades),
-    days_traded=.N
+    days_traded=length(unique(ifelse(trades>0,date,NA))),
+    max_held=max(n_held)
   ), 
   year(date) ]%>%
     merge(results[,.(avg_days_held=mean(days_held),
@@ -33,6 +40,7 @@ performance=function(date,outcome,days_held,symbol){
                            avg_trade=sum(total)/sum(trades),
                            drawdown=min(drawdown), 
                            drawdown_days=max(max_drawdown_days),
-                           days_traded=sum(days_traded) )])
+                           days_traded=sum(days_traded),
+                           max_held=max(max_held))])
   results_overall[order(year)]
 }
