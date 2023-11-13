@@ -43,5 +43,6 @@ performance=function(date,outcome,days_held,symbol,sell_date=date){
                            drawdown_days=max(max_drawdown_days),
                            days_traded=sum(days_traded),
                            max_held=max(max_held))])
-  results_overall[order(year)]
+  print(results_overall[order(year)])
+  return(results_daily[,.(date,n_held)])
 }

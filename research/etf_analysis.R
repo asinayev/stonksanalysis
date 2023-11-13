@@ -82,7 +82,7 @@ prices=key_etfs(prices,low_corr_thresh=.33)
 
 
 setorder(prices, symbol, date)
-prices[volume>500000 & close>7 & 
+rally = prices[volume>500000 & close>7 & 
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          avg_delta/sell_rally_avg<.982][
@@ -113,7 +113,7 @@ prices[volume>500000 & close>7 &
 # 18: 2022   0.022     -1.8   8.9    406         158       24      5.790640            73
 
 
-prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
+revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
@@ -143,7 +143,11 @@ prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 16: 2021   0.018     -1.2   5.1    289         153       21      5.961938            46
 # 17: 2022   0.016     -2.0   5.3    325         136       22      5.224615            77
 
-prices[volume>500000 & close>7 & 
+corr_long = prices[volume>500000 & close>7 & 
          (avg_delta_short<.975) & lagging_corr_long> .35][
            order(avg_volume),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate))
+
+helds = merge(rally, revert, on='date',all=T)%>%
+  merge(corr_long, on='date', all=T)
+cor(helds[,.(n_held,n_held.x,n_held.y)],use = 'pairwise.complete')
