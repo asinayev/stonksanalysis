@@ -28,8 +28,8 @@ news_moves[grepl('earning', title, ignore.case = T) &
   dplyr::arrange(avg_delta) %>%
   head(5)  %>%
   dplyr::mutate(action='BUY', 
-                order_type='MKT',
-                time_in_force='OPG') %>%
+                order_type='MIDPRICE',
+                time_in_force='DAY') %>%
   data.table %>%
   write_strat(strat_name='zacks_earn')
 
