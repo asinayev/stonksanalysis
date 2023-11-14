@@ -27,5 +27,5 @@ prices[volume>75000 & close>7,
 prices[date==max(date, na.rm=T) & 
          reg_predict<threshold,
        .(date, symbol, close, volume)] %>%
-  dplyr::mutate( action='SELL', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='SELL', order_type='MIDPRICE', time_in_force='DAY') %>%
   write_strat(strat_name='regression')
