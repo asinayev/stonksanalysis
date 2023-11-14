@@ -94,8 +94,8 @@ prices[close>5 & volume>100000 &
            order(avg_delta_short)]%>%
   head(5)%>%
   dplyr::mutate( action='BUY',
-                 order_type='MKT',
-                 time_in_force='OPG') %>%
+                 order_type='MIDPRICE',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='volumelong')
 
 
