@@ -390,6 +390,11 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MA
                    lead1sell_rallydate))
 
 
+
+bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
+bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]
+bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
+
 #############
 # bigcap_short
 #      avg_year avg_trade drawdown drawdown_days days_traded max_held
@@ -415,13 +420,44 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MA
 # 18: 2021   0.001     -0.9   0.1    159         101       17      8.509434            42
 # 19: 2022   0.042     -0.4   5.3    126          58       19      6.111111            36
 
-prices[ volume>500000 & close>7 & 
-        avg_delta>1.0075 & avg_delta_short>1.015 &
-        cap_order<200 & vp_order>50 & 
+bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
+          (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
         lead1sell_lowclose/lead1open>.5][
-           order(avg_delta_short,decreasing = T),head(.SD,5),date] %>%
+           order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
   with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate))
 
+
+#############
+# bigcap_long
+#      avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.01321053 0.01466951     -2.7           329         980       39
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2004   0.018      0.0   0.3     16          11        8      5.250000             7
+# 2: 2005   0.035      0.0   1.1     31          24        7      3.870968            15
+# 3: 2006   0.005     -0.8   0.3     67          35       22      4.850746            28
+# 4: 2007   0.015     -0.4   2.2    152          63       20      4.710526            57
+# 5: 2008   0.025     -1.8  11.9    474         143       34      5.080169           127
+# 6: 2009   0.014     -2.7   4.3    312         117       39      5.387821            91
+# 7: 2010   0.019     -0.2   1.6     85          35       23      6.247059            35
+# 8: 2011   0.005     -1.7   0.5    115          44       26      4.791304            47
+# 9: 2012   0.006     -0.3   0.3     45          29       14      4.822222            25
+# 10: 2013   0.007     -0.2   0.2     34          32        4      4.941176            20
+# 11: 2014   0.022      0.0   1.2     52          30       15      5.403846            25
+# 12: 2015   0.001     -0.7   0.1     85          53       17      5.705882            38
+# 13: 2016   0.008     -1.5   1.1    124          47       18      4.306452            45
+# 14: 2017   0.018      0.0   0.3     15          12        4      5.800000             8
+# 15: 2018   0.009     -0.8   1.1    112          50       27      6.366071            56
+# 16: 2019   0.016     -0.2   0.9     56          38       12      5.160714            21
+# 17: 2020   0.017     -2.4   4.2    253          85       24      4.948617            94
+# 18: 2021  -0.001     -1.0  -0.1     75          47       14      6.360000            33
+# 19: 2022   0.012     -1.3   2.9    242          85       28      5.644628            70
+
+bigcaps[(avg_delta_short<bigcap_avg_delta_short*.98 | avg_delta_short<.98) &
+          (avg_delta/bigcap_avg_delta) >.9975 &
+          lead1sell_rally/lead1open<1.5][
+            order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate))
 
 #############
 # No working strategies here yet
@@ -530,3 +566,6 @@ all_splits= prices$symbol %>% unique %>%
 
 merge(prices,
         all_splits[,.(date=as.Date(execution_date),split_from,split_to,symbol=ticker)])
+
+
+

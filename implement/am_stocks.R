@@ -20,6 +20,10 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 # rally_avg(prices,100)
 
+bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
+bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]
+bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
+
 prices[date==max(date, na.rm=T) & 
          (volume/avg_volume <.75 | close/open>1.025) & 
          volume%between%c(10000,20000) & close>5 ,
@@ -39,18 +43,27 @@ prices[date==max(date, na.rm=T) &
                  time_in_force='OPG') %>%
   write_strat(strat_name='overbought')
 
-prices[ date==max(date, na.rm=T) & 
-          volume>500000 & close>7 & 
-          avg_delta>1.0075 & avg_delta_short>1.015 &
-          cap_order<200 & vp_order>50,
+bigcaps[ date==max(date, na.rm=T) & 
+           (avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
+           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015),
         .(date, symbol, close, volume, avg_delta_short)][
             order(avg_delta_short,decreasing = T)]%>%
-  head(5) %>%
+  head(1) %>%
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='bigcap_short')
 
+bigcaps[ date==max(date, na.rm=T) & 
+           (avg_delta/bigcap_avg_delta) >.9975 & 
+           (avg_delta_short<bigcap_avg_delta_short*.98 | avg_delta_short<.98),
+         .(date, symbol, close, volume, avg_delta_short)][
+           order(avg_delta_short,decreasing = F)]%>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='bigcap_long')
 
 prices[date==max(date, na.rm=T) & 
          close>7 & volume>500000 & 
