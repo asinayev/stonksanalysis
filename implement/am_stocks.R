@@ -55,8 +55,8 @@ bigcaps[ date==max(date, na.rm=T) &
   write_strat(strat_name='bigcap_short')
 
 bigcaps[ date==max(date, na.rm=T) & 
-           (avg_delta/bigcap_avg_delta) >.9975 & 
-           (avg_delta_short<bigcap_avg_delta_short*.98 | avg_delta_short<.98),
+           (avg_delta>bigcap_avg_delta*.995 | avg_delta>.995) & 
+           (avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)),
          .(date, symbol, close, volume, avg_delta_short)][
            order(avg_delta_short,decreasing = F)]%>%
   head(1) %>%
@@ -89,9 +89,10 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='correlated_short')
 
 
-prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)|((MACD_slow - MACD) > .015)) &  
-                cap_order<10 &
-        date==max(date, na.rm=T)][
+prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &  
+         cap_order<50 &
+         (((close-low)/avg_range)<.15 ) & 
+         date==max(date, na.rm=T)][
           order(avg_delta_short,decreasing = F)]  %>%
  head(3) %>%
  dplyr::mutate( action='BUY',
