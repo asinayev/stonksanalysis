@@ -102,11 +102,12 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 
 
 prices[close>5 & volume>100000 & 
-         (volume>=max_volume & avg_delta_short<.98) & 
+         (volume>=max_volume & avg_delta_short<.99) & 
          (log(vp_order)-log(cap_order))>.35 &
+         (((close-low)/avg_range)<.2 ) &
          date==max(date, na.rm=T)][
            order(avg_delta_short)]%>%
-  head(5)%>%
+  head(3)%>%
   dplyr::mutate( action='BUY',
                  order_type='MIDPRICE',
                  time_in_force='DAY') %>%

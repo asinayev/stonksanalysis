@@ -166,31 +166,32 @@ prices[
 #####volumelong -- new version
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.01272222 0.01406322     -5.9          1062        1306       33
-#    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2005   0.010     -0.4   0.9     90          68        8             1            81
-# 2: 2006   0.015     -0.4   1.8    123          77       19             1            94
-# 3: 2007   0.029     -0.2   4.2    147          74       21             1           119
-# 4: 2008   0.023     -3.0   8.6    368         158       33             1           272
-# 5: 2009   0.001     -1.7   0.1    158          92       26             1           131
-# 6: 2010   0.024     -0.6   2.9    120          71       15             1            99
-# 7: 2011   0.004     -1.5   0.6    146          83       27             1           100
-# 8: 2012   0.012     -0.3   1.0     86          67        9             1            73
-# 9: 2013   0.013     -0.1   1.2     90          68       11             1            81
-# 10: 2014   0.020     -0.5   1.9     94          64       14             1            73
-# 11: 2015   0.021     -0.8   2.5    123          78       14             1            93
-# 12: 2016   0.022     -0.3   1.9     88          58       12             1            71
-# 13: 2017   0.007     -0.3   0.4     47          40        5             1            38
-# 14: 2018   0.004     -0.7   0.6    153          92       21             1           119
-# 15: 2019   0.008     -0.9   0.5     64          54        9             1            47
-# 16: 2020  -0.012     -5.9  -1.4    121          52       33             1            98
-# 17: 2021  -0.013     -3.1  -0.9     68          54        9             1            58
-# 18: 2022   0.041     -2.9   3.9     97          56       13             1            77
+# 1: 0.01194444 0.01277696     -2.2          1267         970       16
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2005   0.015     -0.1   0.9     59          50        4             1            57
+# 2: 2006   0.008     -0.4   0.5     64          49        6             1            53
+# 3: 2007   0.021     -0.1   1.8     87          63        8             1            78
+# 4: 2008   0.028     -0.9   4.9    179         109       16             1           160
+# 5: 2009   0.012     -0.9   1.0     81          61        7             1            70
+# 6: 2010   0.015     -0.4   1.0     70          50        8             1            67
+# 7: 2011   0.001     -0.6   0.1     87          65       14             1            71
+# 8: 2012   0.013     -0.5   0.9     68          52        9             1            63
+# 9: 2013   0.014     -0.1   1.2     85          58        9             1            80
+# 10: 2014   0.010     -0.4   0.9     93          66       14             1            78
+# 11: 2015   0.024     -0.3   1.9     77          55        9             1            70
+# 12: 2016   0.017     -0.1   1.2     74          56        8             1            69
+# 13: 2017   0.011     -0.1   0.3     25          25        3             1            22
+# 14: 2018  -0.002     -0.7  -0.2     98          65       14             1            85
+# 15: 2019   0.014     -0.6   0.4     26          25        3             1            25
+# 16: 2020  -0.006     -2.2  -0.4     67          41       13             1            63
+# 17: 2021  -0.004     -1.2  -0.3     63          43        8             1            60
+# 18: 2022   0.024     -0.9   1.2     51          37        6             1            47
 
 prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
-         (volume>=max_volume & avg_delta_short<.98) & #big down movement recently and consolidated today
+         (volume>=max_volume & avg_delta_short<.99) & #big down movement recently and consolidated today
+         (((close-low)/avg_range)<.2 ) & 
          (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
-           order(avg_delta_short),head(.SD,5),date]%>%
+           order(avg_delta_short),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate))
 
 ## volumelong -- incorporated into updownmorn
