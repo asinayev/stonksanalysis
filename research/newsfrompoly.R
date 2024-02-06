@@ -6,8 +6,6 @@ source("implement/imports.R", local=T)
 source("research/performance.R", local=T)
 source("implement/get_data.R", local=T)
 
-POLYKEY = Sys.getenv('POLYGONKEY')
-
 days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
 
 # just_news = as.Date(as.Date("2022-04-20"):as.Date("2022-04-29"),origin='1970-01-01') %>%
@@ -45,8 +43,8 @@ news_moves = just_news %>%
 
 byword = news_moves[!sapply(keywords, is.null),
                     .(keywords=unlist(keywords) ),
-                    .(id, delta=close/open, overnight_delta=open/lag1close,
-                      prev_delta=lag1close/lag1open, prev_dol_vol = close*volume, open,
+                    .(id, delta=lead1sell_rally/lead1open, overnight_delta=lead1open/close,
+                      prev_delta=close/open, prev_dol_vol = close*volume, open,
                       symbol, single_ticker, market_cap, date, publisher.name, title)]
 
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
@@ -105,11 +103,10 @@ byword[log(market_cap)<21 & publisher.name=='Benzinga' &
 
 
 byword[
-  ,
-  .(mean(abs(delta-1),na.rm=T),
+  ,.(mean(abs(delta-1),na.rm=T),
     mean(delta,na.rm=T),
     median(delta,na.rm=T),
-    length(unique(paste(date,ticker)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]
+    length(unique(paste(date,symbol)))),.(publisher.name, keywords)][order(V1,decreasing = T)][V4>1000]
 
 unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,publisher.name)], bigram, title)[
   bigram=='daily j']
@@ -130,7 +127,8 @@ news_moves[grepl('earning', title, ignore.case = T) &
                    1,symbol))
 
 
-news_moves[grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T) & 
-             o/prev_close<1.1 & o/prev_close>.98 &prev_vol>75000 & market_cap<10000000000 &
-            !is.na(single_ticker),max(date),
-           .(date,ticker,c,o,market_cap)][, .(mean(c/o),.N), .(year(date),month(date))][order(year,month)]
+news_moves[avg_volume>75000 & market_cap<10000000000 &
+             !is.na(single_ticker) &
+           grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T),
+           max(date),
+           .(date,symbol,lead1open,lead1sell_rally,market_cap)][, .(mean(lead1sell_rally/lead1open),.N), .(year(date),month(date))][order(year,month)]
