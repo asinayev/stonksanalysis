@@ -25,18 +25,9 @@ bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]
 bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
 
 prices[date==max(date, na.rm=T) & 
-         (volume/avg_volume <.75 | close/open>1.025) & 
-         volume%between%c(10000,20000) & close>5 ,
-       .(date, symbol, close)] %>%
-  dplyr::mutate( stock=symbol, action='BUY', 
-                 strike_price=trunc(close*975,3)/1000, 
-                 order_type='LMT', time_in_force='OPG') %>%
-  write_strat(strat_name='updownmorn')
-
-prices[date==max(date, na.rm=T) & 
          close/open>1.2 & open/lag1close>1 &
-         vp_order<3000 & close>7 ,
-       .(date, symbol, close, volume)][order(close*volume,decreasing=T)] %>%
+         vp_order<3000 & close>7][
+  order(close*volume,decreasing=T)] %>%
   head(3) %>%
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
@@ -45,8 +36,7 @@ prices[date==max(date, na.rm=T) &
 
 bigcaps[ date==max(date, na.rm=T) & 
            (avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
-           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015),
-        .(date, symbol, close, volume, avg_delta_short)][
+           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015)][
             order(avg_delta_short,decreasing = T)]%>%
   head(1) %>%
   dplyr::mutate( action='SELL', 
@@ -56,8 +46,7 @@ bigcaps[ date==max(date, na.rm=T) &
 
 bigcaps[ date==max(date, na.rm=T) & 
            (avg_delta>bigcap_avg_delta*.995 | avg_delta>.995) & 
-           (avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)),
-         .(date, symbol, close, volume, avg_delta_short)][
+           (avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05))][
            order(avg_delta_short,decreasing = F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -68,8 +57,8 @@ bigcaps[ date==max(date, na.rm=T) &
 prices[date==max(date, na.rm=T) & 
          close>7 & volume>500000 & 
          close<lag1high & sell_rally_day>6 & 
-         avg_delta<.975 ,
-       .(date, symbol, close, volume, high)][order(high/close,decreasing=T)] %>%
+         avg_delta<.975][
+  order(high/close,decreasing=T)] %>%
   head(5) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
@@ -80,8 +69,8 @@ prices[date==max(date, na.rm=T) &
 prices[date==max(date, na.rm=T) & 
          close>7 & volume>500000 & 
              close>lag1high & sell_rally_day<2 & 
-             avg_delta_short>1.1 ,
-       .(date, symbol, close, volume, high, days_around)][order(days_around,decreasing=T)] %>%
+             avg_delta_short>1.1][
+  order(days_around,decreasing=T)] %>%
   head(5) %>%
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
@@ -93,7 +82,7 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
          cap_order<50 &
          (((close-low)/avg_range)<.15 ) & 
          date==max(date, na.rm=T)][
-          order(avg_delta_short,decreasing = F)]  %>%
+         order(avg_delta_short,decreasing = F)]  %>%
  head(3) %>%
  dplyr::mutate( action='BUY',
                 order_type='MKT',
