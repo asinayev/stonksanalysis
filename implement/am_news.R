@@ -26,12 +26,28 @@ news_moves[grepl('earning', title, ignore.case = T) &
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
   dplyr::arrange(avg_delta) %>%
-  head(5)  %>%
+  head(3)  %>%
   dplyr::mutate(action='BUY', 
                 order_type='MIDPRICE',
                 time_in_force='DAY') %>%
   data.table %>%
   write_strat(strat_name='zacks_earn')
+
+
+news_moves[(grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', title, ignore.case = T)|
+                (grepl('(dividend|repurchase|buyback)', title, ignore.case = T) & avg_delta>1 & avg_delta_short<1)) &
+           !is.na(single_ticker) &
+           avg_volume>50000 & volume>50000 & close>5  & 
+           market_cap %between% c(0.5*10^9, 10*10^9) ] %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(dplyr::row_number()==1) %>%
+  dplyr::arrange(avg_delta_short) %>%
+  head(3)  %>%
+  dplyr::mutate(action='BUY', 
+                order_type='MIDPRICE',
+                time_in_force='DAY') %>%
+  data.table %>%
+  write_strat(strat_name='div_news')
 
 news_moves%>%
   dplyr::group_by(symbol) %>%
