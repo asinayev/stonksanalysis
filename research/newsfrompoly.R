@@ -120,11 +120,11 @@ news_moves[grepl('earning', title, ignore.case = T) &
            avg_volume>50000 & volume>50000 & close>5 & 
            (open-close > avg_range/3 )
            #& !is.na(single_ticker)
-           ,
-           .(delta=max(close/open), avg_delta=max(avg_delta)),
-           .(date,symbol,lead1sell_rally,lead1open)][order(-avg_delta, decreasing=T),head(.SD,5),date]%>%
+           ,.N,
+           .(date,symbol,lead1sell_rally,lead1open,avg_delta)][order(avg_delta),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,
                    1,symbol))
+
 
 
 news_moves[avg_volume>75000 & market_cap<10000000000 &
@@ -132,3 +132,14 @@ news_moves[avg_volume>75000 & market_cap<10000000000 &
            grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T),
            max(date),
            .(date,symbol,lead1open,lead1sell_rally,market_cap)][, .(mean(lead1sell_rally/lead1open),.N), .(year(date),month(date))][order(year,month)]
+
+
+news_moves[avg_volume>50000 & volume>50000 & close>7 & market_cap %between% c(0.5*10^9, 10*10^9) &
+             !is.na(single_ticker) & 
+             (grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', title, ignore.case = T)|
+                (grepl('(dividend|repurchase|buyback)', title, ignore.case = T) & avg_delta>1 & avg_delta_short<1)),
+           .N,
+           .(date,symbol,lead1open,lead1sell_rally,market_cap,avg_delta_short)][
+             order(avg_delta_short, decreasing=T),head(.SD,3),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,
+                   1,symbol))
