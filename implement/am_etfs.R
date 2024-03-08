@@ -9,9 +9,9 @@ source("implement/imports.R", local=T)
 splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
-                                   financials=F, cores=splits, ticker_type='ETF') %>%
+                                   cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
-                               financials=F, cores=splits, ticker_type='ETV'))
+                               cores=splits, ticker_type='ETV'))
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
