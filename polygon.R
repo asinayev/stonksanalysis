@@ -33,7 +33,7 @@ select_field = function(response, field){
 }
 
 stock_deets = function( key, stockname, date){
-  x = "https://api.polygon.io/v3/reference/tickers/%s?date=%s&apiKey=%s" %>%
+  x = "https://api.polygon.io/v3/reference/tickestocks/%s?date=%s&apiKey=%s" %>%
     sprintf(stockname, date, key) %>%
     hit_polygon
   if(!'results' %in% names(x)){return(NULL)}
@@ -75,7 +75,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
   go=T
   last_examined=""
   while(length(go)>0 && go){
-    link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
+    link = "https://api.polygon.io/v3/reference/tickestocks?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
       sprintf(date, key, last_examined,ticker_type)
     response = hit_polygon(link)
     if (!is.null(response$results)){
@@ -101,7 +101,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
 } 
 
 ticker_info_from_polygon = function( key, stockname, date, field=F) {
-  "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
+  "https://api.polygon.io/vX/reference/tickestocks/%s?date=%s&apiKey=%s" %>%
     sprintf(stockname, date, key) %>%
     hit_polygon %>%
     select_field(field=field)
@@ -199,7 +199,7 @@ stock_day = function(stockname, start_date, end_date, key,
   return(unique(results,by=c('stock','TimeStamp')))
 }
 
-get_hours_for_stocks = function(stocknames,
+get_houstocks_for_stocks = function(stocknames,
                                 start_date='2018-01-01', 
                                 end_date=Sys.Date(),
                                 key=POLYKEY){
@@ -267,7 +267,7 @@ get_prev_day_news = function(date, key, full_prevday=T, apply_=F){
     sprintf(open %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"),
             close %>% with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%S"), key) %>%
     get_all_results(results_contain = 'published_utc')
-  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
+  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickestocks') %in% names(today_news)) ){
     return(NULL)
   }
   today_news$date=yesterday
@@ -278,22 +278,28 @@ get_financials = function(stocks){
   financials = parallel::mclapply(unique(stocks$cik), 
                                  financials_from_polygon, 
                                  key=POLYKEY, stockname=F, field=F)
-  process_recordset=function(rs){
-    if(!is.null(rs$results$financials$income_statement$basic_earnings_per_share)){
-      data.frame(cik=rs$results$cik,
-                 start_date=rs$results$start_date,
-                 end_date=rs$results$end_date,
-                 rs$results$financials$income_statement$basic_earnings_per_share) %>%
+  process_recordset=function(stocks){
+    if(!is.null(stocks$results$financials$income_statement$basic_earnings_per_share)){
+      data.frame(cik=stocks$results$cik,
+                 start_date=stocks$results$start_date,
+                 end_date=stocks$results$end_date,
+                 filing_date=as.Date(stocks$results$filing_date),
+                 stocks$results$financials$income_statement$basic_earnings_per_share) %>%
         return()
     } else {
-      data.frame(cik="",start_date="",end_date="",basic_earnings_per_share=0)
+      data.frame(cik="",start_date="",end_date="",filing_date=as.Date(0),basic_earnings_per_share=0) %>%
+        return()
     }
   }
-  
-  financials[unlist(lapply(financials,function(x)is.data.frame(x$results) ))] %>%
+  financials = financials[unlist(lapply(financials,function(x)is.data.frame(x$results) ))] %>%
     lapply(process_recordset)%>%
-    rbindlist(fill=TRUE, use.names = T) %>%
-    merge(stocks, by.x='stock', by.y='ticker')%>%
-    return
-  
+    rbindlist(fill=TRUE, use.names = T) 
+  stock_cols = c(names(stocks),"basic_earnings_per_share","unit",'filing_date')
+  stocks[,joining_date:=date] 
+  financials[,joining_filing_date:=filing_date]
+  financials[stocks, ..stock_cols, 
+         on = .(cik=cik, joining_filing_date<=joining_date) ][
+           order(cik,date,filing_date)][
+             ,.SD[.N],.(cik,date)
+           ]
 }
