@@ -391,6 +391,22 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate))
 
+#############
+# earners
+#############
+
+
+prices[close>7 & avg_volume>200000 & 
+         ((low<running_low*1.015)|(avg_delta_short<avg_delta*.995)) &  
+         mean_eps/close >.2 & eps_unit=="USD / shares" &
+         (((close-low)/avg_range)<.2 ) & 
+         lead1sell_rally/lead1open<1.5][
+           order(market_cap,decreasing = F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate))
+
+
+
 
 
 bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]

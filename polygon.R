@@ -297,10 +297,11 @@ get_financials = function(stocks,identifier='cik'){
   stock_cols = c(names(stocks),"value","unit",'filing_date','end_date')
   financials[,joining_filing_date:=filing_date]
   financials[,year_after_end_date:=as.Date(end_date)+365+90]
-  joined_year = financials[stocks, 
-                           ..stock_cols, 
-                           on = .(identifier,
-                                  joining_filing_date<=joining_date,
-                                  year_after_end_date>=joining_date) ]
-  joined_year[,.(mean_eps=mean(value),eps_unit=unit[1]),names(stocks),..identifier]
+  financials[stocks, 
+             ..stock_cols, 
+             on = .(identifier,
+                    joining_filing_date<=joining_date,
+                    year_after_end_date>=joining_date) 
+             ][,.(mean_eps=mean(value),eps_unit=unit[1]),
+               names(stocks)]
 }
