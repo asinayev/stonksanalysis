@@ -5,7 +5,7 @@ if(length(args)==0){
   setwd(args[1]) 
 }
 source("implement/imports.R", local=T)
-prices = fread('/tmp/prices.csv')
+prices = fread('/tmp/prices.csv',c('cik'='character'))
 
 prices = only_passing(prices, min_volume=0, min_close=0, last_n = 150)
 
