@@ -413,12 +413,12 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 # 13: 2021   0.017     -0.3   1.9    111         112       10      6.846847            16
 # 14: 2022   0.015     -0.2   1.3     82          83        7      5.743902            21
 
-prices[close>7 & avg_volume>200000 & 
-         ((low<running_low*1.015)|(avg_delta_short<avg_delta*.995)) &  
-         mean_eps/close >.2 & eps_unit=="USD / shares" & mean_eps>std_eps &
+prices[close>7 & avg_volume>100000 & 
+         mean_eps/close >.2 & # eps_unit=="USD / shares" & 
+         avg_delta>.99 &
          (((close-low)/avg_range)<.2 ) & 
          lead1sell_rally/lead1open<1.5][
-           order(volume,decreasing = T),head(.SD,1),date] %>%
+           order(avg_volume,decreasing = T),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate))
 

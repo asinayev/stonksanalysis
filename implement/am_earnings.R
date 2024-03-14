@@ -15,12 +15,11 @@ prices=get_financials(prices)
 
 prices[date==max(date, na.rm=T) & 
          close>7 & avg_volume>200000 & 
-         ((low<running_low*1.015)|(avg_delta_short<avg_delta*.995)) &  
-         mean_eps/close >.2 & eps_unit=="USD / shares" &
-         (((close-low)/avg_range)<.2 )][
-           order(market_cap,decreasing=F)] %>%
+         mean_eps/close >.25 & eps_unit=="USD / shares" &
+         (((close-low)/avg_range)<.15 )][
+           order(avg_volume,decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='MIDPRICE',
-                 time_in_force='DAY') %>%
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
   write_strat(strat_name='earners')

@@ -282,7 +282,7 @@ get_financials = function(stocks,identifier='cik'){
                         filing_date=as.Date(finrec$results$filing_date),
                         finrec$results$financials$income_statement$basic_earnings_per_share)
       return(fins[order(filing_date),
-                  .(value=value[.N],filing_date=filing_date[.N]),
+                  .(value=value[.N],unit=unit[.N],filing_date=filing_date[.N]),
                   .(identifier,start_date,end_date)])
     } else {
       return(
