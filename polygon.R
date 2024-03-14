@@ -2,15 +2,15 @@ hit_polygon = function(link, tries = 3,results_contain=F){
   counter = response = tries
   while(is(response, 'numeric') && counter>0){
     counter = tryCatch({
-        response = link %>%jsonlite::fromJSON()
-        stopifnot( response$status %in% c('OK', "DELAYED")  )
-        if(results_contain!=F){
-          stopifnot(results_contain %in% names(response$results))
-        }
-        return(response)
-      },
-      error = function(error){
-        return(counter-1) }
+      response = link %>%jsonlite::fromJSON()
+      stopifnot( response$status %in% c('OK', "DELAYED")  )
+      if(results_contain!=F){
+        stopifnot(results_contain %in% names(response$results))
+      }
+      return(response)
+    },
+    error = function(error){
+      return(counter-1) }
     )
   }
   return(counter)
@@ -29,7 +29,7 @@ get_all_results = function(link,results_contain=F){
 }
 
 select_field = function(response, field){
-    return(response[['results']][[field]])
+  return(response[['results']][[field]])
 }
 
 stock_deets = function( key, stockname, date){
@@ -51,14 +51,14 @@ financials_from_polygon = function( key, identifier, identifier_type='cik', fiel
   if(identifier_type=='symbol'){
     out=
       "https://api.polygon.io/vX/reference/financials?ticker=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-        sprintf(identifier, key) %>%
-        hit_polygon(results_contain = field) 
+      sprintf(identifier, key) %>%
+      hit_polygon(results_contain = field) 
   }
   if(identifier_type=='cik'){
     out=
       "https://api.polygon.io/vX/reference/financials?cik=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-        sprintf(identifier, key) %>%
-        hit_polygon(results_contain = field)
+      sprintf(identifier, key) %>%
+      hit_polygon(results_contain = field)
   }
   out[[identifier_type]]=identifier
   return(out)
@@ -80,7 +80,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
       go=F
     }
   }
-
+  
   out = resultlist %>% 
     rbindlist(use.names=TRUE, fill = T)
   out = out[,.SD[.N],ticker]
@@ -167,8 +167,8 @@ add_results = function(results, ...){
           fill=TRUE
     ) %>% return
   } else {
-      return(results)
-    }
+    return(results)
+  }
 }
 
 stock_day = function(stockname, start_date, end_date, key, 
@@ -181,11 +181,11 @@ stock_day = function(stockname, start_date, end_date, key,
                        TimeStamp = 0,
                        DateTime= as.POSIXct(as.Date(start_date), tz = 'EST'))[stock==1]
   results = add_results(results, stockname, interval_len, interval, 
-            start_date, end_date, key)
+                        start_date, end_date, key)
   while(nrow(results)>=1 & 
         as_date(end_date) - as_date(max(results$DateTime)) > day_buffer){
     new_results = add_results(results, stockname, interval_len, interval, 
-                as_date(max(results$DateTime)), end_date, key)
+                              as_date(max(results$DateTime)), end_date, key)
     if(new_results[,max(DateTime)]>results[,max(DateTime)]){
       results=new_results
     } else { break }
@@ -222,10 +222,10 @@ sampled_data=function(key, date, end_date = as.Date(date)+365,
                       ticker_type=c('CS'),details=F){
   stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,details = details)
   stocklist = parallel::mclapply(stocks$ticker, stock_history,
-                       start_date = as.Date(date), 
-                       end_date = end_date, 
-                       key = key,
-                       mc.cores = 16, check_ticker=F)
+                                 start_date = as.Date(date), 
+                                 end_date = end_date, 
+                                 key = key,
+                                 mc.cores = 16, check_ticker=F)
   if(details){
     stocklist[unlist(lapply(stocklist,is.data.frame))] %>%
       rbindlist(fill=TRUE, use.names = T) %>%
@@ -276,14 +276,14 @@ get_financials = function(stocks,identifier='cik'){
                                   mc.cores = 16)
   process_recordset=function(finrec){
     if(!is.null(finrec$results$financials$income_statement$basic_earnings_per_share)){
-        fins = data.frame(identifier=finrec[[identifier]],
-                   start_date=finrec$results$start_date,
-                   end_date=finrec$results$end_date,
-                   filing_date=as.Date(finrec$results$filing_date),
-                   finrec$results$financials$income_statement$basic_earnings_per_share)
-        return(fins[order(filing_date),
-                    .(value=value[.N],filing_date=filing_date[.N]),
-                    .(identifier,start_date,end_date)])
+      fins = data.table(identifier=finrec[[identifier]],
+                        start_date=finrec$results$start_date,
+                        end_date=finrec$results$end_date,
+                        filing_date=as.Date(finrec$results$filing_date),
+                        finrec$results$financials$income_statement$basic_earnings_per_share)
+      return(fins[order(filing_date),
+                  .(value=value[.N],filing_date=filing_date[.N]),
+                  .(identifier,start_date,end_date)])
     } else {
       return(
         data.frame(identifier="",start_date="",end_date="",filing_date=as.Date(0),value=0,unit='')
@@ -298,11 +298,12 @@ get_financials = function(stocks,identifier='cik'){
   stock_cols = c(names(stocks),"value","unit",'filing_date','end_date')
   financials[,joining_filing_date:=filing_date]
   financials[,year_after_end_date:=as.Date(end_date)+365+90]
+  gc()
   financials[stocks, 
              ..stock_cols, 
              on = .(identifier,
                     joining_filing_date<=joining_date,
                     year_after_end_date>=joining_date) 
-             ][,.(mean_eps=mean(value),std_eps=std(value),eps_unit=unit[1]),
-               names(stocks)]
+  ][,.(mean_eps=mean(value),std_eps=sd(value),eps_unit=unit[1]),
+    names(stocks)]
 }

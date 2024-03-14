@@ -24,16 +24,17 @@ prices=fread("~/datasets/stock_prices_15y.csv")
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
+#prices=get_financials(prices,identifier='symbol')
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
 prices[(symbol %in% prices[!is.na(close),.N,symbol][N>106,symbol]) & !is.na(close),
-          MACD:=EMA(close ,n = 5, align='right',fill=NA)/
-            EMA(close ,n = 100, align='right',fill=NA),symbol ]
+       MACD:=EMA(close ,n = 5, align='right',fill=NA)/
+         EMA(close ,n = 100, align='right',fill=NA),symbol ]
 prices[(symbol %in% prices[!is.na(MACD),.N,symbol][N>11,symbol]) & !is.na(MACD),
-          MACD_slow:=EMA(MACD ,n = 10, align='right',fill=NA),symbol ]
+       MACD_slow:=EMA(MACD ,n = 10, align='right',fill=NA),symbol ]
 prices[,lag1MACD:= shift(MACD,1,type='lag'),symbol]
 prices[,lag1MACD_slow:= shift(MACD_slow,1,type='lag'),symbol]
 
@@ -105,7 +106,7 @@ prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
 prices[
   close/open>1.025 & spy_future_night_delta>.99 & 
     volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
-    with(performance(date,lead1close/lead1open-1,1,symbol))
+  with(performance(date,lead1close/lead1open-1,1,symbol))
 
 prices[
   volume/avg_volume <.75 & spy_future_night_delta>.99 & 
@@ -251,7 +252,7 @@ prices[reg_predict<threshold  & #!day_delta>1.2 &
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
 prices[!is.na(future_day_delta) & reg_predict<threshold  & volume>75000 & close>7][order(date, symbol)][
-           ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+  ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
@@ -274,7 +275,7 @@ prices[lead1open/close>1.02 & lagging_corr_long< -min_corr &
   with(performance(date,1-lead1close/lead1open,1,symbol))
 
 prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
-       .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+                                                                                                                                               .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 abline(h=1)
 abline(h=0.99)
 abline(h=1.01)
@@ -319,29 +320,29 @@ prices[close>7 & volume>500000 &
                    lead1sell_rally/lead1open-1,
                    lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate))
-       
- # avg_year  avg_trade drawdown drawdown_days days_traded max_held
- # 1: 0.04044444 0.04696212     -6.8          1414         839       27
- #    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
- # 1: 2005   0.018      0.0   0.1      4           5        2      6.250000             3
- # 2: 2006  -0.006     -0.1   0.0      4           5        2      5.750000             3
- # 3: 2007  -0.001     -0.3   0.0     12          13        3     13.416667             9
- # 4: 2008   0.087     -0.5   6.9     79          40       18      5.708861            58
- # 5: 2009   0.051     -1.0   2.9     58          42       11      6.327586            45
- # 6: 2010   0.031     -1.1   0.6     18          19        4      7.111111            13
- # 7: 2011  -0.013     -0.8  -0.3     23          21        8     13.217391            13
- # 8: 2012   0.049     -0.8   0.3      6           7        4      5.000000             5
- # 9: 2013   0.120     -0.5   1.9     16          16        3     12.187500            11
- # 10: 2014   0.073     -0.5   1.8     25          20        5      4.800000            14
- # 11: 2015   0.057     -0.5   2.0     35          25        9      6.857143            26
- # 12: 2016  -0.044     -2.9  -2.3     52          36       16      6.423077            28
- # 13: 2017   0.034     -3.3   2.2     64          45        9      7.078125            49
- # 14: 2018   0.107     -1.2   9.8     91          72        8      6.725275            64
- # 15: 2019   0.051     -0.6   5.5    109          81       10      6.862385            82
- # 16: 2020   0.073     -2.1  29.2    401         175       24      7.588529           258
- # 17: 2021   0.003     -6.8   0.9    293         147       27      6.559727           203
- # 18: 2022   0.038     -4.0   4.2    109          70       19      7.706422            69
-       
+
+# avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.04044444 0.04696212     -6.8          1414         839       27
+#    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2005   0.018      0.0   0.1      4           5        2      6.250000             3
+# 2: 2006  -0.006     -0.1   0.0      4           5        2      5.750000             3
+# 3: 2007  -0.001     -0.3   0.0     12          13        3     13.416667             9
+# 4: 2008   0.087     -0.5   6.9     79          40       18      5.708861            58
+# 5: 2009   0.051     -1.0   2.9     58          42       11      6.327586            45
+# 6: 2010   0.031     -1.1   0.6     18          19        4      7.111111            13
+# 7: 2011  -0.013     -0.8  -0.3     23          21        8     13.217391            13
+# 8: 2012   0.049     -0.8   0.3      6           7        4      5.000000             5
+# 9: 2013   0.120     -0.5   1.9     16          16        3     12.187500            11
+# 10: 2014   0.073     -0.5   1.8     25          20        5      4.800000            14
+# 11: 2015   0.057     -0.5   2.0     35          25        9      6.857143            26
+# 12: 2016  -0.044     -2.9  -2.3     52          36       16      6.423077            28
+# 13: 2017   0.034     -3.3   2.2     64          45        9      7.078125            49
+# 14: 2018   0.107     -1.2   9.8     91          72        8      6.725275            64
+# 15: 2019   0.051     -0.6   5.5    109          81       10      6.862385            82
+# 16: 2020   0.073     -2.1  29.2    401         175       24      7.588529           258
+# 17: 2021   0.003     -6.8   0.9    293         147       27      6.559727           203
+# 18: 2022   0.038     -4.0   4.2    109          70       19      7.706422            69
+
 prices[close>7 & volume>500000 & 
          close>lag1high & sell_rally_day<2 & 
          avg_delta_short>1.1][
@@ -350,7 +351,7 @@ prices[close>7 & volume>500000 &
                    1-lead1sell_lowclose/lead1open,
                    lead1sell_lowclosedate-date,symbol,
                    lead1sell_lowclosedate))
-       
+
 
 ############
 # nightbot
@@ -414,10 +415,10 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 
 prices[close>7 & avg_volume>200000 & 
          ((low<running_low*1.015)|(avg_delta_short<avg_delta*.995)) &  
-         mean_eps/close >.2 & eps_unit=="USD / shares" &
+         mean_eps/close >.2 & eps_unit=="USD / shares" & mean_eps>std_eps &
          (((close-low)/avg_range)<.2 ) & 
          lead1sell_rally/lead1open<1.5][
-           order(market_cap,decreasing = F),head(.SD,1),date] %>%
+           order(volume,decreasing = T),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate))
 
@@ -456,8 +457,8 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
 
 bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
-        lead1sell_lowclose/lead1open>.5][
-           order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
+          lead1sell_lowclose/lead1open>.5][
+            order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
   with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate))
 
 
@@ -501,7 +502,7 @@ wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
                                           end_date=Sys.Date(),
                                           key=POLYKEY)
   res = merge(trade_data, pennyshort_hours,
-        by.x=c('symbol','date'),by.y=c('stock','bar_date'))
+              by.x=c('symbol','date'),by.y=c('stock','bar_date'))
   print(res[ !is.na(AdjClose_9),.(mean(open/Open_9,na.rm=T),
                                   at10=mean(AdjClose_9/open,na.rm=T),
                                   mean(AdjClose_10/open,na.rm=T),
@@ -540,7 +541,7 @@ prices[,lead30close:= shift(close,30,type='lead'),symbol]
 
 prices[,avg_delta_trend:=NULL]
 prices[symbol %in% prices[,.N,symbol][N>1000,symbol],
-                  avg_delta_trend:= SMA(ifelse(DEMA_s>DEMA_l, close/lag1close-1, 1-close/lag1close), n = 25 ),symbol ]
+       avg_delta_trend:= SMA(ifelse(DEMA_s>DEMA_l, close/lag1close-1, 1-close/lag1close), n = 25 ),symbol ]
 
 prices[,daily_delta_trend:=NULL]
 prices[avg_volume>500000 & close>7,
@@ -549,7 +550,7 @@ prices[avg_volume>500000 & close>7,
 #prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
 
 prices[avg_volume>500000 & close>7 & (avg_delta_short<.95|avg_delta<.96) &
-       days_around>100 &
+         days_around>100 &
          close<lag1high & sell_rally_day>5 ][
            order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
@@ -576,8 +577,8 @@ prices[,purchase_i:=NULL]
 prices[ (DEMA_s/DEMA_l-avg_sl_ratio) < -.35 & DEMA_s>lag1dema_s  & lag1dema_s<lag2dema_s & days_around>350, 
         purchase_i := rowid(symbol)]
 x=prices[avg_volume>1000000 & close>7 & #lead1sell_trend/lead1open<2 &
-         purchase_i==1 & year(date)==2018 & days_around>600,
-       .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)][sample(.N, 1)]
+           purchase_i==1 & year(date)==2018 & days_around>600,
+         .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)][sample(.N, 1)]
 prices[symbol==x$symbol & year(date) %in% c(2016,2017,2018),.(date,close)] %>%plot
 prices[symbol==x$symbol,.(date,DEMA_s)] %>%points(type='l',col='yellow')
 prices[symbol==x$symbol,.(date,DEMA_l)] %>%points(type='l',col='blue')
@@ -599,7 +600,7 @@ all_splits= prices$symbol %>% unique %>%
   rbindlist(use.names=TRUE, fill=T)
 
 merge(prices,
-        all_splits[,.(date=as.Date(execution_date),split_from,split_to,symbol=ticker)])
+      all_splits[,.(date=as.Date(execution_date),split_from,split_to,symbol=ticker)])
 
 
 
