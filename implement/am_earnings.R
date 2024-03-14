@@ -7,17 +7,16 @@ if(length(args)==0){
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv', colClasses = c('cik'='character'))
 
-prices = only_passing(prices, min_volume=0, min_close=0, last_n = 150)
-
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
 prices=get_financials(prices)
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & avg_volume>200000 & 
-         (mean_eps/close) %between% c(.25,10) & eps_unit=="USD / shares" &
+         close>7 & avg_volume>250000 & 
+         avg_delta>.99 & 
+         (mean_eps/close) %between% c(.15,100) & eps_unit=="USD / shares" &
          (((close-low)/avg_range)<.15 )][
-           order(avg_volume,decreasing=T)] %>%
+           order(close/lag1close,decreasing=F)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
