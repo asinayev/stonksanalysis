@@ -276,13 +276,14 @@ get_financials = function(stocks,identifier='cik'){
                                   mc.cores = 16)
   process_recordset=function(finrec){
     if(!is.null(finrec$results$financials$income_statement$basic_earnings_per_share)){
-      return(
-        data.frame(identifier=finrec[[identifier]],
+        fins = data.frame(identifier=finrec[[identifier]],
                    start_date=finrec$results$start_date,
                    end_date=finrec$results$end_date,
                    filing_date=as.Date(finrec$results$filing_date),
                    finrec$results$financials$income_statement$basic_earnings_per_share)
-      )
+        return(fins[order(filing_date),
+                    .(value=value[.N],filing_date=filing_date[.N]),
+                    .(identifier,start_date,end_date)])
     } else {
       return(
         data.frame(identifier="",start_date="",end_date="",filing_date=as.Date(0),value=0,unit='')
@@ -302,6 +303,6 @@ get_financials = function(stocks,identifier='cik'){
              on = .(identifier,
                     joining_filing_date<=joining_date,
                     year_after_end_date>=joining_date) 
-             ][,.(mean_eps=mean(value),eps_unit=unit[1]),
+             ][,.(mean_eps=mean(value),std_eps=std(value),eps_unit=unit[1]),
                names(stocks)]
 }
