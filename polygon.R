@@ -268,11 +268,11 @@ get_prev_day_news = function(date, key, full_prevday=T, apply_=F){
   today_news%>%data.table
 }
 
-get_financials = function(stocks,identifier='cik'){
+get_financials = function(stocks,identifier='cik', key=POLYKEY){
   financials = parallel::mclapply(unlist(unique(stocks[,..identifier])), 
                                   financials_from_polygon, 
                                   identifier_type=identifier,
-                                  key=POLYKEY, field=F,
+                                  key=key, field=F,
                                   mc.cores = 16)
   process_recordset=function(finrec){
     if(!is.null(finrec$results$financials$income_statement$basic_earnings_per_share)){
@@ -280,8 +280,9 @@ get_financials = function(stocks,identifier='cik'){
                         start_date=finrec$results$start_date,
                         end_date=finrec$results$end_date,
                         filing_date=as.Date(finrec$results$filing_date),
+                        timeframe=as.Date(finrec$results$timeframe),
                         finrec$results$financials$income_statement$basic_earnings_per_share)
-      return(fins[order(filing_date),
+      return(fins[timeframe=='quarterly'][order(filing_date),
                   .(value=value[.N],unit=unit[.N],filing_date=filing_date[.N]),
                   .(identifier,start_date,end_date)])
     } else {

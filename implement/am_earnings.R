@@ -15,7 +15,7 @@ prices=get_financials(prices)
 
 prices[date==max(date, na.rm=T) & 
          close>7 & avg_volume>200000 & 
-         mean_eps/close >.25 & eps_unit=="USD / shares" &
+         (mean_eps/close) %between% c(.25,10) & eps_unit=="USD / shares" &
          (((close-low)/avg_range)<.15 )][
            order(avg_volume,decreasing=T)] %>%
   head(1) %>%
