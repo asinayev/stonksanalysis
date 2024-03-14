@@ -280,7 +280,7 @@ get_financials = function(stocks,identifier='cik', key=POLYKEY){
                         start_date=finrec$results$start_date,
                         end_date=finrec$results$end_date,
                         filing_date=as.Date(finrec$results$filing_date),
-                        timeframe=as.Date(finrec$results$timeframe),
+                        timeframe=finrec$results$timeframe,
                         finrec$results$financials$income_statement$basic_earnings_per_share)
       return(fins[timeframe=='quarterly'][order(filing_date),
                   .(value=value[.N],unit=unit[.N],filing_date=filing_date[.N]),
