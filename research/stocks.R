@@ -21,10 +21,10 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # prices = merge(prices,spy_prices[,.(date,spy_future_night_delta = lead1open/close, spy_day_delta=close/open)],all.x=T)
 
 prices=fread("~/datasets/stock_prices_15y.csv")
-setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
 #prices=get_financials(prices,identifier='symbol')
+setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
@@ -413,12 +413,12 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 # 13: 2021   0.020     -0.6   2.6    134         135        8      6.783582            19
 # 14: 2022  -0.001     -0.6  -0.1    106         107        9      6.924528            19
 
-prices[close>7 & avg_volume>250000 & 
-         (mean_eps/close) %between% c(.15, 1000) &  eps_unit=="USD / shares" & 
-         avg_delta>.99 &
+prices[close>7 & avg_volume>250000 &
+         (mean_eps/close) %between% c(.15, 1000) &  #eps_unit=="USD / shares" & 
          (((close-low)/avg_range)<.15 ) & 
+         avg_delta>.99 &
          lead1sell_rally/lead1open<1.5][
-           order(close/lag1close,decreasing = F),head(.SD,1),date] %>%
+           order(mean_eps/close,decreasing = T),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate))
 
