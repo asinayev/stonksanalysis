@@ -18,6 +18,6 @@ prices = stocklist$ticker %>%
   rbindlist(use.names=TRUE, fill=T)
 
 prices = prices[, .SD[1], by=.(stock, Date)][
-  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose, cik)] %>%
+  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)] %>%
   merge(stocklist,  by.x='symbol', by.y='ticker')
 fwrite(prices,'/tmp/prices.csv')
