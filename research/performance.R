@@ -47,3 +47,9 @@ performance=function(date,outcome,days_held,symbol,sell_date=date){
   print(results_overall[order(year)])
   return(results_daily[,.(date,n_held)])
 }
+
+no_doubling=function(trades,lead1selldatecol){
+  setorder(trades, symbol, date)
+  trades[,prev_sold:=shift(..lead1selldatecol, n = 1, type = "lag"),symbol]
+  trades[prev_sold<date]
+}
