@@ -150,4 +150,6 @@ corr_long = prices[volume>500000 & close>7 &
 
 helds = merge(rally, revert, on='date',all=T)%>%
   merge(corr_long, on='date', all=T)
+helds[,sum_held:=rowSums(.SD,na.rm=T),.SDcols=c('n_held.x','n_held.y','n_held')]
+helds[order(sum_held)]
 cor(helds[,.(n_held,n_held.x,n_held.y)],use = 'pairwise.complete')

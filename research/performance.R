@@ -5,9 +5,12 @@ drawdown = function(x){
   x,0, accumulate=T)[-1]
 }
 
-performance=function(date,outcome,days_held,symbol,sell_date=date){
+performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F){
   results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol,sell_date=sell_date)
   results=na.omit(results)
+  if(no_doubling){
+    results=no_doubling(results)
+  }
   results_daily = results[,.(outcome=sum(outcome,na.rm =T),trades=.N),date]
   results_daily = merge(results_daily, results[,.(n_sold=.N),sell_date], 
                         all=T, by.x='date',by.y='sell_date')
@@ -48,8 +51,9 @@ performance=function(date,outcome,days_held,symbol,sell_date=date){
   return(results_daily[,.(date,n_held)])
 }
 
-no_doubling=function(trades,lead1selldatecol){
+no_doubling=function(trades){
   setorder(trades, symbol, date)
-  trades[,prev_sold:=shift(..lead1selldatecol, n = 1, type = "lag"),symbol]
-  trades[prev_sold<date]
+  trades[,prev_sold:=shift(sell_date, n = 1, type = "lag"),symbol]
+  setorder(trades, date, symbol)
+  trades[is.na(prev_sold) | prev_sold<date]
 }
