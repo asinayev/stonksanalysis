@@ -5,7 +5,7 @@ drawdown = function(x){
   x,0, accumulate=T)[-1]
 }
 
-performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F){
+performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F, hold_less_than=F){
   results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol,sell_date=sell_date)
   results=na.omit(results)
   if(no_doubling){
@@ -21,6 +21,9 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
   results_daily[,drawdown:=drawdown(outcome)]
   results_daily[,drawdown_i:=cumsum(drawdown==0)]
   results_daily[,n_held:=cumsum(trades-n_sold)]
+  if(hold_less_than){
+    results_daily=results_daily[shift(n_held,n=1,type='lag')<hold_less_than]
+  }
   results_overall= results_daily[,.(
     average=round(sum(outcome)/sum(trades),3),
     drawdown=round(min(drawdown,na.rm=T),1),
