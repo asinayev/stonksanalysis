@@ -40,7 +40,7 @@ prices[order(lever, avg_volume,decreasing = F)][
          avg_delta/sell_rally_avg<.982 ,
        .(date, symbol, close, volume)] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
-  head(3) %>%
+  head(1) %>%
   write_strat(strat_name='rally_etfs')
 
 prices[order(lever, avg_volume,decreasing=F)][
@@ -48,7 +48,7 @@ prices[order(lever, avg_volume,decreasing=F)][
          (((close-low)/avg_range)<.15 ) & 
          ((high/close) > 1.075 | avg_delta<.99),
        .(date, symbol, close, volume)]%>%
-  head(3) %>%
+  head(1) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='revert_etfs')
 
@@ -57,7 +57,7 @@ prices[order(lever, avg_volume, decreasing = F)][
     volume>500000 & close>7 & 
     avg_delta_short<.975 & lagging_corr_long> .35,
   .(date, symbol, close, volume)] %>%
-  head(3) %>%
+  head(1) %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='corr_long_etfs')
 
