@@ -143,8 +143,8 @@ prices[
 
 prices[
   (close/open)>1.2 & close>7 & (open/lag1close)>1  &
-    vp_order<3000][order(close*volume,decreasing=T),.SD[1:3],date]%>% 
-  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate))
+    vp_order<3000][order(close*volume,decreasing=T),.SD[1],date]%>% 
+  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=6))
 
 
 # At open, sell stocks that climbed yesterday too much
@@ -187,8 +187,8 @@ prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff 
          (volume>=max_volume & avg_delta_short<.99) & #big down movement recently and consolidated today
          (((close-low)/avg_range)<.2 ) & 
          (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
-           order(avg_delta_short),head(.SD,3),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate))
+           order(avg_delta_short),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 6))
 
 ## volumelong -- incorporated into updownmorn
 # prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
@@ -310,11 +310,11 @@ rally_avg(prices,100)
 prices[close>7 & volume>500000 & 
          close<lag1high & sell_rally_day>6 & 
          avg_delta<.975][
-         ][order(high/close, decreasing=T),head(.SD,5),date] %>%
+         ][order(high/close, decreasing=T),head(.SD,1),date] %>%
   with(performance(date,
                    lead1sell_rally/lead1open-1,
                    lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate))
+                   lead1sell_rallydate, hold_less_than = 6))
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.04044444 0.04696212     -6.8          1414         839       27
@@ -341,11 +341,12 @@ prices[close>7 & volume>500000 &
 prices[close>7 & volume>500000 & 
          close>lag1high & sell_rally_day<2 & 
          avg_delta_short>1.1][
-         ][order(days_around, decreasing=T),head(.SD,5),date]%>%
+         ][order(days_around, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,
                    1-lead1sell_lowclose/lead1open,
                    lead1sell_lowclosedate-date,symbol,
-                   lead1sell_lowclosedate))
+                   lead1sell_lowclosedate,
+                   hold_less_than = 6))
 
 
 ############
@@ -383,9 +384,9 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
          cap_order<50 & 
          (((close-low)/avg_range)<.15 ) & 
          lead1sell_rally/lead1open<1.5][
-           order(avg_delta_short,decreasing = F),head(.SD,3),date] %>%
+           order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate))
+                   lead1sell_rallydate,hold_less_than = 6))
 
 #############
 # earners
@@ -450,7 +451,7 @@ bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) &
           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
           lead1sell_lowclose/lead1open>.5][
             order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
-  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate))
+  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 6))
 
 
 #############
@@ -483,7 +484,7 @@ bigcaps[(avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)
           lead1sell_rally/lead1open<1.5][
             order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate))
+                   lead1sell_rallydate,hold_less_than = 6))
 
 ###########
 # No working strategies here yet
