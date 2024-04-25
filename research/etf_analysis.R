@@ -143,7 +143,7 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
 corr_long = prices[volume>500000 & close>7 & 
          (avg_delta_short<.975) & lagging_corr_long> .35][
            order(avg_volume),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = F))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
 helds = merge(rally, revert, on='date',all=T)%>%
   merge(corr_long, on='date', all=T)
