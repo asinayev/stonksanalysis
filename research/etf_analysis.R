@@ -46,14 +46,6 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
-#                                                                   
-# rally(prices,
-#       sell_rule=function(dat){(dat$lag1close-dat$close)>=dat$avg_range*.5},
-#       varname='sell_range_down')
-# prices[,lead1sell_range_down:= shift(sell_range_down,1,type='lead'),symbol]
-# prices[,lead1sell_range_downdate:= shift(sell_range_down_date,1,type='lead'),symbol]
-# 
-
 rally_avg(prices,200)
 
 prices=key_etfs(prices,low_corr_thresh=.33)

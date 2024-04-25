@@ -55,11 +55,11 @@ bigcaps[ date==max(date, na.rm=T) &
   write_strat(strat_name='bigcap_long')
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & volume>500000 & 
-         close<lag1high & sell_rally_day>6 & 
+         close>7 & avg_volume>1000000 & 
+         close<lag1high & sell_rally_day>4 & 
          avg_delta<.975][
   order(high/close,decreasing=T)] %>%
-  head(5) %>%
+  head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
@@ -67,11 +67,11 @@ prices[date==max(date, na.rm=T) &
 
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & volume>500000 & 
+         close>7 & avg_volume>500000 & 
              close>lag1high & sell_rally_day<2 & 
              avg_delta_short>1.1][
   order(days_around,decreasing=T)] %>%
-  head(5) %>%
+  head(1) %>%
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
@@ -83,7 +83,7 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
          (((close-low)/avg_range)<.15 ) & 
          date==max(date, na.rm=T)][
          order(avg_delta_short,decreasing = F)]  %>%
- head(3) %>%
+ head(1) %>%
  dplyr::mutate( action='BUY',
                 order_type='MKT',
                 time_in_force='OPG') %>%
@@ -92,13 +92,13 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 
 prices[close>5 & volume>100000 & 
          (volume>=max_volume & avg_delta_short<.99) & 
-         (log(vp_order)-log(cap_order))>.35 &
+         (log(vp_order)-log(cap_order))>.4 &
          (((close-low)/avg_range)<.2 ) &
          date==max(date, na.rm=T)][
            order(avg_delta_short)]%>%
-  head(3)%>%
+  head(1)%>%
   dplyr::mutate( action='BUY',
-                 order_type=ifelse(volume>250000,'MKT','MIDPRICE'),
+                 order_type=ifelse(volume>250000,'MKT','Adaptive'),
                  time_in_force='DAY') %>%
   write_strat(strat_name='volumelong')
 

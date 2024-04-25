@@ -27,6 +27,8 @@ prices[volume>75000 & close>7,
 prices[date==max(date, na.rm=T) & 
          reg_predict<threshold,
        .(date, symbol, close, volume)] %>%
+  dplyr::arrange(reg_predict) %>%
+  head(1)  %>%
   dplyr::mutate( action='SELL', 
                  order_type=ifelse(volume>250000,'MKT','MIDPRICE'), 
                  time_in_force='DAY') %>%

@@ -26,7 +26,7 @@ news_moves[grepl('earning', title, ignore.case = T) &
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
   dplyr::arrange(avg_delta) %>%
-  head(3)  %>%
+  head(1)  %>%
   dplyr::mutate(action='BUY', 
                 order_type=ifelse(volume>250000,'MKT','MIDPRICE'),
                 time_in_force='DAY') %>%
@@ -42,7 +42,7 @@ news_moves[(grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', 
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
   dplyr::arrange(avg_delta_short) %>%
-  head(3)  %>%
+  head(1)  %>%
   dplyr::mutate(action='BUY', 
                 order_type=ifelse(volume>250000,'MKT','MIDPRICE'),,
                 time_in_force='DAY') %>%

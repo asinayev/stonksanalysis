@@ -30,13 +30,6 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
-prices[,lag1MACD:= shift(MACD,1,type='lag'),symbol]
-prices[,lag1MACD_slow:= shift(MACD_slow,1,type='lag'),symbol]
-
-
-prices[(symbol %in% prices[,.N,symbol][N>26,symbol]) ,
-       avg_range_p:=SMA(high/low-1 ,n = 25, align='right',fill=NA),symbol ]
-
 rally(prices,
       sell_rule=function(dat){dat$lag1close<dat$lag1low+.2*(dat$lag1high-dat$lag1low) },
       varname='sell_lowclose',
@@ -190,17 +183,6 @@ prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff 
            order(avg_delta_short),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
-## volumelong -- incorporated into updownmorn
-# prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
-#          lag1volume%between%c(10000,100000),
-#        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-# ###### works for ADRCs with less conservative threshold
-# prices[lag1volume/volume_avg <1 & night_delta< .96 & 
-#          volume_avg*lag1close>100000 & volume_avg*lag1close<1000000 & 
-#          volume_avg>50000,
-#        .(mean(day_delta,na.rm=T),.N), year(date)][order(year)]
-######
-
 
 
 ######
@@ -250,36 +232,6 @@ prices[!is.na(future_day_delta) & reg_predict<threshold  & volume>75000 & close>
   ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
 x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
-
-# Overnight strategy makes money over 50 trades (either long or short) with few exceptions
-# There must be a way to get this to work by lowering thresholds
-window = 100
-prices[,lagging_corr_long:=NULL]
-prices[symbol %in% prices[days_around>window, unique(symbol)], 
-       lagging_corr_long:=
-         runCor( close/open, open/lag1close, window),
-       symbol]
-
-min_corr = .45
-prices[lead1open/close<.98 & lagging_corr_long< -min_corr & spy_future_night_delta>.99 & 
-         volume%between%c(10000,50000) & close>7]%>% 
-  with(performance(date,lead1close/lead1open-1,1,symbol))
-
-prices[lead1open/close>1.02 & lagging_corr_long< -min_corr & 
-         volume%between%c(10000,50000) & close>7]%>% 
-  with(performance(date,1-lead1close/lead1open,1,symbol))
-
-prices[future_night_delta<.96 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ ,
-                                                                                                                                               .(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
-abline(h=1)
-abline(h=0.99)
-abline(h=1.01)
-
-prices[future_night_delta>1.04 & lagging_corr< -.4 & !is.na(future_day_delta_ltd) & log(volume_avg+1) %between% c(10,25)][order(date, symbol)][ 
-  ,.(date, MA = EMA(future_day_delta_ltd,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
-abline(h=1)
-abline(h=1.01)
-abline(h=0.99)
 
 
 
@@ -508,79 +460,6 @@ wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
   res
 }
 
-
-
-
-
-
-DEMA = function(x,period){
-  2*EMA(x, n=period, align='right', fill=NA)-
-    EMA(EMA(x, n=period, align='right', fill=NA), n=period, align='right', fill=NA)
-}
-
-prices[(symbol %in% prices[!is.na((open)/2),.N,symbol][N>50,symbol]),
-       DEMA_s:=DEMA((open)/2 ,period = 10),
-       symbol ]
-prices[,lag1dema_s:= shift(DEMA_s,1,type='lag'),symbol]
-prices[,lag2dema_s:= shift(DEMA_s,2,type='lag'),symbol]
-
-prices[(symbol %in% prices[!is.na(open),.N,symbol][N>650,symbol]),
-       DEMA_l:=SMA(open ,n = 50, align='right', fill=NA),
-       symbol ]
-prices[,lag1dema_l:= shift(DEMA_l,1,type='lag'),symbol]
-prices[,lag2dema_l:= shift(DEMA_l,2,type='lag'),symbol]
-prices[,lead30close:= shift(close,30,type='lead'),symbol]
-
-prices[,avg_delta_trend:=NULL]
-prices[symbol %in% prices[,.N,symbol][N>1000,symbol],
-       avg_delta_trend:= SMA(ifelse(DEMA_s>DEMA_l, close/lag1close-1, 1-close/lag1close), n = 25 ),symbol ]
-
-prices[,daily_delta_trend:=NULL]
-prices[avg_volume>500000 & close>7,
-       daily_delta_trend:=median(avg_delta,na.rm=T),date]
-
-#prices[,lag1avgdelta:= shift(avg_delta,1,type='lag'),symbol]
-
-prices[avg_volume>500000 & close>7 & (avg_delta_short<.95|avg_delta<.96) &
-         days_around>100 &
-         close<lag1high & sell_rally_day>5 ][
-           order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
-
-prices[volume>500000 & close>7 & (avg_delta5<.95|avg_delta25<.96) 
-       & days_around>100 &
-         close<lag1high & sell_rally_day>5 ][
-           order(avg_delta5,decreasing = F),head(.SD,1),date] %>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol))
-# same as correlated long?
-
-
-rally(prices,
-      sell_rule=function(dat){(dat[,DEMA_s<lag1dema_s & lag1dema_s>lag2dema_s] ) },
-      varname='sell_trend')
-prices[,lead1sell_trend:= shift(sell_trend,1,type='lead'),symbol]
-prices[,lead1sell_trenddate:= shift(sell_trend_date,1,type='lead'),symbol]
-
-prices[,avg_sl_ratio:=NULL]
-prices[avg_volume>500000 & close>7,avg_sl_ratio:=median(DEMA_s/DEMA_l,na.rm=T),date]
-
-setorder(prices, symbol, date)
-prices[,purchase_i:=NULL]
-prices[ (DEMA_s/DEMA_l-avg_sl_ratio) < -.35 & DEMA_s>lag1dema_s  & lag1dema_s<lag2dema_s & days_around>350, 
-        purchase_i := rowid(symbol)]
-x=prices[avg_volume>1000000 & close>7 & #lead1sell_trend/lead1open<2 &
-           purchase_i==1 & year(date)==2018 & days_around>600,
-         .(date,symbol,DEMA_s,DEMA_l,avg_sl_ratio)][sample(.N, 1)]
-prices[symbol==x$symbol & year(date) %in% c(2016,2017,2018),.(date,close)] %>%plot
-prices[symbol==x$symbol,.(date,DEMA_s)] %>%points(type='l',col='yellow')
-prices[symbol==x$symbol,.(date,DEMA_l)] %>%points(type='l',col='blue')
-abline(v=as.Date(x$date))
-
-setorder(prices, symbol, date)
-prices[avg_volume>500000 & close>7 & #lead1sell_trend/lead1open<2 &
-         purchase_i==1 & days_around>350][
-           order(-DEMA_s/DEMA_l),head(.SD,5), date ]%>%
-  with(performance(date,lead30close/lead1open-1,lead1sell_trenddate-date,symbol))
 
 
 # stock splits
