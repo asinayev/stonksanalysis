@@ -11,6 +11,20 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
   if(no_doubling){
     results=no_doubling(results)
   }
+  if(hold_less_than){
+    results[,to_include:=T]
+    currently_held=c()
+    for(da in sort(unique(results$date))  ){
+      if(length(currently_held)<hold_less_than){
+        currently_held=c(currently_held,results[date==da,sell_date])
+      } else {
+        results[date==da,to_include:=F]
+      }
+      currently_held=currently_held[currently_held>da]
+    }
+    results=results[to_include==T]
+    results[,to_include:=NULL]
+  }
   results_daily = results[,.(outcome=sum(outcome,na.rm =T),trades=.N),date]
   results_daily = merge(results_daily, results[,.(n_sold=.N),sell_date], 
                         all=T, by.x='date',by.y='sell_date')
@@ -21,9 +35,6 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
   results_daily[,drawdown:=drawdown(outcome)]
   results_daily[,drawdown_i:=cumsum(drawdown==0)]
   results_daily[,n_held:=cumsum(trades-n_sold)]
-  if(hold_less_than){
-    results_daily=results_daily[shift(n_held,n=1,type='lag')<hold_less_than]
-  }
   results_overall= results_daily[,.(
     average=round(sum(outcome)/sum(trades),3),
     drawdown=round(min(drawdown,na.rm=T),1),

@@ -144,7 +144,7 @@ prices[
 prices[
   (close/open)>1.2 & close>7 & (open/lag1close)>1  &
     vp_order<3000][order(close*volume,decreasing=T),.SD[1],date]%>% 
-  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=6))
+  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=5))
 
 
 # At open, sell stocks that climbed yesterday too much
@@ -186,9 +186,9 @@ prices[
 prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
          (volume>=max_volume & avg_delta_short<.99) & #big down movement recently and consolidated today
          (((close-low)/avg_range)<.2 ) & 
-         (log(vp_order)-log(cap_order))>.35 ][ #stock is boring
+         (log(vp_order)-log(cap_order))>.4 ][ #stock is boring
            order(avg_delta_short),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 6))
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
 ## volumelong -- incorporated into updownmorn
 # prices[lag1volume/volume_avg <.75 & night_delta< .97  & close>5 & 
@@ -307,14 +307,14 @@ rally_avg(prices,100)
 # 17: 2021   0.030     -1.9   8.2    276         138       21      5.608696            86
 # 18: 2022  -0.001     -2.8  -0.1    213          78       40      7.276995            65
 
-prices[close>7 & volume>500000 & 
-         close<lag1high & sell_rally_day>6 & 
+prices[close>7 & avg_volume>1000000 & 
+         close<lag1high & sell_rally_day>4 & 
          avg_delta<.975][
          ][order(high/close, decreasing=T),head(.SD,1),date] %>%
   with(performance(date,
                    lead1sell_rally/lead1open-1,
                    lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate, hold_less_than = 6))
+                   lead1sell_rallydate, hold_less_than = 5))
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.04044444 0.04696212     -6.8          1414         839       27
@@ -338,7 +338,7 @@ prices[close>7 & volume>500000 &
 # 17: 2021   0.003     -6.8   0.9    293         147       27      6.559727           203
 # 18: 2022   0.038     -4.0   4.2    109          70       19      7.706422            69
 
-prices[close>7 & volume>500000 & 
+prices[close>7 & avg_volume>500000 & 
          close>lag1high & sell_rally_day<2 & 
          avg_delta_short>1.1][
          ][order(days_around, decreasing=T),head(.SD,1),date]%>%
@@ -346,7 +346,7 @@ prices[close>7 & volume>500000 &
                    1-lead1sell_lowclose/lead1open,
                    lead1sell_lowclosedate-date,symbol,
                    lead1sell_lowclosedate,
-                   hold_less_than = 6))
+                   hold_less_than = 5))
 
 
 ############
@@ -386,7 +386,7 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
          lead1sell_rally/lead1open<1.5][
            order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate,hold_less_than = 6))
+                   lead1sell_rallydate,hold_less_than = 5))
 
 #############
 # earners
@@ -451,7 +451,7 @@ bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) &
           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
           lead1sell_lowclose/lead1open>.5][
             order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
-  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 6))
+  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 5))
 
 
 #############
@@ -484,7 +484,7 @@ bigcaps[(avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)
           lead1sell_rally/lead1open<1.5][
             order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate,hold_less_than = 6))
+                   lead1sell_rallydate,hold_less_than = 5))
 
 ###########
 # No working strategies here yet
