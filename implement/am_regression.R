@@ -25,11 +25,10 @@ prices[volume>75000 & close>7,
        threshold:=pmin(quantile(reg_predict,.001,type=1),.995), date]
 
 prices[date==max(date, na.rm=T) & 
-         reg_predict<threshold,
-       .(date, symbol, close, volume)] %>%
+         reg_predict<threshold] %>%
   dplyr::arrange(reg_predict) %>%
   head(1)  %>%
   dplyr::mutate( action='SELL', 
-                 order_type=ifelse(volume>250000,'MKT','MIDPRICE'), 
+                 order_type=ifelse(volume>250000,'MKT','Adaptive'), 
                  time_in_force='DAY') %>%
   write_strat(strat_name='regression')

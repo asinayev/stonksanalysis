@@ -28,7 +28,7 @@ news_moves[grepl('earning', title, ignore.case = T) &
   dplyr::arrange(avg_delta) %>%
   head(1)  %>%
   dplyr::mutate(action='BUY', 
-                order_type=ifelse(volume>250000,'MKT','MIDPRICE'),
+                order_type=ifelse(volume>250000,'MKT','Adaptive'),
                 time_in_force='DAY') %>%
   data.table %>%
   write_strat(strat_name='zacks_earn')
@@ -44,7 +44,7 @@ news_moves[(grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', 
   dplyr::arrange(avg_delta_short) %>%
   head(1)  %>%
   dplyr::mutate(action='BUY', 
-                order_type=ifelse(volume>250000,'MKT','MIDPRICE'),,
+                order_type=ifelse(volume>250000,'MKT','Adaptive'),
                 time_in_force='DAY') %>%
   data.table %>%
   write_strat(strat_name='div_news')
