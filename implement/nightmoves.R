@@ -13,5 +13,3 @@ current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tic
 current_moves_dt = data.table(current_moves$tickers)
 
 fwrite(current_moves_dt[ticker=='SPY'], '/tmp/spy_change.csv') #has todaysChangePerc
-
-prices = fread('/tmp/prices.csv')
