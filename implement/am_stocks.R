@@ -28,7 +28,7 @@ prices[date==max(date, na.rm=T) &
          close/open>1.2 & open/lag1close>1 &
          vp_order<3000 & close>7][
   order(close*volume,decreasing=T)] %>%
-  head(3) %>%
+  head(1) %>%
   dplyr::mutate( action='SELL', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
