@@ -31,6 +31,8 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
              EMA(close ,n = 26, align='right',fill=NA),symbol ]
     stock_dat[(symbol %in% stock_dat[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
            MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
+    stock_dat[,day_drop_norm:=(high-close)/avg_range]
+    stock_dat[,day_rise_norm:=(close-low)/avg_range]
   }
 }
 

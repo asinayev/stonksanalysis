@@ -25,11 +25,11 @@ news_moves[grepl('earning', title, ignore.case = T) &
            open-close > avg_range/3 ] %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
-  dplyr::arrange(avg_delta) %>%
+  dplyr::arrange(day_drop_norm) %>%
   head(1)  %>%
   dplyr::mutate(action='BUY', 
                 order_type=ifelse(volume>250000,'MKT','Adaptive'),
-                time_in_force='DAY') %>%
+                time_in_force=ifelse(volume>250000,'OPG','DAY')) %>%
   data.table %>%
   write_strat(strat_name='zacks_earn')
 
@@ -41,11 +41,11 @@ news_moves[(grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', 
            market_cap %between% c(0.5*10^9, 10*10^9) ] %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(dplyr::row_number()==1) %>%
-  dplyr::arrange(avg_delta_short) %>%
+  dplyr::arrange(day_drop_norm) %>%
   head(1)  %>%
   dplyr::mutate(action='BUY', 
                 order_type=ifelse(volume>250000,'MKT','Adaptive'),
-                time_in_force='DAY') %>%
+                time_in_force=ifelse(volume>250000,'OPG','DAY')) %>%
   data.table %>%
   write_strat(strat_name='div_news')
 

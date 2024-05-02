@@ -76,7 +76,7 @@ rally = prices[volume>500000 & close>7 &
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>2 &
          avg_delta/sell_rally_avg<.982][
-           order(lever, avg_volume,decreasing = T),head(.SD,1),date] %>%
+           order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate,hold_less_than=5))
 
 # revert ETFs
@@ -107,7 +107,7 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
-    ][order( lagging_corr_long,decreasing=T),head(.SD,1),date]%>%
+    ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 5))
 
 # Corr long etfs
@@ -134,7 +134,7 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
 
 corr_long = prices[volume>500000 & close>7 & 
          (avg_delta_short<.975) & lagging_corr_long> .35][
-           order(avg_volume),head(.SD,1),date]%>%
+           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
 helds = merge(rally, revert, on='date',all=T)%>%

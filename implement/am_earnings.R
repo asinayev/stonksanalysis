@@ -18,7 +18,7 @@ prices[date==max(date, na.rm=T) &
          ( ((MACD_slow - MACD) > .03) | (low<running_low*1.005) | 
              (avg_delta_short<avg_delta*.985) | (sell_rally_day>6)) & 
          (mean_eps/close) %between% c(.2, 100) &  eps_unit=="USD / shares"  ][
-           order(avg_delta_short,decreasing=F)] %>%
+           order(day_drop_norm, decreasing=F)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',

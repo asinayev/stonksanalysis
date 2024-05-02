@@ -45,7 +45,6 @@ prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 prices[order(avg_vp,decreasing=T),    vp_order:=seq_len(.N),date]
 prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
 
-
 #####bandlong
 # prices[!is.na(lag1close),
 #        c('lower','avg','upper','pctB'):= data.frame(BBands(lag1close, n = 30, EMA, sd=2.5)),
@@ -136,7 +135,7 @@ prices[
 
 prices[
   (close/open)>1.2 & close>7 & (open/lag1close)>1  &
-    vp_order<3000][order(close*volume,decreasing=T),.SD[1],date]%>% 
+    vp_order<3000][order(day_rise_norm,decreasing=T),.SD[1],date]%>% 
   with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=5))
 
 
@@ -180,7 +179,7 @@ prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff 
          (volume>=max_volume & avg_delta_short<.99) & #big down movement recently and consolidated today
          (((close-low)/avg_range)<.2 ) & 
          (log(vp_order)-log(cap_order))>.4 ][ #stock is boring
-           order(avg_delta_short),head(.SD,1),date]%>%
+           order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
 
@@ -263,7 +262,7 @@ rally_avg(prices,100)
 prices[close>7 & avg_volume>1000000 & 
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.975][
-         ][order(high/close, decreasing=T),head(.SD,1),date] %>%
+         ][order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
   with(performance(date,
                    lead1sell_rally/lead1open-1,
                    lead1sell_rallydate-date,symbol,
@@ -295,7 +294,7 @@ prices[close>7 & avg_volume>1000000 &
 prices[close>7 & avg_volume>500000 & 
          close>lag1high & sell_rally_day<2 & 
          avg_delta_short>1.1][
-         ][order(days_around, decreasing=T),head(.SD,1),date]%>%
+         ][order(day_rise_norm, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,
                    1-lead1sell_lowclose/lead1open,
                    lead1sell_lowclosedate-date,symbol,
@@ -312,36 +311,38 @@ prices[close>7 & avg_volume>500000 &
 
 ##############
 # megacap
-#      avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.02822222 0.02069409     -4.5          1092         796        5
+#       avg_year   avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.009736842 0.009576683     -0.6           548        1460        5
 #    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2005   0.008     -0.6   0.2     26          27        5      4.653846             6
-# 2: 2006   0.130     -0.1   2.6     20          21        5      3.850000             9
-# 3: 2007  -0.026     -4.5  -1.2     46          47        5      7.195652            16
-# 4: 2008   0.000     -3.5   0.0    104         105        5      6.230769            50
-# 5: 2009   0.048     -3.3   2.0     41          42        5      5.487805            15
-# 6: 2010   0.033     -1.0   0.7     21          22        5      3.333333             5
-# 7: 2011   0.023     -0.3   0.7     31          32        5      6.258065            11
-# 8: 2012   0.058     -0.1   1.3     22          23        5      5.454545             7
-# 9: 2013   0.087      0.0   0.7      8           9        3      5.250000             4
-# 10: 2014   0.044     -0.5   1.8     41          42        5      5.146341            13
-# 11: 2015   0.019     -1.0   0.9     49          50        5      6.142857            17
-# 12: 2016   0.011     -1.1   0.4     37          38        5     10.594595            13
-# 13: 2017  -0.003     -1.1   0.0     15          16        5      9.400000             3
-# 14: 2018   0.016     -1.1   0.7     43          44        5      8.209302            14
-# 15: 2019   0.032     -0.8   1.5     47          48        5      8.936170            16
-# 16: 2020   0.061     -1.3   4.4     72          73        5      5.097222            38
-# 17: 2021   0.009     -0.9   1.1    115         116        5      7.504348            52
-# 18: 2022  -0.042     -3.0  -1.7     40          41        5      8.900000            18
+# 1: 2004   0.015      0.0   0.2     13          14        2      4.230769            11
+# 2: 2005   0.006     -0.3   0.6    105         106        5      6.685714            44
+# 3: 2006   0.007     -0.1   0.4     60          61        5      5.933333            33
+# 4: 2007   0.014     -0.1   0.9     59          60        5      5.728814            35
+# 5: 2008   0.028     -0.3   3.3    118         119        5      4.898305            48
+# 6: 2009   0.023     -0.5   1.7     75          76        5      5.586667            31
+# 7: 2010   0.015     -0.1   1.0     66          67        5      5.121212            34
+# 8: 2011   0.005     -0.2   0.4     73          74        5      6.136986            28
+# 9: 2012   0.003     -0.2   0.2     67          68        5      6.194030            30
+# 10: 2013   0.004     -0.6   0.3     81          82        5      6.370370            31
+# 11: 2014   0.005     -0.3   0.4     90          91        5      5.322222            39
+# 12: 2015   0.002     -0.5   0.2     88          89        5      6.340909            38
+# 13: 2016   0.004     -0.3   0.3     77          78        5      6.532468            37
+# 14: 2017   0.002     -0.2   0.2    106         107        5      5.811321            36
+# 15: 2018   0.010     -0.2   0.8     80          81        5      6.512500            33
+# 16: 2019   0.010     -0.1   0.6     65          66        5      5.507692            29
+# 17: 2020   0.015     -0.3   1.2     77          78        5      5.909091            32
+# 18: 2021   0.005     -0.4   0.4     82          83        5      6.926829            38
+# 19: 2022   0.012     -0.4   0.7     59          60        5      5.762712            24
+
 prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &  
          cap_order<50 & 
          (((close-low)/avg_range)<.15 ) & 
          lead1sell_rally/lead1open<1.5][
-           order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
+           order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
-############
+#############
 # earners
 #############
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
@@ -403,7 +404,7 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
 bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
           lead1sell_lowclose/lead1open>.5][
-            order(avg_delta_short,decreasing = T),head(.SD,1),date] %>%
+            order(day_drop_norm,decreasing = F),head(.SD,1),date] %>%
   with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 5))
 
 
@@ -435,7 +436,7 @@ bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) &
 bigcaps[(avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)) &
           (avg_delta>bigcap_avg_delta*.995 | avg_delta>.995) &
           lead1sell_rally/lead1open<1.5][
-            order(avg_delta_short,decreasing = F),head(.SD,1),date] %>%
+            order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
