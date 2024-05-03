@@ -51,14 +51,14 @@ financials_from_polygon = function( key, identifier, identifier_type='cik', fiel
   if(identifier_type=='symbol'){
     out=
       "https://api.polygon.io/vX/reference/financials?ticker=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-        sprintf(identifier, key) %>%
-        hit_polygon(results_contain = field)
+      sprintf(identifier, key) %>%
+      hit_polygon(results_contain = field)
   }
   if(identifier_type=='cik'){
     out=
       "https://api.polygon.io/vX/reference/financials?cik=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-        sprintf(identifier, key) %>%
-        hit_polygon(results_contain = field)
+      sprintf(identifier, key) %>%
+      hit_polygon(results_contain = field)
   }
   out[[identifier_type]]=identifier
   return(out)
@@ -96,7 +96,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
 
 ticker_info_from_polygon = function( key, stockname, date, field=F) {
   "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
-  sprintf(stockname, date, key) %>%
+    sprintf(stockname, date, key) %>%
     hit_polygon %>%
     select_field(field=field)
 }
@@ -310,12 +310,15 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
   financials[,year_after_end_date:=as.Date(end_date)+365+90]
   gc()
   financials[stocks,
-              ..stock_cols,
-              on = .(identifier,
-              joining_filing_date<=joining_date,
-              year_after_end_date>=joining_date)
-            ][,.(mean_eps=mean(value),std_eps=sd(value),eps_unit=unit[1],
-                 liabilities=mean(liabilities),assets=mean(assets),
-                 shares=mean(shares)),
-            names(stocks)]
+             ..stock_cols,
+             on = .(identifier,
+                    joining_filing_date<=joining_date,
+                    year_after_end_date>=joining_date)
+  ][,.(mean_eps=mean(value),std_eps=sd(value),eps_unit=unit[1],
+       liabilities=mean(liabilities),assets=mean(assets),
+       shares=mean(shares)),
+    names(stocks)]
 }
+
+
+

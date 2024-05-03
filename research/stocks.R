@@ -345,30 +345,32 @@ prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &
 #############
 # earners
 #############
-# avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.01292857 0.01126126     -0.8           231        1124        9
-# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2009   0.019      0.0   0.2     13          14        3      7.000000             1
-# 2: 2010   0.020     -0.1   1.5     73          74        6      5.095890             8
-# 3: 2011   0.006     -0.5   0.7    112         113        9      6.964286            12
-# 4: 2012   0.004     -0.5   0.4    106         107        6      6.726415             9
-# 5: 2013   0.013     -0.3   1.0     76          77        6      5.513158             6
-# 6: 2014   0.008     -0.1   0.5     58          59        5      5.862069             5
-# 7: 2015   0.022     -0.1   0.2      7           8        3      4.714286             3
-# 8: 2016   0.021     -0.5   1.2     58          59        6      5.689655             4
-# 9: 2017   0.016     -0.4   0.9     56          57        5      6.214286             5
-# 10: 2018   0.014     -0.2   1.2     84          85        9      6.880952             6
-# 11: 2019   0.009     -0.1   0.7     78          79        8      5.602564             9
-# 12: 2020   0.010     -0.8   1.5    149         150        9      6.416107            25
-# 13: 2021   0.020     -0.6   2.6    134         135        8      6.783582            19
-# 14: 2022  -0.001     -0.6  -0.1    106         107        9      6.924528            19
+#     avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.02221429 0.01426593     -0.9           644         736        5
+#    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2009   0.024      0.0   0.3     14          15        5             1             1
+# 2: 2010   0.032     -0.1   0.9     28          29        5             1             2
+# 3: 2011   0.019     -0.5   1.1     56          57        5             1             5
+# 4: 2012   0.066     -0.1   0.7     10          11        3             1             2
+# 5: 2013   0.017      0.0   0.3     16          17        5             1             1
+# 6: 2014  -0.001     -0.7   0.0     66          67        5             1             2
+# 7: 2015   0.038     -0.2   0.2      5           6        3             1             1
+# 8: 2016   0.029     -0.3   0.8     26          27        4             1             3
+# 9: 2017   0.034     -0.3   1.8     54          55        5             1             3
+# 10: 2018   0.031     -0.3   1.5     48          49        5             1             5
+# 11: 2019   0.001     -0.4   0.0     41          42        5             1             6
+# 12: 2020   0.008     -0.9   1.3    156         157        5             1            13
+# 13: 2021   0.009     -0.5   1.1    115         116        5             1             7
+# 14: 2022   0.004     -0.4   0.3     87          88        5             1            11
 
 prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 &
          ( ((MACD_slow - MACD) > .03) | (low<running_low*1.005) | 
-             (avg_delta_short<avg_delta*.985) | (sell_rally_day>6)) & 
+             (sell_rally_day>6) |
+             (avg_delta_short<avg_delta*.985) #| (day_rise_norm<.1) 
+           ) &
          (mean_eps/close) %between% c(.2, 100) &  eps_unit=="USD / shares"  ][ #stock is boring
-           order(avg_delta_short),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate))
+           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
 
 
