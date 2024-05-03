@@ -78,11 +78,10 @@ prices[date==max(date, na.rm=T) &
   write_strat(strat_name='correlated_short')
 
 
-prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &  
-         cap_order<50 &
-         (((close-low)/avg_range)<.15 ) & 
+prices[avg_delta_short<avg_delta*.985 &  
+         cap_order<25 & 
          date==max(date, na.rm=T)][
-         order(day_drop_norm, decreasing=F)]  %>%
+         order(day_drop_norm, decreasing=T)]  %>%
  head(1) %>%
  dplyr::mutate( action='BUY',
                 order_type='MKT',

@@ -334,11 +334,10 @@ prices[close>7 & avg_volume>500000 &
 # 18: 2021   0.005     -0.4   0.4     82          83        5      6.926829            38
 # 19: 2022   0.012     -0.4   0.7     59          60        5      5.762712            24
 
-prices[((low<running_low*1.001)|(avg_delta_short<avg_delta*.98)) &  
-         cap_order<50 & 
-         (((close-low)/avg_range)<.15 ) & 
+prices[avg_delta_short<avg_delta*.985 &  
+         cap_order<25 & 
          lead1sell_rally/lead1open<1.5][
-           order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
+           order(day_drop_norm, decreasing=T),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
