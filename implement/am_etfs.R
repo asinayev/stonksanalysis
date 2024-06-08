@@ -58,6 +58,13 @@ prices[order(day_drop_norm, decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='corr_long_etfs')
 
+prices[order(day_drop_norm, decreasing=F)][
+  date==max(date, na.rm=T) & 
+    volume>500000 & close>7 & 
+    !short & ((1-avg_delta_short) > (.02+avg_range/close)/2 ) ]%>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  write_strat(strat_name='drop_etfs')
 
 prices[date==max(date, na.rm=T) ] %>%
   fwrite('/tmp/stonksanalysis/all_etfs.csv')

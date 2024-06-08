@@ -107,8 +107,8 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
-    ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 5))
+    ][order( day_drop_norm, decreasing=F),head(.SD,3),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 1))
 
 # Corr long etfs
 
@@ -137,8 +137,40 @@ corr_long = prices[volume>500000 & close>7 &
            order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
-helds = merge(rally, revert, on='date',all=T)%>%
-  merge(corr_long, on='date', all=T)
-helds[,sum_held:=rowSums(.SD,na.rm=T),.SDcols=c('n_held.x','n_held.y','n_held')]
+# Drop ETFs
+
+# avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.01255556 0.01637348     -1.4           935         757        5
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2005  -0.018     -0.1  -0.1      3           4        2     10.000000             2
+# 2: 2006  -0.028     -0.2  -0.1      4           5        2      5.500000             4
+# 3: 2007   0.019     -0.2   0.2     13          14        3      3.000000             7
+# 4: 2008   0.017     -0.5   0.5     29          30        5      5.103448            14
+# 5: 2009   0.010     -0.3   0.2     19          20        3      3.736842            14
+# 6: 2010   0.023     -0.1   0.5     22          23        4      3.954545            15
+# 7: 2011   0.017     -0.2   0.9     54          55        5      4.537037            30
+# 8: 2012   0.023     -0.1   0.7     28          29        5      4.500000            13
+# 9: 2013   0.013     -0.2   0.5     38          39        5      3.605263            22
+# 10: 2014   0.024     -0.2   0.7     31          32        5      4.806452            20
+# 11: 2015   0.025     -0.1   1.6     66          67        5      4.575758            30
+# 12: 2016  -0.002     -1.1  -0.1     62          63        5      4.387097            37
+# 13: 2017   0.018     -0.2   0.4     24          25        3      3.666667            11
+# 14: 2018   0.016     -0.1   0.8     50          51        5      3.680000            29
+# 15: 2019   0.019     -0.2   1.1     55          56        3      4.327273            27
+# 16: 2020   0.025     -0.9   2.0     80          81        5      4.912500            46
+# 17: 2021   0.019     -0.2   1.9     98          99        5      4.010204            47
+# 18: 2022   0.006     -1.4   0.4     63          64        5      4.190476            38
+
+drop_etfs = prices[volume>500000 & close>7 & !short &
+         ((1-avg_delta_short) > (.02+avg_range/close)/2 ) ][
+           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
+                   lead1sell_rallydate, hold_less_than = 5))
+
+
+helds = merge(rally, revert, on='date',all=T, suffixes = c("rally",'revert') )%>%
+  merge(corr_long, on='date', all=T)%>%
+  merge(drop_etfs, on='date', all=T, suffixes = c("corr_long",'drop_etfs'))
+helds[,sum_held:=rowSums(.SD,na.rm=T),.SDcols=c("n_heldrally","n_heldrevert","n_heldcorr_long","n_helddrop_etfs")]
 helds[order(sum_held)]
-cor(helds[,.(n_held,n_held.x,n_held.y)],use = 'pairwise.complete')
+cor(helds[,.(n_heldrally,n_heldrevert,n_heldcorr_long,n_helddrop_etfs)],use = 'pairwise.complete')
