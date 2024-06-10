@@ -107,8 +107,8 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
-    ][order( day_drop_norm, decreasing=F),head(.SD,3),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 1))
+    ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 5))
 
 # Corr long etfs
 
@@ -162,7 +162,7 @@ corr_long = prices[volume>500000 & close>7 &
 # 18: 2022   0.006     -1.4   0.4     63          64        5      4.190476            38
 
 drop_etfs = prices[volume>500000 & close>7 & !short &
-         ((1-avg_delta_short) > (.02+avg_range/close)/2 ) ][
+                     (avg_delta_short < .99-avg_range/close/2 ) ][
            order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
