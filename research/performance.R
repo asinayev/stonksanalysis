@@ -71,3 +71,15 @@ no_doubling=function(trades){
   setorder(trades, date, symbol)
   trades[is.na(prev_sold) | prev_sold<date]
 }
+
+performance_features(dataset){
+  dataset[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
+  dataset[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
+  
+  rally(dataset,
+        sell_rule=function(dat){dat$lag1close<dat$lag1low+.2*(dat$lag1high-dat$lag1low) },
+        varname='sell_lowclose',
+        sell_close=F)
+  dataset[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
+  dataset[,lead1sell_lowclosedate:= shift(sell_lowclose_date,1,type='lead'),symbol]
+}

@@ -43,11 +43,8 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
-prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
-
 rally_avg(prices,200)
-
+performance_features(prices)
 prices=key_etfs(prices,low_corr_thresh=.33)
  
 # Rally ETFs

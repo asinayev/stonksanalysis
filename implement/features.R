@@ -33,7 +33,14 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
            MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
     stock_dat[,day_drop_norm:=(high-close)/avg_range]
     stock_dat[,day_rise_norm:=(close-low)/avg_range]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>corr_window,symbol],
+           max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
+           avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol ]
+    stock_dat[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
+    stock_dat[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
   }
+  setorder(stock_dat, symbol, date)
 }
 
 regression_features = function(stock_dat){

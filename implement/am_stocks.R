@@ -8,14 +8,6 @@ source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
 
 prices = only_passing(prices, min_volume=0, min_close=0, last_n = 150)
-
-prices[symbol %in% prices[,.N,symbol][N>100,symbol]
-       ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>25,symbol]
-       ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
-prices[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
-prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
-
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 # rally_avg(prices,100)

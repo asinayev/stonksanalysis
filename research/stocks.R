@@ -10,16 +10,6 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-
-# prices=lapply(Sys.Date()-365*18:1, sampled_data, key=POLYKEY, ticker_type='CS', details=T, financials=F) %>%   
-#   rbindlist(fill=T) %>%
-#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-# spy_prices=stock_history('SPY', '2004-01-01', Sys.Date(), key=POLYKEY,check_ticker=F) %>%
-#   dplyr::rename(symbol=stock, close=AdjClose, date=Date)
-# spy_prices[,c("lag1close", "lag2close", "lead1close"):=shift(close, n = c(1:2,-1), type = "lag"),symbol]
-# spy_prices[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
-# prices = merge(prices,spy_prices[,.(date,spy_future_night_delta = lead1open/close, spy_day_delta=close/open)],all.x=T)
-
 prices=fread("~/datasets/stock_prices_15y.csv")
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
@@ -27,23 +17,7 @@ prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
-prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
-
-rally(prices,
-      sell_rule=function(dat){dat$lag1close<dat$lag1low+.2*(dat$lag1high-dat$lag1low) },
-      varname='sell_lowclose',
-      sell_close=F)
-prices[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
-prices[,lead1sell_lowclosedate:= shift(sell_lowclose_date,1,type='lead'),symbol]
-
-
-prices[symbol %in% prices[,.N,symbol][N>100,symbol]
-       ,max_volume:= zoo::rollapply(volume,max,width=100, align='right',fill=NA),symbol ]
-prices[symbol %in% prices[,.N,symbol][N>25,symbol]
-       ,avg_vp:= frollmean(close*volume ,n = 25, align='right',fill=NA),symbol ]
-prices[order(avg_vp,decreasing=T),    vp_order:=seq_len(.N),date]
-prices[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+performance_features(prices)
 
 #####bandlong
 # prices[!is.na(lag1close),
