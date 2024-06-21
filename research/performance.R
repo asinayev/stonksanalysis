@@ -72,7 +72,7 @@ no_doubling=function(trades){
   trades[is.na(prev_sold) | prev_sold<date]
 }
 
-performance_features(dataset){
+performance_features=function(dataset){
   dataset[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
   dataset[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
   
