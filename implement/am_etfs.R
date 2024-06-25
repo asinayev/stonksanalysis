@@ -21,7 +21,7 @@ prices = stocklist$ticker %>%
   rbindlist(use.names=TRUE, fill=T)
 
 prices = prices[, .SD[1], by=.(stock, Date)][
-  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose)] %>%
+  ,.(symbol=stock,date=Date, AdjClose, open, high, low, volume, close=AdjClose, market_cap=NA)] %>%
   merge(stocklist[,.(symbol=ticker, name)], all.x=T)
 
 prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
