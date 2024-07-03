@@ -165,9 +165,18 @@ drop_etfs = prices[volume>500000 & close>7 & !short &
                    lead1sell_rallydate, hold_less_than = 5))
 
 
+arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  & avg_delta_short<1 &
+                                rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15 &
+                                volume>500000][
+                                  order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate, hold_less_than = 5))
+
+
 helds = merge(rally, revert, on='date',all=T, suffixes = c("rally",'revert') )%>%
   merge(corr_long, on='date', all=T)%>%
-  merge(drop_etfs, on='date', all=T, suffixes = c("corr_long",'drop_etfs'))
-helds[,sum_held:=rowSums(.SD,na.rm=T),.SDcols=c("n_heldrally","n_heldrevert","n_heldcorr_long","n_helddrop_etfs")]
+  merge(drop_etfs, on='date', all=T, suffixes = c("corr_long",'drop_etfs'))%>%
+  merge(arb_etfs, on='date', all=T)
+helds[,sum_held:=rowSums(.SD,na.rm=T),.SDcols=c("n_heldrally","n_heldrevert","n_heldcorr_long","n_helddrop_etfs","n_held")]
 helds[order(sum_held)]
-cor(helds[,.(n_heldrally,n_heldrevert,n_heldcorr_long,n_helddrop_etfs)],use = 'pairwise.complete')
+cor(helds[,.(n_heldrally,n_heldrevert,n_heldcorr_long,n_helddrop_etfs,n_held)],use = 'pairwise.complete')

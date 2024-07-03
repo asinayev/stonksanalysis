@@ -137,3 +137,56 @@ only_passing = function(stock_dat, min_close, min_volume, last_n, passing_date=m
   setorder(passing_dat, symbol, date)
   passing_dat
 }
+
+reference_etfs=c('ACWI','AGG','DIA','EEM',
+                 EFA','EWC','EWJ','EWY','EWZ',
+FXI','HYG','GDX','GDXJ',
+                 IAU','IBB','IEI','IJR','ITA','IWM','IWP','IWO','IWR','IYF','IYR','IYW',
+KRE','LQD','MBB','QQQ',
+                 SHY','SJNK','SLQD','SLV','SLVP','SOXX','SPHB','SPY','SPYG','STPZ',
+TIP','TLT','UNG','USIG','USO',
+                 VBR','VDC','VEA','VGK','VIXY','VNQ','VTV','VXUS',
+XBI','XLB','XLE','XLF','XLI','XLK','XLU','XLV','XLY','XOP')
+
+check_corr = function(dataset, target_etf, reference_etf){
+  m1=dataset[symbol==target_etf,.(date,target_delta_short=avg_delta_short-1)] %>%
+    merge(dataset[symbol==reference_etf,.(date,reference_delta_short=avg_delta_short-1)])%>%
+    lm(formula=target_delta_short~0+reference_delta_short)
+  c('mult'=m1$coefficients, 'rsq'=summary(m1)$r.squared)
+}
+
+matching_pairs_for_year = function(yr, dataset=prices, reference_etfs=reference_etfs){
+  dataset[,target_var:=avg_delta_short-1]
+  key_etfs = dataset[year(date)==(yr-1),
+                     .(volume = mean(volume,na.rm=T),
+                       volatility = sd(target_var,na.rm=T),
+                       count = .N),
+                     symbol][volume>100000 & count>50]
+  key_etf_wide = dataset[symbol %in% key_etfs$symbol & !is.na(target_var) & year(date)==(yr-1) ] %>%
+    dcast(date~symbol, value.var='target_var',fun.aggregate = mean)
+  
+  etf_corrs = data.frame(key_etf_wide)[,names(key_etf_wide)!='date']%>%
+    cor(use='pairwise.complete') %>%
+    data.table
+  hi_corr=which((etf_corrs>.98 | etf_corrs< -.98),arr.ind=T)
+  hi_corr=data.table(
+    target = names(etf_corrs)[hi_corr[,1]],
+    reference = names(etf_corrs)[hi_corr[,2]]
+  ) %>%
+    merge(key_etfs[,.(symbol,target_volume=volume, target_volatility=volatility )],
+          by.x='target',by.y='symbol')%>%
+    merge(key_etfs[,.(symbol,reference_volume=volume, reference_volatility=volatility )],
+          by.x='reference',by.y='symbol')
+  
+  hi_corr_tradeable = hi_corr[(reference_volume>target_volume) & (reference %in% reference_etfs),
+                              .(reference,target)]
+  hi_corr_tradeable = cbind(hi_corr_tradeable,
+                            t(apply(hi_corr_tradeable,1,
+                                    function(dats) check_corr(dataset[year(date)==(yr-1)],dats['target'],dats['reference']))))
+  comparison_to_reference=dataset[year(date)==yr] %>%
+    merge(hi_corr_tradeable, by.x='symbol',by.y = 'target')%>%
+    merge(dataset[year(date)==yr,
+                  .(date,reference=symbol,reference_delta_short=avg_delta_short,reference_avg_delta=avg_delta, reference_delta=close/lag1close)],
+          by=c('date','reference') )
+  comparison_to_reference
+}
