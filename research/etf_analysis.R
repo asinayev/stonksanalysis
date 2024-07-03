@@ -164,6 +164,10 @@ drop_etfs = prices[volume>500000 & close>7 & !short &
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
 
+all_matching_pairs=parallel::mclapply(c(2009:2022),matching_pairs_for_year,
+                                      dataset=prices, reference_etfs=reference_etfs,
+                                      mc.cores=16)%>%
+  rbindlist
 
 arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  & avg_delta_short<1 &
                                 rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15 &

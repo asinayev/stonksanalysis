@@ -139,14 +139,14 @@ only_passing = function(stock_dat, min_close, min_volume, last_n, passing_date=m
 }
 
 reference_etfs=c('ACWI','AGG','DIA','EEM',
-                 EFA','EWC','EWJ','EWY','EWZ',
-FXI','HYG','GDX','GDXJ',
-                 IAU','IBB','IEI','IJR','ITA','IWM','IWP','IWO','IWR','IYF','IYR','IYW',
-KRE','LQD','MBB','QQQ',
-                 SHY','SJNK','SLQD','SLV','SLVP','SOXX','SPHB','SPY','SPYG','STPZ',
-TIP','TLT','UNG','USIG','USO',
-                 VBR','VDC','VEA','VGK','VIXY','VNQ','VTV','VXUS',
-XBI','XLB','XLE','XLF','XLI','XLK','XLU','XLV','XLY','XOP')
+                 'EFA','EWC','EWJ','EWY','EWZ',
+                 'FXI','HYG','GDX','GDXJ',
+                 'IAU','IBB','IEI','IJR','ITA','IWM','IWP','IWO','IWR','IYF','IYR','IYW',
+'KRE','LQD','MBB','QQQ',
+                 'SHY','SJNK','SLQD','SLV','SLVP','SOXX','SPHB','SPY','SPYG','STPZ',
+'TIP','TLT','UNG','USIG','USO',
+                 'VBR','VDC','VEA','VGK','VIXY','VNQ','VTV','VXUS',
+'XBI','XLB','XLE','XLF','XLI','XLK','XLU','XLV','XLY','XOP')
 
 check_corr = function(dataset, target_etf, reference_etf){
   m1=dataset[symbol==target_etf,.(date,target_delta_short=avg_delta_short-1)] %>%
