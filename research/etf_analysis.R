@@ -164,9 +164,26 @@ drop_etfs = prices[volume>500000 & close>7 & !short &
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
 
+# avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.01871429 0.01807512     -0.9           489         440        5
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2009   0.033      0.0   0.2      7           8        3      5.000000             5
+# 2: 2010   0.031     -0.1   0.7     22          23        4      5.000000             9
+# 3: 2011   0.007     -0.5   0.2     30          31        5      4.300000            12
+# 4: 2012   0.005     -0.1   0.1     14          15        3      4.214286            10
+# 5: 2013   0.014     -0.1   0.2     11          12        2      5.909091             7
+# 6: 2014   0.009     -0.1   0.1      9          10        2      3.333333             8
+# 7: 2015   0.020     -0.1   0.6     28          29        5      4.464286            12
+# 8: 2016   0.023     -0.3   0.3     13          14        2      4.384615             6
+# 9: 2017   0.031      0.0   0.5     17          18        3      3.647059            11
+# 10: 2018   0.004     -0.2   0.1     19          20        3      6.052632            10
+# 11: 2019   0.027     -0.1   0.4     15          16        2      4.933333            12
+# 12: 2020   0.015     -0.9   2.3    148         149        5      4.520270            21
+# 13: 2021   0.012     -0.3   0.5     45          46        3      4.977778            18
+# 14: 2022   0.031     -0.5   1.5     48          49        4      3.791667            15
 all_matching_pairs=parallel::mclapply(c(2009:2022),matching_pairs_for_year,
                                       dataset=prices, reference_etfs=reference_etfs,
-                                      mc.cores=16)%>%
+                                      mc.cores=2)%>%
   rbindlist
 
 arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  & avg_delta_short<1 &
