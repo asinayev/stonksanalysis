@@ -28,6 +28,24 @@ get_all_results = function(link,results_contain=F){
   return(results)
 }
 
+get_table_results = function(link, handle, tries=3, results_contain=F){
+  counter = response = tries
+  while(!is.data.table(response) && counter>0){
+    counter = tryCatch({
+      response=link %>%curl(handle = handle)%>%read.csv%>%data.table
+      stopifnot( is.data.table(response)  )
+      if(results_contain!=F){
+        stopifnot(results_contain %in% names(response))
+      }
+      return(response)
+    },
+    error = function(error){
+      return(counter-1) }
+    )
+  }
+  return(counter)
+}
+
 select_field = function(response, field){
   return(response[['results']][[field]])
 }
@@ -68,14 +86,16 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
   resultlist=list()
   go=T
   last_examined=""
+  h=new_handle()
+  handle_setheaders(h, "Accept"= "text/csv")
   while(length(go)>0 && go){
     link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
       sprintf(date, key, last_examined,ticker_type)
-    response = hit_polygon(link)
-    if (!is.null(response$results)){
-      last_examined = response$results$ticker[nrow(response$results)]
-      resultlist[last_examined]= list(response$results)
-      go=nrow(response$results)==1000
+    response = get_table_results(link, handle=h)
+    if (is.data.table(response) && nrow(response)>0){
+      last_examined = response[.N,ticker]
+      resultlist[[last_examined]]= response
+      go=nrow(response)==1000
     } else {
       go=F
     }
@@ -93,6 +113,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
     return(out)
   }
 }
+
 
 ticker_info_from_polygon = function( key, stockname, date, field=F) {
   "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
