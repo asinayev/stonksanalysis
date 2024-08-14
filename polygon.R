@@ -86,8 +86,8 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
   resultlist=list()
   go=T
   last_examined=""
-  h=new_handle()
-  handle_setheaders(h, "Accept"= "text/csv")
+  h=curl::new_handle()
+  curl::handle_setheaders(h, "Accept"= "text/csv")
   while(length(go)>0 && go){
     link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
       sprintf(date, key, last_examined,ticker_type)
