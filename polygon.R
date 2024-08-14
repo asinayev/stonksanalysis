@@ -32,7 +32,7 @@ get_table_results = function(link, handle, tries=3, results_contain=F){
   counter = response = tries
   while(!is.data.table(response) && counter>0){
     counter = tryCatch({
-      response=link %>%curl(handle = handle)%>%read.csv%>%data.table
+      response=link %>%curl::curl(handle = handle)%>%read.csv%>%data.table
       stopifnot( is.data.table(response)  )
       if(results_contain!=F){
         stopifnot(results_contain %in% names(response))
