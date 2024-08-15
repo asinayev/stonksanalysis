@@ -58,12 +58,13 @@ def enrich_result(result):
   matches= client.list_tickers(search=result['companyName'], active=True, type='CS')
   first_match=next(matches)
   if first_match.ticker==result['ticker']:
-    result['match']=True
     details= client.get_ticker_details(ticker=result['ticker'])
     result['market_cap_ok']=details.market_cap<10000000000
-    prev_close= client.get_previous_close_agg(ticker=result['ticker'])[0]
-    result['liquidity_ok']=prev_close.close>5 and prev_close.volume>10000
-    result['volume']=prev_close.volume
+    snap= client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
+    result['liquidity_ok']=snap.prev_day.close>5 and snap.prev_day.volume>10000
+    result['volume']=snap.prev_day.volume
+    result['overnight_in_range']=snap.todays_change_percent> -1.75 and snap.todays_change_percent< 9
+    result['match']= result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
   else: result['match']=False
   return(result)
 
