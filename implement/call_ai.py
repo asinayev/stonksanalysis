@@ -13,9 +13,9 @@ genai.configure(api_key=google_key)
 model = genai.GenerativeModel('gemini-1.5-flash-latest')
 client = RESTClient(api_key=polygon_key)
 
-def google_search(search_term, api_key, cse_id, **kwargs):
+def google_search(api_key, cse_id, **kwargs):
     service = build("customsearch", "v1", developerKey=api_key)
-    res = service.cse().list(q=search_term, cx=cse_id, **kwargs).execute()
+    res = service.cse().list(cx=cse_id, **kwargs).execute()
     return res
 
 def all_search_pages(**kwargs):
@@ -44,7 +44,6 @@ def read_results(all_results, prompt_template):
       json_text = response.text[response.text.find("{"):response.text.find("}")+1]
       response_dict = json.loads(json_text)
       if(response_dict['newProgram']=='Yes'):
-        print(response_dict)
         valid_summaries.append(response_dict)
       pub_time=datetime.datetime.strptime( response_dict['timePublished'], '%m/%d/%Y %I:%M:%S %p' )
       if (datetime.datetime.now()-pub_time) > datetime.timedelta(days=1):
@@ -71,19 +70,28 @@ def enrich_result(result):
 prompt_template="The time now is "
 prompt_template+=datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
 
-prompt_template+=""". Based on the following search result, please answer yes or no about whether this constitues an announcement of a NEW share buyback or share repurchase program in which stocks will be repurchased in the future. If the announcement is not within 23 hours of the current time or simply an update about stock repurchases that already happened, respond no. Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
+prompt_template+=""". Based on the following search result, please answer yes or no about whether this constitues a NEW announcement about a share buyback or share repurchase program which says more stocks will be repurchased in the future. If the announcement is not within 23 hours of the current time or simply an update about stock repurchases that already happened, respond no. Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
 Respond in a format like this: {"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT",timePublished:"8/12/2024 3:30:00 PM"}
 
 Here is the search result: 
 """
 
 all_results=all_search_pages(
-        search_term='stock buyback', 
         api_key=google_key, 
         cse_id=my_cse_id, 
+        q='stock',
+        orTerms='buyback repurchase',
         sort="date",
         num=10)
 
+print("############################ MATCHING RESULTS")
 valid_results = read_results(all_results, prompt_template)
-for r in valid_results:
-  print(enrich_result(r))
+enriched_results = [enrich_result(r) for r in valid_results]
+for r in enriched_results:
+  if r['match']:
+    print(r)
+
+print("############################ OTHER RESULTS")
+for r in enriched_results:
+  if not r['match']:
+    print(r)
