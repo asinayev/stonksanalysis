@@ -21,5 +21,5 @@ if [ $run_what == "pm" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/pm_etfs.R /home/repos/stonksanalysis
 fi
 if [ $run_what == "buybacks" ] ; then
-	python3 /home/repos/stonksanalysis/implement/call_ai.py /home/repos/stonksanalysis
+	python3 /home/repos/stonksanalysis/ai_news/buybacks.py /home/repos/stonksanalysis
 fi
