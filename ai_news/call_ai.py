@@ -22,7 +22,7 @@ def read_results(all_results, prompt_template, model):
         overtime+=1
       else: overtime=0
     except Exception as e:
-      print("Issue parsing result")
+      print("Issue parsing result: "+ str(response.text))
       print(e)
     if overtime==3: break
   return valid_summaries
