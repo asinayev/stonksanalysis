@@ -193,6 +193,12 @@ arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.re
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate, hold_less_than = 5))
 
+volatility_df = prices[symbol=='SVXY']%>%
+  merge(prices[symbol=='SPY'], by = 'date', suffixes=c('_SVXY','_SPY'))
+volatility_df[(close_SPY<lag1close_SPY*.99)|(close_SPY<lag1close_SPY*.995 & volume_SPY<avg_volume_SPY)]%>%
+  with(performance(date,lead1sell_rally_SVXY/lead1open_SVXY-1,lead1sell_rallydate_SVXY-date,
+                   symbol_SVXY,lead1sell_rallydate_SVXY,hold_less_than=1))
+
 
 helds = merge(rally, revert, on='date',all=T, suffixes = c("rally",'revert') )%>%
   merge(corr_long, on='date', all=T)%>%
