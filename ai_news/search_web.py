@@ -3,7 +3,7 @@ def all_search_pages(service, cse_id, **kwargs):
   results=['items']
   search_i=1
   while 'items' in results and search_i<90:
-    results = service.list(cx=cse_id, **kwargs).execute()
+    results = service.list(cx=cse_id, start=search_i, **kwargs).execute()
     if 'items' in results:
       all_results+=results['items']
       search_i+=10

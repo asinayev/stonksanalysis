@@ -24,22 +24,20 @@ def read_results(all_results, prompt_template, model):
     except Exception as e:
       print("Issue parsing result: "+ str(response.text))
       print(e)
-    if overtime==3: break
   return valid_summaries
 
 def enrich_result(result, poly_client):
-  matches= poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
-  first_match=next(matches)
   result['match']=False
-  if first_match.ticker==result['ticker']:
-    try:
-      details= poly_client.get_ticker_details(ticker=result['ticker'])
-      result['market_cap_ok']=details.market_cap<10000000000
-      snap= poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
-      result['liquidity_ok']=snap.prev_day.close>5 and snap.prev_day.volume>10000
-      result['volume']=snap.prev_day.volume
-      result['overnight_in_range']=snap.todays_change_percent> -1.75 and snap.todays_change_percent< 9
-      result['match']= result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
-    except Exception as e:
-      print("Issue getting ticker data: "+ str(result['ticker']))
+  try:
+    matches= poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
+    first_match=next(matches)
+    details= poly_client.get_ticker_details(ticker=result['ticker'])
+    result['market_cap_ok']=details.market_cap<10000000000
+    snap= poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
+    result['liquidity_ok']=snap.prev_day.close>5 and snap.prev_day.volume>10000
+    result['volume']=snap.prev_day.volume
+    result['overnight_in_range']=snap.todays_change_percent> -1.75 and snap.todays_change_percent< 9
+    result['match']= first_match.ticker==result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
+  except Exception as e:
+    print("Issue getting ticker data: "+ str(result['ticker']))
   return(result)
