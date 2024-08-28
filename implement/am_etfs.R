@@ -77,5 +77,13 @@ all_matching_pairs[order(day_drop_norm, decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='arb_etfs')
 
+should_trade_volatility = prices[
+  date==max(date, na.rm=T) & symbol=='SPY',
+    ((high/low>1.015)|(abs(close/lag1close-1)>.01)|(abs(avg_delta_short-1)>.005))]
+
+prices[date==max(date, na.rm=T) & symbol=='SVXY' & should_trade_volatility]%>%
+  dplyr::mutate(action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  write_strat(strat_name='short_vix')
+
 prices[date==max(date, na.rm=T) ] %>%
   fwrite('/tmp/stonksanalysis/all_etfs.csv')

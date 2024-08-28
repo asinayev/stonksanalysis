@@ -193,11 +193,31 @@ arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.re
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate, hold_less_than = 5))
 
+
+# avg_year   avg_trade drawdown drawdown_days days_traded max_held
+# <num>       <num>    <num>         <int>       <int>    <num>
+#   1:    0.012 0.008802817     -0.5           464         295        1
+# Key: <year>
+#   year average drawdown total trades days_traded max_held avg_days_held
+# <int>   <num>    <num> <num>  <num>       <int>    <num>         <num>
+#   1:  2012   0.000     -0.1   0.0     11          12        1      3.272727
+# 2:  2013   0.023     -0.1   0.5     23          24        1      3.608696
+# 3:  2014   0.004     -0.2   0.1     20          21        1      5.500000
+# 4:  2015   0.018     -0.2   0.6     35          36        1      3.628571
+# 5:  2016   0.016     -0.3   0.4     25          26        1      3.840000
+# 6:  2017   0.046      0.0   0.2      5           6        1      5.400000
+# 7:  2018   0.001     -0.2   0.0     25          26        1      4.640000
+# 8:  2019   0.010     -0.1   0.3     26          27        1      3.307692
+# 9:  2020  -0.003     -0.5  -0.1     47          48        1      3.936170
+# 10:  2021   0.011     -0.2   0.3     29          30        1      3.379310
+# 11:  2022   0.006     -0.1   0.2     38          39        1      3.842105
 volatility_df = prices[symbol=='SVXY']%>%
-  merge(prices[symbol=='SPY'], by = 'date', suffixes=c('_SVXY','_SPY'))
-volatility_df[(close_SPY<lag1close_SPY*.99)|(close_SPY<lag1close_SPY*.995 & volume_SPY<avg_volume_SPY)]%>%
+  merge(prices[symbol=='UVXY'], by = 'date', suffixes=c('_SVXY','_UVXY'))%>%
+  merge(prices[symbol=='SPY'], by = 'date')
+volatility_df[(high/low>1.015) |(abs(close/lag1close-1)>.01) | (abs(avg_delta_short-1)>.005)]%>%
   with(performance(date,lead1sell_rally_SVXY/lead1open_SVXY-1,lead1sell_rallydate_SVXY-date,
                    symbol_SVXY,lead1sell_rallydate_SVXY,hold_less_than=1))
+
 
 
 helds = merge(rally, revert, on='date',all=T, suffixes = c("rally",'revert') )%>%
