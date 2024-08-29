@@ -66,7 +66,9 @@ prices[order(day_drop_norm, decreasing=F)][
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   write_strat(strat_name='drop_etfs')
 
-all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), dataset=prices, reference_etfs=reference_etfs)
+all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), 
+                                           dataset=prices, 
+                                           reference_etfs=reference_etfs)
 all_matching_pairs[order(day_drop_norm, decreasing=F)][
   date==max(date, na.rm=T) &
     volume>500000 & close>7 &
