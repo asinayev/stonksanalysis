@@ -298,9 +298,10 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
   process_recordset=function(finrec){
     if(!is.null(finrec$results$financials$income_statement$diluted_earnings_per_share$value)&
        !is.null(finrec$results$financials$income_statement$diluted_earnings_per_share$unit)&
+       !is.null(finrec$results$financials$income_statement$diluted_average_shares$value)&
+       !is.null(finrec$results$financials$cash_flow_statement$net_cash_flow_from_operating_activities$value)&
        !is.null(finrec$results$financials$balance_sheet$current_liabilities$value)&
-       !is.null(finrec$results$financials$balance_sheet$current_assets$value)&
-       !is.null(finrec$results$financials$income_statement$diluted_average_shares$value)){
+       !is.null(finrec$results$financials$balance_sheet$current_assets$value)){
       fins = data.table(identifier=finrec[[id_type]],
                         start_date=finrec$results$start_date,
                         end_date=finrec$results$end_date,
@@ -308,11 +309,12 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
                         timeframe=finrec$results$timeframe,
                         eps_unit=finrec$results$financials$income_statement$diluted_earnings_per_share$unit,
                         eps_value=finrec$results$financials$income_statement$diluted_earnings_per_share$value,
+                        operating_cash=finrec$results$financials$cash_flow_statement$net_cash_flow_from_operating_activities$value,
                         liabilities=finrec$results$financials$balance_sheet$current_liabilities$value,
                         assets=finrec$results$financials$balance_sheet$current_assets$value,
                         shares=finrec$results$financials$income_statement$diluted_average_shares$value)
       return(fins[timeframe=='quarterly'][order(filing_date),
-                                          .(value=eps_value[.N],unit=eps_unit[.N],liabilities=liabilities[.N],assets=assets[.N],shares=shares[.N],filing_date=filing_date[.N]),
+                                          .(value=eps_value[.N],unit=eps_unit[.N],operating_cash=operating_cash[.N],liabilities=liabilities[.N],assets=assets[.N],shares=shares[.N],filing_date=filing_date[.N]),
                                           .(identifier,start_date,end_date)])
     } else {
       return(
@@ -325,7 +327,7 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
     rbindlist(fill=TRUE, use.names = T)
   stocks[,joining_date:=date]
   stocks[,identifier:=get(id_type)]
-  stock_cols = c(names(stocks),"value","unit","liabilities","assets","shares",
+  stock_cols = c(names(stocks),"value","unit","operating_cash","liabilities","assets","shares",
                  'filing_date','end_date')
   financials[,joining_filing_date:=filing_date]
   financials[,year_after_end_date:=as.Date(end_date)+365+90]
@@ -335,7 +337,7 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
              on = .(identifier,
                     joining_filing_date<=joining_date,
                     year_after_end_date>=joining_date)
-  ][,.(mean_eps=mean(value),std_eps=sd(value),eps_unit=unit[1],
+  ][,.(mean_eps=mean(value),std_eps=sd(value),mean_cash=mean(operating_cash),eps_unit=unit[1],
        liabilities=mean(liabilities),assets=mean(assets),
        shares=mean(shares)),
     names(stocks)]

@@ -15,10 +15,10 @@ rally(prices)
 
 prices[date==max(date, na.rm=T) & 
          close>7 & avg_volume>250000 & 
-         ( ((MACD_slow - MACD) > .03) | (low<running_low*1.005) | 
-             (avg_delta_short<avg_delta*.985) | (sell_rally_day>6)) & 
-         (mean_eps/close) %between% c(.2, 100) &  eps_unit=="USD / shares"  ][
-           order(day_drop_norm, decreasing=F)] %>%
+         ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
+             (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
+         (mean_eps/close) >.2 &  eps_unit=="USD / shares"   ][
+           order(mean_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',

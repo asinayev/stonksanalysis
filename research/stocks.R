@@ -13,7 +13,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 prices=fread("~/datasets/stock_prices_15y.csv")
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
-#prices=get_financials(prices,identifier='symbol')
+#prices=get_financials(prices,id_type='symbol')
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
@@ -321,31 +321,30 @@ prices[avg_delta_short<avg_delta*.985 &
 #############
 # earners
 #############
-#     avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.02221429 0.01426593     -0.9           644         736        5
-#    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2009   0.024      0.0   0.3     14          15        5             1             1
-# 2: 2010   0.032     -0.1   0.9     28          29        5             1             2
-# 3: 2011   0.019     -0.5   1.1     56          57        5             1             5
-# 4: 2012   0.066     -0.1   0.7     10          11        3             1             2
-# 5: 2013   0.017      0.0   0.3     16          17        5             1             1
-# 6: 2014  -0.001     -0.7   0.0     66          67        5             1             2
-# 7: 2015   0.038     -0.2   0.2      5           6        3             1             1
-# 8: 2016   0.029     -0.3   0.8     26          27        4             1             3
-# 9: 2017   0.034     -0.3   1.8     54          55        5             1             3
-# 10: 2018   0.031     -0.3   1.5     48          49        5             1             5
-# 11: 2019   0.001     -0.4   0.0     41          42        5             1             6
-# 12: 2020   0.008     -0.9   1.3    156         157        5             1            13
-# 13: 2021   0.009     -0.5   1.1    115         116        5             1             7
-# 14: 2022   0.004     -0.4   0.3     87          88        5             1            11
+# avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.02171429 0.01861472     -0.8           411         707        5
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2009   0.023      0.0   0.1      5           6        2             1             1
+# 2: 2010   0.048     -0.1   0.6     13          14        5             1             1
+# 3: 2011   0.032     -0.5   1.3     40          41        5             1             5
+# 4: 2012   0.026      0.0   0.8     30          31        5             1             3
+# 5: 2013   0.021      0.0   0.6     27          28        5             1             2
+# 6: 2014   0.005     -0.2   0.4     72          73        5             1             6
+# 7: 2015  -0.001     -0.5  -0.1     49          50        5             1             4
+# 8: 2016   0.011     -0.5   0.6     50          51        5             1             5
+# 9: 2017   0.039     -0.1   1.6     41          42        5             1             2
+# 10: 2018   0.029     -0.3   0.9     31          32        4             1             3
+# 11: 2019   0.012     -0.1   0.6     48          49        5             1             6
+# 12: 2020   0.019     -0.8   2.4    122         123        5             1            12
+# 13: 2021   0.014     -0.7   1.3     93          94        5             1             9
+# 14: 2022   0.026     -0.3   1.8     72          73        5             1            10
 
-prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 &
-         ( ((MACD_slow - MACD) > .03) | (low<running_low*1.005) | 
-             (sell_rally_day>6) |
-             (avg_delta_short<avg_delta*.985) #| (day_rise_norm<.1) 
-           ) &
-         (mean_eps/close) %between% c(.2, 100) &  eps_unit=="USD / shares"  ][ #stock is boring
-           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+
+prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
+         ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
+             (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
+         (mean_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
+           order(mean_eps/close, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
 
