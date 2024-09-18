@@ -339,14 +339,28 @@ prices[avg_delta_short<avg_delta*.985 &
 # 13: 2021   0.014     -0.7   1.3     93          94        5             1             9
 # 14: 2022   0.026     -0.3   1.8     72          73        5             1            10
 
-
-prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
-         ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
-             (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-         (mean_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
-           order(mean_eps/close, decreasing=T),head(.SD,1),date]%>%
+all_splits[,year_before_split:=date(execution_date)-365]
+all_splits[,year_after_split:=date(execution_date)+365]
+merge(prices,
+             prices[,.(symbol,date,date2=date)][all_splits, on = .(symbol=ticker, date2 > year_before_split, date2 < year_after_split), 
+                                                .(symbol, date=date, in_split_range=T)],
+             on=.(symbol,date), all.x = T
+)[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & is.na(in_split_range) &
+    ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
+        (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
+    (mean_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
+      order(mean_eps/close, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
+
+merge(prices,
+      prices[,.(symbol,date,date2=date)][all_splits, on = .(symbol=ticker, date2 > year_before_split, date2 < year_after_split), 
+                                         .(symbol, date=date, in_split_range=T)],
+      on=.(symbol,date), all.x = T
+)prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
+             avg_delta<1 & avg_delta_short<.995 &
+            (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
+                order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
 
 
 bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]

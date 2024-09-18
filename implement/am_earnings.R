@@ -24,3 +24,14 @@ prices[date==max(date, na.rm=T) &
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='earners')
+
+prices[date==max(date, na.rm=T) & 
+         close>7 & avg_volume>250000 & 
+         avg_delta<1 & avg_delta_short<.995 &
+         (mean_eps/close) >.05 &  eps_unit=="USD / shares"   ][
+           order(mean_eps/close, decreasing=T)] %>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='earners_long')
