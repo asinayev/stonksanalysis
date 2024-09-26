@@ -15,6 +15,8 @@ def read_results(all_results, prompt_template, model):
     try:
       json_text = response.text[response.text.find("{"):response.text.find("}")+1]
       response_dict = json.loads(json_text)
+      response_dict['link']=result['link']
+      response_dict['snippet']=result['snippet']
       if(response_dict['newProgram']=='Yes'):
         valid_summaries.append(response_dict)
     except Exception as e:
