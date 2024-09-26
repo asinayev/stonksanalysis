@@ -19,8 +19,8 @@ Respond in a format like this: {"newProgram":"No","companyName":"Microsoft Corpo
 Here is the search result: 
 """
 
-ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='stock buyback', \
-  orTerms='share repurchase', prompt_template=prompt_template, model=model)
+ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='buyback|repurchase share|stock', \
+  orTerms='', prompt_template=prompt_template, model=model)
 
 
 prompt_template="The time now is "
@@ -32,5 +32,5 @@ p
 Here is the search result: 
 """
 
-ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='guidance', \
-  orTerms='improves raises increases', prompt_template=prompt_template, model=model)
+ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='improves|raises|increases guidance', \
+  orTerms='', prompt_template=prompt_template, model=model)
