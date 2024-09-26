@@ -22,11 +22,11 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
   already_tracked = []
   for r in enriched_results:
     if r['match'] and r['companyName'] not in already_tracked:
-      print(r)
+      print(r['timePublished'],r['ticker'],r['link'],r['snippet'])
       already_tracked.append(r['companyName'])
   
   print("############################ OTHER RESULTS: "+query)
   for r in enriched_results:
     if not r['match'] and r['companyName'] not in already_tracked:
-      print(r)
+      print(r['timePublished'],r['ticker'],r['message'])
       already_tracked.append(r['companyName'])
