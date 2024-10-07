@@ -342,6 +342,7 @@ prices[avg_delta_short<avg_delta*.985 &
 prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
     ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
         (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
+      mean_deps<std_deps &
     (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
       order(mid_eps/close, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
