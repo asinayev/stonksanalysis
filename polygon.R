@@ -297,7 +297,7 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
                                   mc.cores = 16)
   process_recordset=function(finrec){
     if(!is.null(finrec$results$financials$income_statement$diluted_earnings_per_share$value)&
-       !is.null(finrec$results$financials$income_statement$diluted_earnings_per_share$unit)&
+       !is.null(finrec$results$financials$income_statement$basic_earnings_per_share$unit)&
        !is.null(finrec$results$financials$income_statement$diluted_average_shares$value)&
        !is.null(finrec$results$financials$cash_flow_statement$net_cash_flow_from_operating_activities$value)&
        !is.null(finrec$results$financials$balance_sheet$current_liabilities$value)&
@@ -307,18 +307,19 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
                         end_date=finrec$results$end_date,
                         filing_date=as.Date(finrec$results$filing_date),
                         timeframe=finrec$results$timeframe,
-                        eps_unit=finrec$results$financials$income_statement$diluted_earnings_per_share$unit,
-                        eps_value=finrec$results$financials$income_statement$diluted_earnings_per_share$value,
+                        eps_unit=finrec$results$financials$income_statement$basic_earnings_per_share$unit,
+                        eps_value=finrec$results$financials$income_statement$basic_earnings_per_share$value,
+                        deps_value=finrec$results$financials$income_statement$diluted_earnings_per_share$value,
                         operating_cash=finrec$results$financials$cash_flow_statement$net_cash_flow_from_operating_activities$value,
                         liabilities=finrec$results$financials$balance_sheet$current_liabilities$value,
                         assets=finrec$results$financials$balance_sheet$current_assets$value,
                         shares=finrec$results$financials$income_statement$diluted_average_shares$value)
       return(fins[timeframe=='quarterly'][order(filing_date),
-                                          .(value=eps_value[.N],unit=eps_unit[.N],operating_cash=operating_cash[.N],liabilities=liabilities[.N],assets=assets[.N],shares=shares[.N],filing_date=filing_date[.N]),
+                                          .(deps_value=deps_value[.N],eps_unit=eps_unit[.N],eps_value=eps_value[.N],operating_cash=operating_cash[.N],liabilities=liabilities[.N],assets=assets[.N],shares=shares[.N],filing_date=filing_date[.N]),
                                           .(identifier,start_date,end_date)])
     } else {
       return(
-        data.frame(identifier="",start_date="",end_date="",filing_date=as.Date(0),value=0,unit='',liabilities=0,assets=0,shares=0)
+        data.frame(identifier="",start_date="",end_date="",filing_date=as.Date(0),deps_value=0,eps_unit='',eps_value=0,operating_cash=0,liabilities=0,assets=0,shares=0)
       )
     }
   }
@@ -327,7 +328,7 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
     rbindlist(fill=TRUE, use.names = T)
   stocks[,joining_date:=date]
   stocks[,identifier:=get(id_type)]
-  stock_cols = c(names(stocks),"value","unit","operating_cash","liabilities","assets","shares",
+  stock_cols = c(names(stocks),"deps_value","eps_value","eps_unit","operating_cash","liabilities","assets","shares",
                  'filing_date','end_date')
   financials[,joining_filing_date:=filing_date]
   financials[,year_after_end_date:=as.Date(end_date)+365+90]
@@ -337,7 +338,8 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
              on = .(identifier,
                     joining_filing_date<=joining_date,
                     year_after_end_date>=joining_date)
-  ][,.(mean_eps=mean(value),std_eps=sd(value),mean_cash=mean(operating_cash),eps_unit=unit[1],
+  ][,.(mean_deps=mean(deps_value),std_deps=sd(eps_value),mean_eps=mean(eps_value),mid_eps=median(eps_value),mid_deps=median(deps_value),
+       mean_cash=mean(operating_cash),eps_unit=eps_unit[1],
        liabilities=mean(liabilities),assets=mean(assets),
        shares=mean(shares)),
     names(stocks)]
