@@ -342,8 +342,7 @@ prices[avg_delta_short<avg_delta*.985 &
 prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
     ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
         (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-      mean_deps<std_deps &
-    (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
+      (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
       order(mid_eps/close, decreasing=T),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 
@@ -352,7 +351,6 @@ prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
              avg_delta<1 & avg_delta_short<.995 &
             (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
                 order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
-
 
 bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
 bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]

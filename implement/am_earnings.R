@@ -17,8 +17,7 @@ prices[date==max(date, na.rm=T) &
          close>7 & avg_volume>250000 & 
          ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
              (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-         mean_deps<std_deps &
-         (mean_deps/close) >.2 &  eps_unit=="USD / shares"   ][
+         (mid_eps/close) >.2 &  eps_unit=="USD / shares"   ][
            order(mid_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -29,8 +28,7 @@ prices[date==max(date, na.rm=T) &
 prices[date==max(date, na.rm=T) & 
          close>7 & avg_volume>250000 & 
          avg_delta<1 & avg_delta_short<.995 & 
-         mean_deps<std_deps &
-         (mean_deps/close) >.05 &  eps_unit=="USD / shares"   ][
+         (mid_eps/close) >.05 &  eps_unit=="USD / shares"   ][
            order(mid_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
