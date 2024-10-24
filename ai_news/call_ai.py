@@ -36,6 +36,7 @@ def enrich_result(result, poly_client):
     result['volume']=snap.prev_day.volume
     result['overnight_in_range']=snap.todays_change_percent> -1.75 and snap.todays_change_percent< 9
     result['match']= first_match.ticker==result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
+    if 'message' not in result: result['message']=''
     for issue in ['liquidity_ok','market_cap_ok','overnight_in_range']:
       result['message']+=['failed '+issue,''][result[issue]]
   except Exception as e:
