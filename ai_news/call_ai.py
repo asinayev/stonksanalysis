@@ -39,5 +39,5 @@ def enrich_result(result, poly_client):
     for issue in ['liquidity_ok','market_cap_ok','overnight_in_range']:
       result['message']+=['failed '+issue,''][result[issue]]
   except Exception as e:
-    result['message']='issue getting ticker data'
+    result['message']='issue getting ticker data'+str(e)
   return(result)
