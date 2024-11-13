@@ -11,14 +11,15 @@ RUN install2.r --error \
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
     cd stonksanalysis && \
-    git checkout b1044a224bfc865c2ee7698fa8f8656817d14086 
+    git checkout 9ec74d5e3665ec91f5e02711f439ecaba0f108ee 
 
 RUN apt-get update && apt-get install -y \
     python3-pip
 
-#RUN pip3 install --upgrade \
-#    google-api-python-client\ 
-#    google-generativeai\
-#    polygon-api-client
+RUN pip3 install --upgrade \
+    google-api-python-client\ 
+    google-generativeai\
+    polygon-api-client\
+    --break-system-packages
 
 CMD bash /home/repos/stonksanalysis/launch.sh
