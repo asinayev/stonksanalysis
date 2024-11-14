@@ -20,6 +20,7 @@ RUN pip3 install --upgrade \
     google-api-python-client\ 
     google-generativeai\
     polygon-api-client\
+    pandas\
     --break-system-packages\
     --no-cache-dir
 
