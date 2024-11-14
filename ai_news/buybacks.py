@@ -12,7 +12,7 @@ model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 prompt_template="""Based on the following search result, please answer yes or no about whether this constitues a NEW announcement about a {}
 Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
-Respond in this JSON format: {"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}
+Respond in this JSON format: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}}
 
 Here is the search result: 
 """
