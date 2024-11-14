@@ -42,6 +42,5 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
   for r in enriched_results:
     model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time:"+ r['timePublished'])
     r['timePublished'] = model_out.text.strip()
-    if not r['match'] and r['companyName'] not in already_tracked:
+    if not r['match'] and  not (already_tracked['companyName']==r['companyName']).any():
       print(r['timePublished'],r['ticker'],r['message'])
-      already_tracked.append(r['companyName'])
