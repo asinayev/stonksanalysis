@@ -35,7 +35,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
       r['timePublished'] = model_out.text.strip()
       print(r['timePublished'],r['ticker'],r['link'],r['title'])
       already_tracked=pd.concat([pandas_results, pd.DataFrame([r])], ignore_index=True)
-  pandas_results.to_csv(write_to_dir+query.replace('|','_')+'.csv'
+  pandas_results.to_csv(write_to_dir+query.replace('|','_')+'.csv')
   
   print("############################ OTHER RESULTS: "+query)
   for r in enriched_results:
