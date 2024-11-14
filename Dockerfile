@@ -21,6 +21,6 @@ RUN pip3 install --upgrade \
     google-generativeai\
     polygon-api-client\
     pandas\
-    --break-system-packages\
+    --break-system-packages
 
 CMD bash /home/repos/stonksanalysis/launch.sh
