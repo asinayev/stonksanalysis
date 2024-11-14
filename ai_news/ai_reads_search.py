@@ -25,7 +25,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
     'order_type': 'MKT',
     'time_in_force': 'OPG',
     'asset_type': 'liquid'
-    'companyName':''
+    'companyName':'',
   }
   print("############################ MATCHING RESULTS: "+query)
   enriched_results = [call_ai.enrich_result(r, poly_client) for r in valid_results]
