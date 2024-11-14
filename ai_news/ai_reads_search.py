@@ -24,7 +24,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
     'action': 'BUY',
     'order_type': 'MKT',
     'time_in_force': 'OPG',
-    'asset_type': 'liquid'
+    'asset_type': 'liquid',
     'companyName':'',
   }
   print("############################ MATCHING RESULTS: "+query)
