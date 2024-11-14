@@ -22,6 +22,5 @@ RUN pip3 install --upgrade \
     polygon-api-client\
     pandas\
     --break-system-packages\
-    --no-cache-dir
 
 CMD bash /home/repos/stonksanalysis/launch.sh
