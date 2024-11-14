@@ -32,8 +32,11 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
   already_tracked = pd.DataFrame([default_data])
   for r in enriched_results:
     if r['match'] and not (already_tracked['companyName']==r['companyName']).any():
-      model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time:"+ r['timePublished'])
-      r['timePublished'] = model_out.text.strip()
+      model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):"+ r['timePublished'])
+      try:
+        r['timePublished'] = model_out.text.strip()
+      except:
+        r['timePublished'] = 'cannot be formatted'
       print(r['timePublished'],r['ticker'],r['link'],r['title'])
       already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
   already_tracked.to_csv(write_to_dir+query.replace('|','_')+'.csv')
