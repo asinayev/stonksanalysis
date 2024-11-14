@@ -35,8 +35,8 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
       model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time:"+ r['timePublished'])
       r['timePublished'] = model_out.text.strip()
       print(r['timePublished'],r['ticker'],r['link'],r['title'])
-      already_tracked=pd.concat([pandas_results, pd.DataFrame([r])], ignore_index=True)
-  pandas_results.to_csv(write_to_dir+query.replace('|','_')+'.csv')
+      already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
+  already_tracked.to_csv(write_to_dir+query.replace('|','_')+'.csv')
   
   print("############################ OTHER RESULTS: "+query)
   for r in enriched_results:
