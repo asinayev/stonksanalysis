@@ -33,7 +33,7 @@ def enrich_result(result, poly_client):
     result['market_cap_ok']=details.market_cap<10000000000
     snap= poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
     result['volume']=snap.prev_day.volume
-    result['current']=snap.prev_day.close+snap.todays_chage
+    result['current']=snap.prev_day.close+snap.todays_change
     result['liquidity_ok']=snap.prev_day.close>5 and snap.prev_day.volume>10000
     result['overnight_in_range']=snap.todays_change_percent> -1.75 and snap.todays_change_percent< 9
     result['match']= first_match.ticker==result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
