@@ -32,7 +32,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
   print("############################ MATCHING RESULTS: "+query)
   enriched_results = [call_ai.enrich_result(r, poly_client) for r in valid_results]
   print(f"{len(enriched_results)} enriched results")
-  print(f"{len([x for x in enriched_results if x['match'] )} matching enriched results")
+  print(f"{len([x for x in enriched_results if x['match'] ])} matching enriched results")
   already_tracked = pd.DataFrame([default_data])
   for r in enriched_results:
     if r['match'] and not (already_tracked['companyName']==r['companyName']).any():
