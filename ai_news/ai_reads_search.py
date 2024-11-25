@@ -35,8 +35,8 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
   print(f"{len([x for x in enriched_results if x['match'] ])} matching enriched results")
   already_tracked = pd.DataFrame([default_data])
   for r in enriched_results:
-    model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):"+ r['timePublished'])
     try:
+      model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):"+ r['timePublished'])
       r['timePublished'] = model_out.text.strip()
       r['newProgram']=r['newProgram'].lower()
     except:
