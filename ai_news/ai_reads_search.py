@@ -38,6 +38,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
     model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):"+ r['timePublished'])
     try:
       r['timePublished'] = model_out.text.strip()
+      r['newProgram']=r['newProgram'].lower()
     except:
       r['timePublished'] = 'cannot be formatted'
     if r['match']:
