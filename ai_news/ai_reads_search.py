@@ -42,7 +42,9 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
     except:
       r['timePublished'] = 'cannot be formatted'
     if r['match']:
-      print(r['timePublished'],r['ticker'],r['link'],r['title'])
+      #print(r['timePublished'],r['ticker'],r['link'],r['title'])
     already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
-  already_tracked.sort_values(["newProgram","timePublished"],ascending=False).to_csv(write_to_dir+query.replace('|','_')+'.csv')
+  already_tracked.sort_values(["newProgram","timePublished"],ascending=False,inplace=True)
+  print(already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link', 'title']])
+  already_tracked.to_csv(write_to_dir+query.replace('|','_')+'.csv')
 
