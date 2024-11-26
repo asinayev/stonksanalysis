@@ -41,10 +41,10 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
       r['newProgram']=r['newProgram'].lower()
     except:
       r['timePublished'] = 'cannot be formatted'
-    if r['match']:
-      1#print(r['timePublished'],r['ticker'],r['link'],r['title'])
     already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
   already_tracked.sort_values(["newProgram","timePublished"],ascending=False,inplace=True)
-  print(already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link', 'title']])
+  for index, row in already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link']].iterrows():
+    print(row)
+    print("-" * 20)  # Add a separator between rows
   already_tracked.to_csv(write_to_dir+query.replace('|','_')+'.csv')
 
