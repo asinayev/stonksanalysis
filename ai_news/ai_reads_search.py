@@ -43,6 +43,7 @@ def read_search(google_key, polygon_key, search_id, query, prompt_template, mode
       r['timePublished'] = 'cannot be formatted'
     already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
   already_tracked.sort_values(["newProgram","timePublished"],ascending=False,inplace=True)
+  pd.set_option('display.max_colwidth', None)
   for index, row in already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link']].iterrows():
     print(row)
     print("-" * 20)  # Add a separator between rows
