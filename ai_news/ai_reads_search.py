@@ -1,51 +1,92 @@
+import logging
 from googleapiclient.discovery import build
 from polygon import RESTClient
 import pandas as pd
 import search_web
 import call_ai
 
-def read_search(google_key, polygon_key, search_id, query, prompt_template, model, write_to_dir, **kwargs):
-  search_service = build("customsearch", "v1", developerKey=google_key).cse()
-  
-  all_results=search_web.all_search_pages(
-        service=search_service, 
-        cse_id=search_id, 
-        q=query,
-        sort="date",
-        num=10,
-        **kwargs)
-  print(f"{len(all_results)} total results")
-  
-  valid_results = call_ai.read_results(all_results, prompt_template, model)
-  print(f"{len(valid_results)} valid results")
-  poly_client = RESTClient(api_key=polygon_key)
-  default_data={
-    'date': '03/12/2024',
-    'symbol': '',
-    'strike_price': '',
-    'action': 'BUY',
-    'order_type': 'MKT',
-    'time_in_force': 'OPG',
-    'asset_type': 'liquid',
-    'companyName':'',
-  }
-  print("############################ MATCHING RESULTS: "+query)
-  enriched_results = [call_ai.enrich_result(r, poly_client) for r in valid_results]
-  print(f"{len(enriched_results)} enriched results")
-  print(f"{len([x for x in enriched_results if x['match'] ])} matching enriched results")
-  already_tracked = pd.DataFrame([default_data])
-  for r in enriched_results:
-    try:
-      model_out=model.generate_content("Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):"+ r['timePublished'])
-      r['timePublished'] = model_out.text.strip()
-      r['newProgram']=r['newProgram'].lower()
-    except:
-      r['timePublished'] = 'cannot be formatted'
-    already_tracked=pd.concat([already_tracked, pd.DataFrame([r])], ignore_index=True)
-  already_tracked.sort_values(["newProgram","timePublished"],ascending=False,inplace=True)
-  pd.set_option('display.max_colwidth', None)
-  for index, row in already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link']].iterrows():
-    print(row)
-    print("-" * 20)  # Add a separator between rows
-  already_tracked.to_csv(write_to_dir+query.replace('|','_')+'.csv')
+# Configure logging
+logging.basicConfig(filename='read_search.log', level=logging.INFO)  # Log at INFO level
 
+def fetch_search_results(search_service, search_id, query, **kwargs):
+    """Fetches search results from Google Custom Search."""
+    try:
+        all_results = search_web.all_search_pages(
+            service=search_service,
+            cse_id=search_id,
+            q=query,
+            sort="date",
+            num=10,
+            **kwargs
+        )
+        logging.info(f"{len(all_results)} total results found for query: {query}")
+        return all_results
+    except Exception as e:
+        logging.error(f"Error fetching search results: {e}")
+        return [] 
+
+def process_results_with_ai(all_results, prompt_template, model):
+    """Processes search results using the AI model."""
+    try:
+        valid_results = call_ai.read_results(all_results, prompt_template, model)
+        logging.info(f"{len(valid_results)} valid results after AI processing.")
+        return valid_results
+    except Exception as e:
+        logging.error(f"Error processing results with AI: {e}")
+        return []
+
+def enrich_with_financial_data(valid_results, polygon_key):
+    """Enriches results with data from Polygon API."""
+    enriched_results = []
+    poly_client = RESTClient(api_key=polygon_key)  # Initialize client outside the loop
+    for r in valid_results:
+        try:
+            enriched_result = call_ai.enrich_result(r, poly_client)
+            enriched_results.append(enriched_result) 
+        except Exception as e:
+            logging.error(f"Error enriching result: {r} - Error: {e}")
+    logging.info(f"{len(enriched_results)} results enriched with Polygon data.")
+    return enriched_results
+
+def format_and_save_results(enriched_results, model, query, write_to_dir):
+    """Formats the results and saves them to a CSV file."""
+    try:
+        all_data = []
+        for r in enriched_results:
+            try:
+                model_out = model.generate_content(
+                    "Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):" + r['timePublished']
+                )
+                r['timePublished'] = model_out.text.strip()
+                r['newProgram'] = r['newProgram'].lower()
+            except Exception as e:
+                logging.error(f"Error processing timePublished: {e}")
+                r['timePublished'] = 'cannot be formatted'
+            all_data.append(r)
+
+        already_tracked = pd.DataFrame(all_data)
+        already_tracked.sort_values(["newProgram","timePublished"], ascending=False, inplace=True)
+
+        # --- Logging ---
+        logging.info("############################ MATCHING RESULTS: " + query)
+        logging.info(f"{len([x for x in enriched_results if x['match'] ])} matching enriched results")
+        
+        pd.set_option('display.max_colwidth', None)
+        logging.info(already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link']])
+
+        already_tracked.to_csv(write_to_dir + query.replace('|','_') + '.csv')
+    except Exception as e:
+        logging.error(f"Error formatting and saving results: {e}")
+
+def read_search(google_key: str, polygon_key: str, search_id: str, 
+                query: str, prompt_template: str, model, write_to_dir: str, **kwargs):
+    """
+    Performs a search, processes results, enriches them with financial data, 
+    and saves the output to a CSV file. 
+    """
+    search_service = build("customsearch", "v1", developerKey=google_key).cse()
+
+    search_results = fetch_search_results(search_service, search_id, query, **kwargs)
+    processed_results = process_results_with_ai(search_results, prompt_template, model)
+    enriched_results = enrich_with_financial_data(processed_results, polygon_key)
+    format_and_save_results(enriched_results, model, query, write_to_dir)
