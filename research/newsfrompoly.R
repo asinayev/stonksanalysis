@@ -6,7 +6,7 @@ source("implement/imports.R", local=T)
 source("research/performance.R", local=T)
 source("implement/get_data.R", local=T)
 
-days_to_look_at = as.Date(as.Date("2021-04-20"):Sys.Date(),origin='1970-01-01')
+days_to_look_at = as.Date(as.Date("2022-04-20"):Sys.Date(),origin='1970-01-01')
 
 # just_news = as.Date(as.Date("2022-04-20"):as.Date("2022-04-29"),origin='1970-01-01') %>%
 #   lapply(get_newsday, key=POLYKEY) %>%
@@ -30,6 +30,12 @@ prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 news_moves = just_news %>%
   clean_news %>%
   merge(prices, by=c('date','symbol'), all.x=T)
+
+#trying out strategies around insights types, but data only starts July '24
+insights=just_news[, rbindlist(insights), by = .(publisher.name,date)] %>% unique
+insights=merge(prices, 
+               insights[,.(publisher.name,date,sentiment,symbol=ticker)],
+               by=c('date','symbol'), all.y=T)
 
 # x=sapply(unique(floor_date(news_moves$date,'month')),function(yrmth) {
 #   top_authors = news_moves[order(close/lag1close)][close>6 & date<as.Date(yrmth),head(.SD,5),.(date,author)][, 
