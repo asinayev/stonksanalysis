@@ -6,7 +6,7 @@ import search_web
 import call_ai
 
 # Configure logging
-logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO)  # Log at INFO level
+logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 
 def fetch_search_results(search_service, search_id, query, **kwargs):
     """Fetches search results from Google Custom Search."""
