@@ -43,14 +43,6 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
   setorder(stock_dat, symbol, date)
 }
 
-regression_features = function(stock_dat){
-  stock_dat[,day_delta:= close/open]
-  stock_dat[,day_fall:= low/open]
-  stock_dat[,day_rise:= high/open]
-  stock_dat[,night_delta:= open/lag1close]
-  stock_dat[,future_day_delta:= lead1close/lead1open]
-}
-
 rally = function(stock_dat,
                  sell_rule=function(dat){dat$close>=dat$lag1high},
                  varname='sell_rally',
