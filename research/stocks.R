@@ -13,7 +13,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 prices=fread("~/datasets/stock_prices_15y.csv")
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
-#prices=get_financials(prices,id_type='symbol')
+# prices=get_financials(prices,id_type='symbol')
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
@@ -42,75 +42,29 @@ performance_features(prices)
 #####
 
 #####updownmorn
-# perf drawdown days_traded
-# 1: 0.01705263     -0.5        2444
-# year average drawdown total trades days_traded avg_days_held stocks_traded
-# 1: 2004   0.008     -0.1   0.3     32          21             1            28
-# 2: 2005   0.010     -0.1   1.2    117          84             1            93
-# 3: 2006   0.007     -0.2   1.2    168         107             1           106
-# 4: 2007   0.009     -0.3   1.5    158          92             1            99
-# 5: 2008   0.019     -0.2   4.4    229         113             1           134
-# 6: 2009   0.023     -0.1   6.7    286         136             1           171
-# 7: 2010   0.015     -0.2   2.3    150          99             1           109
-# 8: 2011   0.035     -0.2   3.6    103          76             1            79
-# 9: 2012   0.015     -0.1   1.8    121          86             1            75
-# 10: 2013   0.012     -0.2   2.0    164         121             1            99
-# 11: 2014   0.017     -0.1   3.3    192         130             1           109
-# 12: 2015   0.010     -0.5   2.0    201         130             1           107
-# 13: 2016   0.018     -0.4   3.9    217         122             1           121
-# 14: 2017   0.016     -0.3   5.4    335         154             1           212
-# 15: 2018   0.023     -0.3  13.7    598         210             1           363
-# 16: 2019   0.021     -0.4  14.2    681         225             1           379
-# 17: 2020   0.025     -0.3  17.7    715         202             1           372
-# 18: 2021   0.019     -0.3  11.1    570         209             1           328
-# 19: 2022   0.022     -0.4   8.5    391         127             1           249
-prices[
-  close/open>1.025 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
-  with(performance(date,lead1close/lead1open-1,1,symbol))
+# prices[
+#   close/open>1.025 & spy_future_night_delta>.99 & 
+#     volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
+#   with(performance(date,lead1close/lead1open-1,1,symbol))
 
-prices[
-  volume/avg_volume <.75 & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
-  with(performance(date,lead1close/lead1open-1,1,symbol))
+# prices[
+#   volume/avg_volume <.75 & spy_future_night_delta>.99 & 
+#     volume%between%c(10000,20000) & close>5 & lead1open/close<.975]%>%
+#   with(performance(date,lead1close/lead1open-1,1,symbol))
 
-prices[
-  (volume/avg_volume <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
-    volume%between%c(10000,20000) & close>5 & (lead1open/close)<.975]%>%
-  with(performance(date,(lead1close/lead1open)-1,1,symbol))
+# prices[
+#   (volume/avg_volume <.75 | close/open>1.025) & spy_future_night_delta>.99 & 
+#     volume%between%c(10000,20000) & close>5 & (lead1open/close)<.975]%>%
+#   with(performance(date,(lead1close/lead1open)-1,1,symbol))
 
 #At open, buy stocks that climbed yesterday but fell overnight today unless the index fell overnight
 #####
 
 #####overbought
-
-# avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.03489474 0.04293893     -3.3          1193        1067        5
-#    year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004   0.033      0.0   0.1      2           3        2             1             2
-# 2: 2005   0.016      0.0   0.1      5           6        2             1             5
-# 3: 2006  -0.026     -0.5  -0.3     13          14        2             1            12
-# 4: 2007   0.068     -0.1   1.4     21          22        3             1            18
-# 5: 2008   0.026     -0.8   2.0     74          75        4             1            64
-# 6: 2009  -0.011     -2.5  -0.9     83          84        5             1            69
-# 7: 2010   0.026     -2.1   0.8     32          33        4             1            29
-# 8: 2011   0.014     -1.6   0.3     23          24        3             1            22
-# 9: 2012   0.060     -1.1   1.7     29          30        3             1            21
-# 10: 2013   0.038     -0.5   0.7     19          20        4             1            15
-# 11: 2014   0.040     -0.8   1.1     27          28        5             1            21
-# 12: 2015   0.026     -1.6   1.4     53          54        4             1            41
-# 13: 2016  -0.024     -2.7  -1.4     58          59        5             1            49
-# 14: 2017   0.081     -1.9   5.4     66          67        5             1            57
-# 15: 2018   0.105     -1.4  10.5    100         101        5             1            80
-# 16: 2019   0.024     -2.1   2.4     99         100        5             1            82
-# 17: 2020   0.056     -2.7   8.2    145         146        5             1           121
-# 18: 2021   0.060     -3.3   8.4    139         140        5             1           108
-# 19: 2022   0.051     -1.1   3.1     60          61        5             1            51
-
-prices[
-  (close/open)>1.2 & close>7 & (open/lag1close)>1  &
-    vp_order<3000][order(day_rise_norm,decreasing=T),.SD[1],date]%>% 
-  with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=5))
+# prices[
+#   (close/open)>1.2 & close>7 & (open/lag1close)>1  &
+#     vp_order<3000][order(day_rise_norm,decreasing=T),.SD[1],date]%>% 
+#   with(performance(date,1-lead1sell_lowclose/lead1open,1,symbol,lead1sell_lowclosedate,hold_less_than=5))
 
 
 # At open, sell stocks that climbed yesterday too much
@@ -243,38 +197,15 @@ prices[close>7 & avg_volume>1000000 &
                    lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate, hold_less_than = 5))
 
-# avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.04236842 0.05207297     -3.7          1414         622        5
-# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004  -0.001      0.0   0.0      1           2        1     13.000000             1
-# 2: 2005   0.025      0.0   0.1      3           4        2      8.000000             2
-# 3: 2006   0.000     -0.1   0.0      7           8        2      5.857143             5
-# 4: 2007  -0.007     -0.1  -0.1      9          10        3     11.333333             7
-# 5: 2008   0.069     -0.5   2.1     31          32        4      6.032258            24
-# 6: 2009   0.038     -0.9   1.3     33          34        4      6.606061            29
-# 7: 2010   0.008     -0.7   0.1      9          10        2      6.333333             7
-# 8: 2011  -0.006     -0.7  -0.1     17          18        5     13.058824            11
-# 9: 2012   0.031     -0.7   0.2      5           6        2      9.800000             4
-# 10: 2013   0.230     -0.5   2.1      9          10        3     12.888889             6
-# 11: 2014   0.044     -0.3   0.7     15          16        3      4.933333             9
-# 12: 2015   0.072     -0.4   1.2     17          18        4      4.823529            13
-# 13: 2016  -0.115     -3.4  -3.1     27          28        5      6.629630            14
-# 14: 2017   0.066     -3.7   1.7     25          26        4      7.120000            16
-# 15: 2018   0.137     -1.3   5.6     41          42        5      7.512195            33
-# 16: 2019   0.052     -0.4   3.1     60          61        5      7.516667            48
-# 17: 2020   0.053     -2.1   6.9    129         130        5      7.906977           106
-# 18: 2021   0.065     -1.1   7.2    111         112        5      6.207207            89
-# 19: 2022   0.044     -1.0   2.4     54          55        5      7.425926            35
-
-prices[close>7 & avg_volume>500000 & 
-         close>lag1high & sell_rally_day<2 & 
-         avg_delta_short>1.1][
-         ][order(day_rise_norm, decreasing=T),head(.SD,1),date]%>%
-  with(performance(date,
-                   1-lead1sell_lowclose/lead1open,
-                   lead1sell_lowclosedate-date,symbol,
-                   lead1sell_lowclosedate,
-                   hold_less_than = 5))
+# prices[close>7 & avg_volume>500000 & 
+#          close>lag1high & sell_rally_day<2 & 
+#          avg_delta_short>1.1][
+#          ][order(day_rise_norm, decreasing=T),head(.SD,1),date]%>%
+#   with(performance(date,
+#                    1-lead1sell_lowclose/lead1open,
+#                    lead1sell_lowclosedate-date,symbol,
+#                    lead1sell_lowclosedate,
+#                    hold_less_than = 5))
 
 
 ############
@@ -358,35 +289,12 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
 
 #############
 # bigcap_short
-# avg_year   avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.01026316 0.009465649     -1.3          1061        1329        5
-# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004   0.019     -0.1   0.4     20          21        5      6.100000             8
-# 2: 2005  -0.010     -0.9  -0.8     80          81        5      6.650000            18
-# 3: 2006   0.015     -0.9   1.3     87          88        5      6.632184            25
-# 4: 2007   0.010     -0.7   0.8     79          80        5     10.810127            30
-# 5: 2008   0.025     -0.8   3.6    146         147        5      7.273973            62
-# 6: 2009  -0.001     -1.3  -0.1    125         126        5      7.408000            58
-# 7: 2010   0.002     -1.1   0.1     65          66        5      7.461538            24
-# 8: 2011   0.013     -0.8   0.7     53          54        5     10.018868            23
-# 9: 2012   0.004     -0.3   0.2     47          48        5      8.617021            25
-# 10: 2013   0.016     -0.1   0.8     47          48        5      9.404255            13
-# 11: 2014   0.010     -0.4   0.4     41          42        5      8.414634             7
-# 12: 2015   0.005     -0.6   0.3     57          58        5      7.508772            17
-# 13: 2016   0.010     -0.5   0.7     70          71        5      8.500000            23
-# 14: 2017   0.025      0.0   0.4     16          17        5      7.500000            10
-# 15: 2018   0.019     -0.1   0.6     33          34        4      7.909091            17
-# 16: 2019   0.004     -0.4   0.2     54          55        5      8.351852            19
-# 17: 2020   0.012     -0.6   1.6    136         137        5      6.367647            60
-# 18: 2021  -0.001     -0.7  -0.1     82          83        5      8.682927            32
-# 19: 2022   0.018     -0.5   1.3     72          73        5      6.916667            32
-
-
-bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
-          (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
-          lead1sell_lowclose/lead1open>.5][
-            order(day_rise_norm,decreasing=T),head(.SD,1),date] %>%
-  with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 5))
+                                          
+# bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
+#           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
+#           lead1sell_lowclose/lead1open>.5][
+#             order(day_rise_norm,decreasing=T),head(.SD,1),date] %>%
+#   with(performance(date,1-lead1sell_lowclose/lead1open,lead1sell_lowclosedate-date,symbol,lead1sell_lowclosedate,hold_less_than = 5))
 
 
 #############
