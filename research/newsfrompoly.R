@@ -27,9 +27,24 @@ rally(prices)
 prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
 prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
 
+just_news[,.N,.(date=paste(year(date),stringr::str_pad(month(date ),2, pad="0") ),publisher.name)]%>%
+  ggplot( aes(x = date, y = N, color = publisher.name, group = publisher.name)) +
+  geom_line() +
+  labs(title = "News Items per Day by Publisher",
+       x = "Date",
+       y = "Number of News Items") +
+  theme_bw()  # Adjust theme as desired
+
 news_moves = just_news %>%
   clean_news %>%
   merge(prices, by=c('date','symbol'), all.x=T)
+
+news_amount = just_news %>% tidyr::unnest(cols=c(tickers))
+news_amount = data.table(news_amount)[publisher.name%in% c('GlobeNewswire Inc.','Benzinga', 'The Motley Fool', 'Seeking Alpha', 'MarketWatch'),
+                                      .(news_items=.N),.(date,symbol=tickers)]
+news_amount = merge(prices, news_amount, by=c('date','symbol'), all.x=T)
+setorder(news_amount, symbol, date)
+news_amount[, running_news_volume:=SMA(ifelse(is.na(news_items),0,news_items), n = 25 ),symbol]
 
 #trying out strategies around insights types, but data only starts July '24
 insights=just_news[, rbindlist(insights), by = .(publisher.name,date)] %>% unique
