@@ -35,9 +35,8 @@ prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
 prices[order(day_drop_norm, decreasing=F)][
-  date==max(date, na.rm=T) & volume>500000 & close>7 & 
-         close<lag1high & sell_rally_day>2 & 
-         avg_delta/sell_rally_avg<.982] %>%
+  date==max(date, na.rm=T) & volume>1000000 & close>7 & 
+         close<lag1high & sell_rally_day>10] %>%
   dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
   head(1) %>%
   write_strat(strat_name='rally_etfs')

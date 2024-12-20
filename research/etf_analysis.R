@@ -47,6 +47,13 @@ rally_avg(prices,200)
 performance_features(prices)
 prices=key_etfs(prices,low_corr_thresh=.33)
  
+
+# prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+#        ,mid_range:= zoo::rollapply((high-low)/open, median ,width = 25, align='right',fill=NA),symbol ]
+# prices[symbol %in% prices[,.N,symbol][N>25,symbol]
+#        ,mid_range:= zoo::rollapply(abs(close-lag1close)/open, median ,width = 25, align='right',fill=NA),symbol ]
+
+
 # Rally ETFs
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1:   0.0256 0.02372719     -2.3           519        1056        8
@@ -69,10 +76,9 @@ prices=key_etfs(prices,low_corr_thresh=.33)
 
 
 setorder(prices, symbol, date)
-rally = prices[volume>500000 & close>7 & 
+rally = prices[volume>1000000 & close>7 & 
          lead1sell_rally/lead1open<2 & 
-         close<lag1high & sell_rally_day>2 &
-         avg_delta/sell_rally_avg<.982][
+         close<lag1high & sell_rally_day>10  ][
            order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate,hold_less_than=5))
 
@@ -163,6 +169,7 @@ drop_etfs = prices[volume>500000 & close>7 & !short &
            order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
+
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.01871429 0.01807512     -0.9           489         440        5
