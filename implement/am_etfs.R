@@ -10,7 +10,7 @@ splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-15, 
                                    cores=splits, ticker_type='ETF') %>%
-  rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
+  rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-15, 
                                cores=splits, ticker_type='ETV'))
 
 prices = stocklist$ticker %>%
