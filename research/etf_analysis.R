@@ -106,7 +106,7 @@ rally = prices[volume>1000000 & close>7 &
 # 18: 2022   0.019     -1.3   2.8    146         147        8      6.331210            46
 
 
-revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
+revert = prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
@@ -135,7 +135,7 @@ revert = prices[volume>500000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 15: 2021   0.017     -0.9   2.5    148         149        8      5.855263            34
 # 16: 2022   0.016     -1.3   2.2    134         135        8      5.074074            46
 
-corr_long = prices[volume>500000 & close>7 & 
+corr_long = prices[volume>1000000 & close>7 & 
          (avg_delta_short<.975) & lagging_corr_long> .35][
            order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = 5))
@@ -164,7 +164,7 @@ corr_long = prices[volume>500000 & close>7 &
 # 17: 2021   0.019     -0.2   1.9     98          99        5      4.010204            47
 # 18: 2022   0.006     -1.4   0.4     63          64        5      4.190476            38
 
-drop_etfs = prices[volume>500000 & close>7 & !short &
+drop_etfs = prices[volume>1000000 & close>7 & !short &
                      (avg_delta_short < .99-avg_range/close/2 ) ][
            order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
@@ -195,7 +195,7 @@ all_matching_pairs=parallel::mclapply(c(2009:2022),matching_pairs_for_year,
 
 arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  & avg_delta_short<1 &
                                 rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15 &
-                                volume>500000][
+                                volume>1000000][
                                   order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate, hold_less_than = 5))

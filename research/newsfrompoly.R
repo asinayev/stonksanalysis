@@ -164,3 +164,7 @@ news_moves[avg_volume>50000 & volume>50000 & close>7 & market_cap %between% c(0.
              order(avg_delta_short, decreasing=T),head(.SD,3),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,
                    1,symbol))
+
+
+news=fread("https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/All_external.csv?download=true")
+news[,domain:=str_extract(Url, "(?<=(http(s)?://)?(www)?)([a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+)(?=(/|:|$))")]
