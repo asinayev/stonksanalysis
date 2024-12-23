@@ -63,8 +63,7 @@ def format_and_save_results(enriched_results, model, query, write_to_dir):
                 logging.error(f"Error processing timePublished: {e}")
                 r['timePublished'] = 'cannot be formatted'
             all_data.append(r)
-
-        already_tracked = pd.DataFrame(all_data)
+        already_tracked = pd.DataFrame(all_data).reindex(columns=['timePublished','ticker','match','message','newProgram','current','volume','link','title','companyName','market_cap_ok','liquidity_ok','overnight_in_range'])
         already_tracked.sort_values(["newProgram","timePublished"], ascending=False, inplace=True)
 
         # --- Logging ---
