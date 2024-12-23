@@ -8,7 +8,7 @@ source("implement/imports.R", local=T)
 
 splits = 16
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-15, 
                                    cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                cores=splits, ticker_type='ETV'))
