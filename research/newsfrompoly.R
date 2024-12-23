@@ -167,4 +167,11 @@ news_moves[avg_volume>50000 & volume>50000 & close>7 & market_cap %between% c(0.
 
 
 news=fread("https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/All_external.csv?download=true")
-news[,domain:=str_extract(Url, "(?<=(http(s)?://)?(www)?)([a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+)(?=(/|:|$))")]
+news[,domain:=stringr::str_extract(Url, "(?<=(http(s)?://)?(www)?)([a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+)(?=(/|:|$))")]
+news[domain=='www.zacks.com'][grepl('earning', Article_title, ignore.case = T) &
+                                grepl('revenue', Article_title, ignore.case = T)][
+                                  mapply(function(symbol, title) {
+                                    pattern <- paste0("\\(", symbol, "\\)") # Escape parentheses
+                                    grepl(pattern, title, ignore.case = TRUE)
+                                  }, Stock_symbol, Article_title)
+                                ][order(Date)]

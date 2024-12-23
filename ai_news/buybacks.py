@@ -4,6 +4,7 @@ import ai_reads_search
 import google.generativeai as genai
 
 my_cse_id = os.environ["SEARCHID"]
+zacks_search_id = os.environ["ZACKSSEARCHID"]
 google_key = os.environ["GOOGLEKEY"]
 polygon_key = os.environ["POLYGONKEY"]
 
@@ -25,4 +26,9 @@ ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='buyback|r
 guidance_description="improved guidance in the newProgram field, The announcement should say that guidance for an important metric is now higher (better) than previously expected. If the announcement is simply an update about progress on existing guidance, respond no."
 
 ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='improves|raises|increases guidance', \
+  orTerms='', prompt_template=prompt_template.format(guidance_description), model=model, write_to_dir='/tmp/stonksanalysis/')
+
+guidance_description="earnings and revenue change for a specific stock."
+
+ai_reads_search.read_search(google_key, polygon_key, zacks_search_id, query='allintitle: revenue|revenues earnings|earning', \
   orTerms='', prompt_template=prompt_template.format(guidance_description), model=model, write_to_dir='/tmp/stonksanalysis/')
