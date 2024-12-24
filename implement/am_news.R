@@ -13,6 +13,9 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
 just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
 
+zacks_news = fread('/tmp/stonksanalysis/allintitle: revenue_revenues earnings_earning.csv')
+zacks_news=zacks_news[timePublished>paste(Sys.Date()-1,"16:00")]
+
 if(!is.null(just_news)){
   
   news_moves = just_news %>%
@@ -20,9 +23,7 @@ if(!is.null(just_news)){
     merge(prices, by=c('date','symbol'), all.x=T)
   
   # long stocks that fell before revenue
-  news_moves[grepl('earning', title, ignore.case = T) &
-             grepl('revenue', title, ignore.case = T) &
-             publisher.name=='Zacks Investment Research' &
+  prices[symbol %in% zacks_news$ticker & date==max(date) &
              avg_volume>50000 & volume>50000 & close>5  & 
              open-close > avg_range/3 ] %>%
     dplyr::group_by(symbol) %>%
