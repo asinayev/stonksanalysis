@@ -53,7 +53,7 @@ def enrich_result(result, poly_client):
         details = poly_client.get_ticker_details(ticker=result['ticker'])
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
     except Exception as e:
-        logger.exception(f"Ticker not found: {result['ticker']}") # Use logger.exception to log stack trace
+        logger.exception(f"Ticker not found. {result['companyName']}: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] = f'Ticker not found: {result['ticker']}'
         return result
     try:
