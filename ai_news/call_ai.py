@@ -52,6 +52,9 @@ def enrich_result(result, poly_client):
         if not matches:
             result['companyName']=''.join(ch for ch in result['companyName'] if ch.isalnum() or ch==" ")
             matches = poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
+        if not matches:
+            result['companyName']=result['companyName'].rsplit(' ', 1)[0]
+            matches = poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
         first_match = next(matches)
         market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
