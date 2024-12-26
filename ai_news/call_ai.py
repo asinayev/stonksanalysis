@@ -48,7 +48,7 @@ def enrich_result(result, poly_client):
         logger.exception(f"No ticker") 
         return result
     try:
-        result['companyName']=''.join(ch for ch in result['companyName'] if ch.isalnum())
+        result['companyName']=''.join(ch for ch in result['companyName'] if ch.isalnum() or ch==" ")
         matches = poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
         first_match = next(matches)
         market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
