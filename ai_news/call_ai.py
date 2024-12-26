@@ -49,7 +49,10 @@ def enrich_result(result, poly_client):
         first_match = next(matches)
         details = poly_client.get_ticker_details(ticker=result['ticker'])
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
-
+    except Exception as e:
+        logger.exception(f"Ticker not found: {result['ticker']}") # Use logger.exception to log stack trace
+        result['message'] = f'Ticker not found: {result['ticker']}'
+    try:
         result.update({
             'market_cap_ok': details.market_cap < 10000000000,
             'volume': snap.prev_day.volume,
@@ -60,8 +63,8 @@ def enrich_result(result, poly_client):
             'message': generate_message(result)
         })
     except Exception as e:
-        logger.exception(f"Issue getting ticker data: {e}") # Use logger.exception to log stack trace
-        result['message'] = f'Issue getting ticker data: {e}'
+        logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
+        result['message'] = f'Issue getting ticker data: {result['ticker']}'
     return result
 
 def generate_message(result):
