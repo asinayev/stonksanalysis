@@ -59,9 +59,9 @@ def enrich_result(result, poly_client):
             'current': snap.prev_day.close + snap.todays_change,
             'liquidity_ok': snap.prev_day.close > 5 and snap.prev_day.volume > 10000,
             'overnight_in_range': -1.75 < snap.todays_change_percent < 9,
-            'match': first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range'],
             'message': generate_message(result)
         })
+        result['match']=first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range'],
     except Exception as e:
         logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] = f'Issue getting ticker data: {result['ticker']}'
