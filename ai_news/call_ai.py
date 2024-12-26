@@ -55,6 +55,7 @@ def enrich_result(result, poly_client):
     except Exception as e:
         logger.exception(f"Ticker not found: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] = f'Ticker not found: {result['ticker']}'
+        return result
     try:
         result.update({
             'market_cap_ok': details.market_cap < 10000000000,
