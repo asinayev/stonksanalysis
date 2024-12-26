@@ -50,7 +50,7 @@ def enrich_result(result, poly_client):
     try:
         matches = poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
         first_match = next(matches)
-        details = poly_client.get_ticker_details(ticker=result['ticker'])
+        market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
     except Exception as e:
         logger.exception(f"Ticker not found. {result['companyName']}: {result['ticker']}") # Use logger.exception to log stack trace
@@ -58,7 +58,7 @@ def enrich_result(result, poly_client):
         return result
     try:
         result.update({
-            'market_cap_ok': details.market_cap < 10000000000,
+            'market_cap_ok': market_cap < 10000000000,
             'volume': snap.prev_day.volume,
             'current': snap.prev_day.close + snap.todays_change,
             'liquidity_ok': snap.prev_day.close > 5 and snap.prev_day.volume > 10000,
