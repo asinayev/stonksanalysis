@@ -44,6 +44,9 @@ def parse_response(response, result):
 def enrich_result(result, poly_client):
     """Enrich the result with financial data and match criteria."""
     result['match'] = False
+    if not result['ticker']:
+        logger.exception(f"No ticker") 
+        return result
     try:
         matches = poly_client.list_tickers(search=result['companyName'], active=True, type='CS')
         first_match = next(matches)
