@@ -21,8 +21,8 @@ prices[date==max(date, na.rm=T) &
            order(mid_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='MKT',
-                 time_in_force='OPG') %>%
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='earners')
 
 prices[date==max(date, na.rm=T) & 
@@ -32,6 +32,6 @@ prices[date==max(date, na.rm=T) &
            order(mid_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='MKT',
-                 time_in_force='OPG') %>%
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='earners_long')
