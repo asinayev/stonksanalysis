@@ -37,7 +37,9 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 prices[order(day_drop_norm, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 & 
          close<lag1high & sell_rally_day>10] %>%
-  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   head(1) %>%
   write_strat(strat_name='rally_etfs')
 
@@ -46,7 +48,9 @@ prices[order(day_drop_norm, decreasing=F)][
          (((close-low)/avg_range)<.15 ) & 
          ((high/close) > 1.075 | avg_delta<.99)]%>%
   head(1) %>%
-  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='revert_etfs')
 
 prices[order(day_drop_norm, decreasing=F)][
@@ -54,7 +58,9 @@ prices[order(day_drop_norm, decreasing=F)][
     volume>1000000 & close>7 & 
     avg_delta_short<.975 & lagging_corr_long> .35] %>%
   head(1) %>%
-  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='corr_long_etfs')
 
 prices[order(day_drop_norm, decreasing=F)][
@@ -62,7 +68,9 @@ prices[order(day_drop_norm, decreasing=F)][
     volume>1000000 & close>7 & 
     !short & (avg_delta_short < .99-avg_range/close/2 ) ]%>%
   head(1) %>%
-  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='drop_etfs')
 
 all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), 
@@ -75,7 +83,9 @@ all_matching_pairs[order(day_drop_norm, decreasing=F)][
     avg_delta_short<1 &
     rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15]%>%
   head(1) %>%
-  dplyr::mutate( action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='arb_etfs')
 
 should_trade_volatility = prices[
@@ -83,7 +93,9 @@ should_trade_volatility = prices[
     ((high/low>1.015)|(abs(close/lag1close-1)>.01)|(abs(avg_delta_short-1)>.005))]
 
 prices[date==max(date, na.rm=T) & symbol=='SVXY' & should_trade_volatility]%>%
-  dplyr::mutate(action='BUY', order_type='MKT', time_in_force='OPG') %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
   write_strat(strat_name='short_vix')
 
 prices[date==max(date, na.rm=T) ] %>%
