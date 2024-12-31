@@ -30,9 +30,9 @@ if(!is.null(just_news)){
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(day_drop_norm) %>%
     head(1)  %>%
-    dplyr::mutate(action='BUY', 
-                  order_type=ifelse(volume>250000,'MKT','Adaptive'),
-                  time_in_force=ifelse(volume>250000,'OPG','DAY')) %>%
+    dplyr::mutate( action='BUY', 
+                   order_type='Adaptive',
+                   time_in_force='DAY') %>%
     data.table %>%
     write_strat(strat_name='zacks_earn')
   
@@ -46,9 +46,9 @@ if(!is.null(just_news)){
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(day_drop_norm) %>%
     head(1)  %>%
-    dplyr::mutate(action='BUY', 
-                  order_type=ifelse(volume>250000,'MKT','Adaptive'),
-                  time_in_force=ifelse(volume>250000,'OPG','DAY')) %>%
+    dplyr::mutate( action='BUY', 
+                   order_type='Adaptive',
+                   time_in_force='DAY') %>%
     data.table %>%
     write_strat(strat_name='div_news')
   
