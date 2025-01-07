@@ -20,7 +20,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 prices=fread("~/datasets/etf_prices_15y.csv")
 
-prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
+prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
 # prices[,RSI2:=NULL ]

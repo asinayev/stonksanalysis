@@ -28,10 +28,10 @@ prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-rally_avg(prices,200)
+#rally_avg(prices,200)
 #prices=key_etfs(prices, low_corr_thresh=.33)
 
-prices[,short:=grepl('short|bear|inverse', name, ignore.case = T)]
+prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
 prices[order(day_drop_norm, decreasing=F)][
@@ -44,7 +44,7 @@ prices[order(day_drop_norm, decreasing=F)][
   write_strat(strat_name='rally_etfs')
 
 prices[order(day_drop_norm, decreasing=F)][
-  date==max(date, na.rm=T) & volume>500000 & close>7 &  
+  date==max(date, na.rm=T) & volume>1000000 & close>7 &  
          (((close-low)/avg_range)<.15 ) & 
          ((high/close) > 1.075 | avg_delta<.99)]%>%
   head(1) %>%
