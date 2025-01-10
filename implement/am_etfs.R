@@ -79,7 +79,7 @@ all_matching_pairs=matching_pairs_for_year(year(max(prices$date)),
 all_matching_pairs[order(day_drop_norm, decreasing=F)][
   date==max(date, na.rm=T) &
     volume>500000 & close>7 &
-    (close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  &
+    abs(1-close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>.0075  &
     avg_delta_short<1 &
     rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15]%>%
   head(1) %>%
