@@ -98,5 +98,15 @@ prices[date==max(date, na.rm=T) & symbol=='SVXY' & should_trade_volatility]%>%
                  time_in_force='DAY') %>%
   write_strat(strat_name='short_vix')
 
+prices[order(day_drop_norm, decreasing=F)][
+  date==max(date, na.rm=T) & symbol%in%c('TNA','UPRO','YINN') &
+         volume>100000 & close>7 &
+         close>lag1close*1.03]%>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
+  write_strat(strat_name='tru_rally')
+
 prices[date==max(date, na.rm=T) ] %>%
   fwrite('/tmp/stonksanalysis/all_etfs.csv')

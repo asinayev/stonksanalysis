@@ -47,12 +47,20 @@ rally_avg(prices,200)
 performance_features(prices)
 prices=key_etfs(prices,low_corr_thresh=.33)
  
+rally(prices,sell_rule=function(dat){dat$close>dat$lag1close+dat$lag1high-dat$lag1low},varname='sell_rally2')
+prices[,lead1sell_rally2:= shift(sell_rally2,1,type='lead'),symbol]
+prices[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol]
 
 # prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 #        ,mid_range:= zoo::rollapply((high-low)/open, median ,width = 25, align='right',fill=NA),symbol ]
 # prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 #        ,mid_range:= zoo::rollapply(abs(close-lag1close)/open, median ,width = 25, align='right',fill=NA),symbol ]
 
+
+tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
+                 close>lag1close*1.03 ][
+                   order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-date,symbol,lead1sell_rally2date,hold_less_than=1))
 
 # Rally ETFs
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
@@ -106,12 +114,12 @@ rally = prices[volume>1000000 & close>7 &
 # 18: 2022   0.019     -1.3   2.8    146         147        8      6.331210            46
 
 
-revert = prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
+revert = prices2[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
          (((close-low)/avg_range)<.15 ) & 
          (((high/close) > 1.075) | (avg_delta<.99)  
          )
     ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate, hold_less_than = 5))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,lead1sell_rallydate,hold_less_than=5))
 
 # Corr long etfs
 
@@ -193,7 +201,7 @@ all_matching_pairs=parallel::mclapply(c(2009:2022),matching_pairs_for_year,
                                       mc.cores=2)%>%
   rbindlist
 
-arb_etfs = all_matching_pairs[(close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>1.0075  & avg_delta_short<1 &
+arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>.0075  & avg_delta_short<1 &
                                 rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15 &
                                 volume>1000000][
                                   order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
