@@ -6,8 +6,8 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv', colClasses = c('cik'='character'))
-
-prices=get_financials(prices)
+prices = only_passing(prices, min_volume=50000, min_close=5, last_n = 150)
+prices = get_financials(prices)
 setorder(prices, symbol, date)
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
