@@ -23,7 +23,7 @@ model = genai.GenerativeModel(
 prompt_template="""Based on the following search result, please answer yes or no about whether this constitues a NEW announcement about a {}
 Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
 Respond in this JSON format: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}}. 
-If any of the fields cannot be determined, write UNKNOWN, for example: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"UNKNOWN"}}
+If any of the fields cannot be determined, write "UNKNOWN" or "0/0/0000 0:00:00 AM", for example: {{"newProgram":"No","companyName":"Thievery Corporation","ticker":"UNKNOWN","timePublished":"0/0/0000 0:00:00 AM"}}
 
 Here is the search result: 
 """
