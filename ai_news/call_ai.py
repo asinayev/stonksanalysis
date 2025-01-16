@@ -7,10 +7,11 @@ import google.generativeai as genai
 # Configure logging
 logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 logger = logging.getLogger(__name__)
-signal.signal(signal.SIGALRM, timeout_handler)
 
 def timeout_handler(signum, frame):
     raise TimeoutError("Request timed out")
+
+signal.signal(signal.SIGALRM, timeout_handler)
 
 def read_results(all_results, prompt_template, model):
     """Read and process AI-generated content for all results."""
