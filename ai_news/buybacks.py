@@ -11,7 +11,7 @@ polygon_key = os.environ["POLYGONKEY"]
 genai.configure(api_key=google_key)
 
 model = genai.GenerativeModel(
-  model_name='gemini-flash-experimental', 
+  model_name='gemini-2.0-flash-exp', 
   safety_settings=[
           {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
           {"category": "HARM_CATEGORY_HARASSMENT", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
