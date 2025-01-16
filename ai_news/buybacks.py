@@ -9,7 +9,6 @@ google_key = os.environ["GOOGLEKEY"]
 polygon_key = os.environ["POLYGONKEY"]
 
 genai.configure(api_key=google_key)
-request_options = RequestOptions(timeout=30)
 
 model = genai.GenerativeModel(
   model_name='gemini-1.5-flash-latest', 
