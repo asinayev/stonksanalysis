@@ -1,5 +1,4 @@
 import json
-import signal
 import logging
 import datetime
 import google.generativeai as genai
@@ -7,11 +6,6 @@ import google.generativeai as genai
 # Configure logging
 logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 logger = logging.getLogger(__name__)
-
-def timeout_handler(signum, frame):
-    raise TimeoutError("Request timed out")
-
-signal.signal(signal.SIGALRM, timeout_handler)
 
 def read_results(all_results, prompt_template, model):
     """Read and process AI-generated content for all results."""
@@ -55,18 +49,20 @@ def enrich_result(result, poly_client):
         logger.exception(f"No ticker") 
         return result
     try:
-        signal.alarm(5)
-        matches = list(poly_client.list_tickers(search=result['companyName'], active=True, type='CS'))
-        if not matches:
-            result['companyName']=''.join(ch for ch in result['companyName'] if ch.isalnum() or ch==" ")
-            matches = list(poly_client.list_tickers(search=result['companyName'], active=True, type='CS'))
-        if not matches:
-            result['companyName']=result['companyName'].rsplit(' ', 1)[0]
-            matches = list(poly_client.list_tickers(search=result['companyName'], active=True, type='CS'))
-        first_match = matches[0]
+        first_match=""
+        names_to_try=[result['companyName'],
+            ''.join(ch for ch in result['companyName'] if ch.isalnum() or ch==" "), #remove non letter number whitespace
+            result['companyName'].rsplit(' ', 1)[0],
+            result['companyName'].split(' ')[0]
+                        ]
+        for n in names_to_try:
+            matches = poly_client.list_tickers(search=n, active=True, type='CS')
+            try:
+                first_match=next(matches)
+            except:
+                continue
         market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
-        signal.alarm(0)
     except TimeoutError as e:
         logger.exception(f"Ticker timed out. {result['companyName']}: {result['ticker']}") 
         result['message'] = f'Ticker timed out: {result['ticker']}'
@@ -83,7 +79,7 @@ def enrich_result(result, poly_client):
             'overnight_in_range': -1.75 < snap.todays_change_percent < 9,
         })
         result['message']=generate_message(result)
-        result['match']=first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
+        result['match']=first_match and first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
     except Exception as e:
         logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] = f'Issue getting ticker data: {result['ticker']}'
