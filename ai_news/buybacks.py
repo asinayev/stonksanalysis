@@ -9,11 +9,22 @@ google_key = os.environ["GOOGLEKEY"]
 polygon_key = os.environ["POLYGONKEY"]
 
 genai.configure(api_key=google_key)
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+request_options = RequestOptions(timeout=30)
+
+model = genai.GenerativeModel(
+  model_name='gemini-1.5-flash-latest', 
+  safety_settings=[
+          {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
+          {"category": "HARM_CATEGORY_HARASSMENT", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
+          {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
+          {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": genai.types.HarmBlockThreshold.BLOCK_NONE},
+      ]
+  )
 
 prompt_template="""Based on the following search result, please answer yes or no about whether this constitues a NEW announcement about a {}
 Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
-Respond in this JSON format: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}}
+Respond in this JSON format: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}}. 
+If any of the fields cannot be determined, write UNKNOWN, for example: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"UNKNOWN"}}
 
 Here is the search result: 
 """

@@ -8,12 +8,13 @@ import call_ai
 # Configure logging
 logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 
-def fetch_search_results(search_service, search_id, query, **kwargs):
+def fetch_search_results(search_service, search_id, query, n_results, **kwargs):
     """Fetches search results from Google Custom Search."""
     try:
         all_results = search_web.all_search_pages(
             service=search_service,
             cse_id=search_id,
+            n_results=n_results,
             q=query,
             sort="date",
             num=10,
@@ -78,14 +79,15 @@ def format_and_save_results(enriched_results, model, query, write_to_dir):
         logging.error(f"Error formatting and saving results: {e}")
 
 def read_search(google_key: str, polygon_key: str, search_id: str, 
-                query: str, prompt_template: str, model, write_to_dir: str, **kwargs):
+                query: str, prompt_template: str, model, write_to_dir: str, 
+                n_results =90, **kwargs):
     """
     Performs a search, processes results, enriches them with financial data, 
     and saves the output to a CSV file. 
     """
     search_service = build("customsearch", "v1", developerKey=google_key).cse()
 
-    search_results = fetch_search_results(search_service, search_id, query, **kwargs)
+    search_results = fetch_search_results(search_service, search_id, query, n_results, **kwargs)
     processed_results = process_results_with_ai(search_results, prompt_template, model)
     enriched_results = enrich_with_financial_data(processed_results, polygon_key)
     format_and_save_results(enriched_results, model, query, write_to_dir)

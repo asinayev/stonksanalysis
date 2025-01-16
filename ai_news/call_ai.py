@@ -1,17 +1,23 @@
 import json
+import signal
 import logging
 import datetime
+import google.generativeai as genai
 
 # Configure logging
 logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 logger = logging.getLogger(__name__)
+signal.signal(signal.SIGALRM, timeout_handler)
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Request timed out")
 
 def read_results(all_results, prompt_template, model):
     """Read and process AI-generated content for all results."""
     valid_summaries = []
     for result in all_results:
         prompt = create_prompt(prompt_template, result)
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
         summary = parse_response(response, result)
         if summary:
             valid_summaries.append(summary)
@@ -44,10 +50,11 @@ def parse_response(response, result):
 def enrich_result(result, poly_client):
     """Enrich the result with financial data and match criteria."""
     result['match'] = False
-    if not result['ticker']:
+    if not result['ticker'] or result['ticker']=='UNKNOWN':
         logger.exception(f"No ticker") 
         return result
     try:
+        signal.alarm(5)
         matches = list(poly_client.list_tickers(search=result['companyName'], active=True, type='CS'))
         if not matches:
             result['companyName']=''.join(ch for ch in result['companyName'] if ch.isalnum() or ch==" ")
@@ -58,8 +65,12 @@ def enrich_result(result, poly_client):
         first_match = matches[0]
         market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
+        signal.alarm(0)
+    except TimeoutError as e:
+        logger.exception(f"Ticker timed out. {result['companyName']}: {result['ticker']}") 
+        result['message'] = f'Ticker timed out: {result['ticker']}'
     except Exception as e:
-        logger.exception(f"Ticker not found. {result['companyName']}: {result['ticker']}") # Use logger.exception to log stack trace
+        logger.exception(f"Ticker not found. {result['companyName']}: {result['ticker']}") 
         result['message'] = f'Ticker not found: {result['ticker']}'
         return result
     try:
