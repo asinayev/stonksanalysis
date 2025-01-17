@@ -56,7 +56,7 @@ def format_and_save_results(enriched_results, model, query, write_to_dir):
         for r in enriched_results:
             try:
                 model_out = model.generate_content(
-                    "Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided):" + r['timePublished']
+                    "Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). If that is not possible, write UNKNOWN. Here is the date time string: " + r['timePublished']
                 )
                 r['timePublished'] = model_out.text.strip()
                 r['newProgram'] = r['newProgram'].lower()
