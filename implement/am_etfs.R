@@ -46,7 +46,7 @@ prices[order(day_drop_norm, decreasing=F)][
 prices[order(day_drop_norm, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 &  
          (((close-low)/avg_range)<.15 ) & 
-         ((high/close) > 1.075 | avg_delta<.99)]%>%
+         ((high/close) > avg_range*2 | avg_delta<(.99-(.01*lever)))]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
