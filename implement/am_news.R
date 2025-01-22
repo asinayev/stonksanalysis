@@ -14,7 +14,7 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
 
 zacks_news = fread('/tmp/stonksanalysis/allintitle: revenue_revenues earnings_earning.csv')
-zacks_news=zacks_news[timePublished>paste(Sys.Date()-1,"16:00")]
+zacks_news=zacks_news[timePublished>=paste(Sys.Date(),"00:00")]
 
 if(!is.null(just_news)){
   
