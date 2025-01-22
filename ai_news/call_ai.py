@@ -45,8 +45,10 @@ def parse_response(response, result):
 def enrich_result(result, poly_client):
     """Enrich the result with financial data and match criteria."""
     result['match'] = False
+    result['message'] = ''
     if not result['ticker'] or result['ticker']=='UNKNOWN':
         logger.exception(f"No ticker") 
+        result['message'] += f'No ticker'
         return result
     try:
         first_match=""
@@ -59,16 +61,19 @@ def enrich_result(result, poly_client):
             matches = poly_client.list_tickers(search=n, active=True, type='CS')
             try:
                 first_match=next(matches)
+                assert(first_match.ticker == result['ticker'])
             except:
                 continue
+        if not first_match or first_match.ticker != result['ticker']:
+            result['message'] += f'No good match in polygon for ticker'
         market_cap = poly_client.get_ticker_details(ticker=result['ticker']).market_cap
         snap = poly_client.get_snapshot_ticker(ticker=result['ticker'], market_type='stocks')
     except TimeoutError as e:
         logger.exception(f"Ticker timed out. {result['companyName']}: {result['ticker']}") 
-        result['message'] = f'Ticker timed out: {result['ticker']}'
+        result['message'] += f'Ticker timed out'
     except Exception as e:
         logger.exception(f"Ticker not found. {result['companyName']}: {result['ticker']}") 
-        result['message'] = f'Ticker not found: {result['ticker']}'
+        result['message'] += f'Issue getting match in Polygon'
         return result
     try:
         result.update({
@@ -78,11 +83,11 @@ def enrich_result(result, poly_client):
             'liquidity_ok': snap.prev_day.close > 5 and snap.prev_day.volume > 10000,
             'overnight_in_range': -1.75 < snap.todays_change_percent < 9,
         })
-        result['message']=generate_message(result)
+        result['message'] += generate_message(result)
         result['match']=first_match and first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
     except Exception as e:
         logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
-        result['message'] = f'Issue getting ticker data: {result['ticker']}'
+        result['message'] += f'Issue getting ticker data'
     return result
 
 def generate_message(result):
