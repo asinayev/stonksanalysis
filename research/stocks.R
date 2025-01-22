@@ -103,10 +103,11 @@ performance_features(prices)
 # 17: 2021  -0.005     -0.7  -0.2     38          39        5             1            37
 # 18: 2022   0.044     -0.4   1.3     30          31        4             1            27
 
-prices[lead1sell_rally/lead1open<1.5 & close>5 & volume>100000 & #exclude stuff that can't be traded
-         (volume>=max_volume & avg_delta_short<.99) & #big down movement recently and consolidated today
-         (((close-low)/avg_range)<.2 ) & 
-         (log(vp_order)-log(cap_order))>.4 ][ #stock is boring
+prices[lead1sell_rally/lead1open<1.5 & close>7 & volume>100000 & #exclude stuff that can't be traded
+         volume>=max_volume & 
+         avg_delta_short<.99 & 
+         vp_order>cap_order &
+         (close-low)/avg_range<.1][ #stock is boring
            order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
 

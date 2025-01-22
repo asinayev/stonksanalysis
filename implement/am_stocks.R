@@ -49,10 +49,11 @@ prices[avg_delta_short<avg_delta*.985 &
  write_strat(strat_name='megacap')
 
 
-prices[close>5 & volume>100000 & 
-         (volume>=max_volume & avg_delta_short<.99) & 
-         (log(vp_order)-log(cap_order))>.4 &
-         (((close-low)/avg_range)<.2 ) &
+prices[close>7 & volume>100000 & 
+         volume>=max_volume & 
+         avg_delta_short<.99 & 
+         vp_order>cap_order &
+         (close-low)/avg_range<.1  &
          date==max(date, na.rm=T)][
            order(day_drop_norm, decreasing=F)]%>%
   head(1)%>%
