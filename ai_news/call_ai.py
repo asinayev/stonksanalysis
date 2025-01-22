@@ -85,8 +85,9 @@ def enrich_result(result, poly_client):
         })
         result['message'] += generate_message(result)
         result['match']=first_match and first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
-        if result['match']=="No good match in polygon for ticker":
-            result['match']="DOUBLE CHECK THIS TICKER"
+        if result['message']=="No good match in polygon for ticker":
+            result['message']="DOUBLE CHECK THIS TICKER"
+            result['match']=True
     except Exception as e:
         logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] += f'Issue getting ticker data'
