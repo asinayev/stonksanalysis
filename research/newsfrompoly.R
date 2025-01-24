@@ -168,6 +168,22 @@ news_moves[avg_volume>50000 & volume>50000 & close>7 & market_cap %between% c(0.
 
 news=fread("https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/All_external.csv?download=true")
 news[,domain:=stringr::str_extract(Url, "(?<=(http(s)?://)?(www)?)([a-zA-Z0-9-]+(\\.[a-zA-Z0-9-]+)+)(?=(/|:|$))")]
+domains = unique(news$domain)
+for(i in 1:length(domains)){
+  fwrite(news[domain==domains[i]], paste("~/datasets/news_",domains[i],".csv", collapse =""))
+}
+#restart R
+zacks_news=fread("~/datasets/news_ www.zacks.com .csv")
+zacks_news=zacks_news[Url %in% zacks_news[,.N,Url][N==1,Url],.(date=as.IDate(Date),symbol=Stock_symbol, title=Article_title)]
+zacks_news=merge(prices,zacks_news, by=c('date','symbol'))
+zacks_news[grepl('earning', title, ignore.case = T) &
+             grepl('revenue', title, ignore.case = T) &
+             avg_volume>50000 & volume>50000 & close>5 & 
+             (open-close > avg_range/2 )][order(day_drop_norm),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
+
+
 news[domain=='www.zacks.com'][grepl('earning', Article_title, ignore.case = T) &
                                 grepl('revenue', Article_title, ignore.case = T)][
                                   mapply(function(symbol, title) {

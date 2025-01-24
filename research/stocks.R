@@ -109,7 +109,8 @@ prices[lead1sell_rally/lead1open<1.5 & close>7 & volume>100000 & #exclude stuff 
          vp_order>cap_order &
          (close-low)/avg_range<.1][ #stock is boring
            order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
 
 
 
@@ -276,7 +277,8 @@ prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 &
         (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
       (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
       order(mid_eps/close, decreasing=T),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,1,symbol,lead1sell_rallydate,hold_less_than = 5))
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
++                    lead1sell_rallydate,hold_less_than = 5))
 
 
 prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
