@@ -37,8 +37,3 @@ guidance_description="improved guidance in the newProgram field, The announcemen
 
 ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='improves|raises|increases guidance', \
   orTerms='', prompt_template=prompt_template.format(guidance_description), model=model, write_to_dir='/tmp/stonksanalysis/')
-
-guidance_description="earnings and revenue change for a specific stock."
-
-ai_reads_search.read_search(google_key, polygon_key, zacks_search_id, query='allintitle: revenue|revenues earnings|earning', \
-  orTerms='', prompt_template=prompt_template.format(guidance_description), model=model, write_to_dir='/tmp/stonksanalysis/')

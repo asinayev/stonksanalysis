@@ -6,15 +6,15 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 prices = fread('/tmp/prices.csv')
+snapshot=fread('/tmp/current_moves.csv')
 
 setorder(prices, symbol, date)
 prices = prices[!is.na(close), tail(.SD,126), by=symbol]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
-just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
+trending=snapshot[((as.integer(Sys.time())-as.integer(updated))/60/60)<1 & overnight_delta>1.03]
 
-zacks_news = fread('/tmp/stonksanalysis/allintitle: revenue_revenues earnings_earning.csv')
-zacks_news=zacks_news[timePublished>=paste(Sys.Date(),"00:00")]
+just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
 
 if(!is.null(just_news)){
   
@@ -22,26 +22,12 @@ if(!is.null(just_news)){
     clean_news %>%
     merge(prices, by=c('date','symbol'), all.x=T)
   
-  # long stocks that fell before revenue
-  prices[symbol %in% zacks_news$ticker & date==max(date) &
-             avg_volume>50000 & volume>50000 & close>5  & 
-             open-close > avg_range/3 ] %>%
-    dplyr::group_by(symbol) %>%
-    dplyr::filter(dplyr::row_number()==1) %>%
-    dplyr::arrange(day_drop_norm) %>%
-    head(1)  %>%
-    dplyr::mutate( action='BUY', 
-                   order_type='Adaptive',
-                   time_in_force='DAY') %>%
-    data.table %>%
-    write_strat(strat_name='zacks_earn')
-  
-  
-  news_moves[(grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', title, ignore.case = T)|
-                  (grepl('(dividend|repurchase|buyback)', title, ignore.case = T) & avg_delta>1 & avg_delta_short<1)) &
-             !is.na(single_ticker) &
-             avg_volume>50000 & volume>50000 & close>5  & 
-             market_cap %between% c(0.5*10^9, 10*10^9) ] %>%
+  news_moves[grepl('(dividend|repurchase|buyback)', title, ignore.case = T)  & 
+                publisher.name=='GlobeNewswire Inc.' &
+                avg_delta_short<1 &
+                !is.na(single_ticker) &
+                avg_volume>100000 & volume>100000 & close>5  & 
+                market_cap <10*10^9 ] %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(day_drop_norm) %>%
@@ -51,6 +37,20 @@ if(!is.null(just_news)){
                    time_in_force='DAY') %>%
     data.table %>%
     write_strat(strat_name='div_news')
+  
+  news_moves[symbol %in% trending$symbol &
+               publisher.name=='GlobeNewswire Inc.' &
+               !is.na(single_ticker) &
+               avg_volume>100000 & volume>100000 & close>5 ] %>%
+    dplyr::group_by(symbol) %>%
+    dplyr::filter(dplyr::row_number()==1) %>%
+    dplyr::arrange(volume) %>%
+    head(1)  %>%
+    dplyr::mutate( action='BUY', 
+                   order_type='MKT',
+                   time_in_force='OPG') %>%
+    data.table %>%
+    write_strat(strat_name='news_trend')
   
   news_moves%>%
     dplyr::group_by(symbol) %>%

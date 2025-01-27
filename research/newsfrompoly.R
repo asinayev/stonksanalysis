@@ -22,10 +22,10 @@ just_news = parallel::mclapply(
 setorder(prices, symbol, date)
 prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
 
+setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
-prices[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
-prices[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
+performance_features(prices)
 
 just_news[,.N,.(date=paste(year(date),stringr::str_pad(month(date ),2, pad="0") ),publisher.name)]%>%
   ggplot( aes(x = date, y = N, color = publisher.name, group = publisher.name)) +
@@ -64,8 +64,8 @@ insights=merge(prices,
 
 byword = news_moves[!sapply(keywords, is.null),
                     .(keywords=unlist(keywords) ),
-                    .(id, delta=lead1sell_rally/lead1open, overnight_delta=lead1open/close,
-                      prev_delta=close/open, prev_dol_vol = close*volume, open,
+                    .(id, lead1sell_rally,lead1open,open,close, volume,market_cap,
+                      avg_delta_short, avg_volume,day_drop_norm, lead1sell_rallydate,
                       symbol, single_ticker, market_cap, date, publisher.name, title)]
 
 byword[log(market_cap)<21 & keywords %in%c('Health', 'Partnerships', 'Press releases') & publisher.name=='GlobeNewswire Inc.'  & overnight_delta>1.01,
@@ -135,35 +135,25 @@ unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,pu
 ##
 ## WINNING
 ##
-news_moves[grepl('earning', title, ignore.case = T) &
-           grepl('revenue', title, ignore.case = T) &
-           publisher.name=='Zacks Investment Research' &
-           avg_volume>50000 & volume>50000 & close>5 & 
-           (open-close > avg_range/3 )
-           #& !is.na(single_ticker)
-           ,.N,
-           .(date,symbol,lead1sell_rally,lead1open,avg_delta)][order(avg_delta),head(.SD,3),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,
-                   1,symbol))
 
-
-
-news_moves[avg_volume>75000 & market_cap<10000000000 &
+news_moves[grepl('(dividend|repurchase|buyback)', title, ignore.case = T)  & 
+             avg_delta_short<1 &
              !is.na(single_ticker) &
-           grepl('(new|announce|declare|authori).*(repurchase|buyback)', title, ignore.case = T),
-           max(date),
-           .(date,symbol,lead1open,lead1sell_rally,market_cap)][, .(mean(lead1sell_rally/lead1open),.N), .(year(date),month(date))][order(year,month)]
+             publisher.name=='GlobeNewswire Inc.' &
+             avg_volume>100000 & volume>100000 & close>5  & 
+             market_cap <10*10^9  ][ #stock is boring
+               order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
 
 
-news_moves[avg_volume>50000 & volume>50000 & close>7 & market_cap %between% c(0.5*10^9, 10*10^9) &
-             !is.na(single_ticker) & 
-             (grepl('(new|announce|declare|authori|start).*(repurchase|buyback)', title, ignore.case = T)|
-                (grepl('(dividend|repurchase|buyback)', title, ignore.case = T) & avg_delta>1 & avg_delta_short<1)),
-           .N,
-           .(date,symbol,lead1open,lead1sell_rally,market_cap,avg_delta_short)][
-             order(avg_delta_short, decreasing=T),head(.SD,3),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,
-                   1,symbol))
+news_moves[lead1open/close >1.03 & 
+             !is.na(single_ticker) &
+             publisher.name=='GlobeNewswire Inc.' &
+             avg_volume>100000 & volume>100000 & close>5    ][ #stock is boring
+               order(volume,decreasing = F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
 
 
 news=fread("https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/All_external.csv?download=true")
