@@ -41,6 +41,12 @@ prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 #        ADX:=EMA((PDM-NDM)/(PDM+NDM) ,n = 30, align='right',fill=NA),
 #        symbol ]
 
+setorder(prices, symbol, date)
+prices[symbol %in% prices[,.N,symbol][N>25,symbol],avg_delta_short2:=(close/SMA(lag1close,5))^(1/5),symbol]
+prices[symbol %in% prices[,.N,symbol][N>25,symbol],avg_delta2:=(close/SMA(lag1close,25))^(1/25),symbol]
+prices[,avg_delta_short3:=(close/shift(lag1close,5))^(1/5),symbol]
+prices[,avg_delta3:=(close/shift(lag1close,25))^(1/25),symbol]
+
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,200)
