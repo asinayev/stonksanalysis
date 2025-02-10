@@ -35,5 +35,5 @@ ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='buyback|r
 
 guidance_description="improved guidance in the newProgram field, The announcement should say that guidance for an important metric is now higher (better) than previously expected. If the announcement is simply an update about progress on existing guidance, respond no."
 
-ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='improves|raises|increases guidance', \
+ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='improves|raises|increases guidance|outlook', \
   orTerms='', prompt_template=prompt_template.format(guidance_description), model=model, write_to_dir='/tmp/stonksanalysis/')
