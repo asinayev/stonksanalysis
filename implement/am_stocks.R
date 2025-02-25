@@ -18,7 +18,7 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short, na.rm=T),date]
 
 bigcaps[ date==max(date, na.rm=T) & 
            ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.04 & avg_delta_short<1))][
-           order(day_drop_norm, decreasing=F)]%>%
+           order(volume, decreasing=F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
