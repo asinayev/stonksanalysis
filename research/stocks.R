@@ -287,8 +287,8 @@ prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
                 order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
 
 bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
-bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]
-bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
+bigcaps[,bigcap_avg_delta:=mean(avg_delta,na.rm=T),date]
+bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
 #############
 # bigcap_short
@@ -302,34 +302,64 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
 
 #############
 # bigcap_long
-# avg_year   avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.007421053 0.007346327     -1.4          1006        1353        5
+# avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.01010526 0.01047766     -0.8           692         668        5
 # year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004   0.020      0.0   0.3     13          14        4      4.769231             9
-# 2: 2005   0.012     -0.1   0.4     36          37        4      4.527778            18
-# 3: 2006   0.014     -0.1   0.7     54          55        5      4.574074            31
-# 4: 2007   0.001     -0.4   0.0     56          57        5      5.821429            24
-# 5: 2008   0.016     -0.8   2.5    152         153        5      5.019737            76
-# 6: 2009   0.006     -1.4   0.7    127         128        5      4.984252            72
-# 7: 2010   0.002     -0.3   0.1     52          53        5      5.615385            27
-# 8: 2011   0.004     -0.5   0.3     62          63        5      4.725806            26
-# 9: 2012   0.004     -0.3   0.2     57          58        5      6.701754            26
-# 10: 2013   0.006     -0.2   0.4     57          58        4      5.403509            29
-# 11: 2014   0.019     -0.1   0.9     47          48        5      4.297872            21
-# 12: 2015   0.005     -0.3   0.4     72          73        5      5.791667            32
-# 13: 2016  -0.001     -0.7  -0.1     70          71        5      5.942857            28
-# 14: 2017   0.006     -0.3   0.2     32          33        4      5.312500            18
-# 15: 2018   0.003     -0.3   0.2     66          67        5      6.636364            30
-# 16: 2019   0.002     -0.4   0.1     81          82        5      5.432099            31
-# 17: 2020   0.013     -0.5   1.6    127         128        5      4.574803            60
-# 18: 2021   0.002     -0.7   0.2     79          80        5      5.582278            37
-# 19: 2022   0.007     -0.7   0.7     94          95        5      5.723404            47
+# 1: 2004   0.022      0.0   0.2      7           8        4      5.571429             5
+# 2: 2005   0.026      0.0   0.4     16          17        3      3.062500            10
+# 3: 2006   0.004     -0.2   0.1     24          25        4      4.833333            16
+# 4: 2007   0.026     -0.1   0.9     36          37        5      3.722222            19
+# 5: 2008   0.019     -0.7   1.8     92          93        5      5.000000            48
+# 6: 2009   0.018     -0.5   1.1     63          64        5      4.746032            39
+# 7: 2010  -0.005     -0.2  -0.1     27          28        5      7.259259            17
+# 8: 2011   0.011     -0.4   0.4     40          41        5      4.375000            22
+# 9: 2012   0.006     -0.1   0.1     19          20        3      5.421053            12
+# 10: 2013  -0.012     -0.2  -0.1     11          12        4      7.363636             7
+# 11: 2014   0.023     -0.2   0.4     19          20        4      5.578947             8
+# 12: 2015   0.003     -0.2   0.1     28          29        3      5.714286            17
+# 13: 2016   0.004     -0.6   0.1     33          34        5      4.424242            14
+# 14: 2017   0.023     -0.1   0.2      9          10        3      4.333333             6
+# 15: 2018   0.001     -0.2   0.0     28          29        5      6.928571            15
+# 16: 2019   0.001     -0.4   0.0     41          42        5      6.585366            19
+# 17: 2020   0.007     -0.8   0.4     59          60        5      4.966102            38
+# 18: 2021   0.007     -0.5   0.3     40          41        4      5.125000            22
+# 19: 2022   0.008     -0.6   0.5     57          58        5      5.947368            29
 
-
-bigcaps[(avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05)) &
-          (avg_delta>bigcap_avg_delta*.995 | avg_delta>.995) &
+bigcaps[(((avg_delta_short<.975) &
+          (avg_delta>.995))|(close>open*1.04 & avg_delta_short<1)) &
           lead1sell_rally/lead1open<1.5][
             order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
+
+
+#############
+# bigcap_trend
+# avg_year   avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.008052632 0.008895706     -0.7           595         671        5
+# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+# 1: 2004   0.010      0.0   0.1      5           6        2      4.400000             4
+# 2: 2005   0.013      0.0   0.3     21          22        2      3.619048            12
+# 3: 2006   0.008     -0.1   0.2     24          25        2      5.416667            17
+# 4: 2007   0.003     -0.3   0.1     38          39        3      4.947368            29
+# 5: 2008   0.013     -0.6   1.4    106         107        5      5.443396            60
+# 6: 2009   0.008     -0.7   0.6     72          73        5      4.736111            46
+# 7: 2010  -0.002     -0.2   0.0     21          22        2      3.619048            18
+# 8: 2011   0.011     -0.3   0.3     29          30        3      5.758621            20
+# 9: 2012   0.002     -0.1   0.0     19          20        3      5.894737            12
+# 10: 2013  -0.003     -0.2   0.0     13          14        3      6.615385             9
+# 11: 2014   0.009     -0.2   0.2     23          24        3      5.695652            14
+# 12: 2015   0.012     -0.2   0.4     36          37        3      4.666667            18
+# 13: 2016   0.020      0.0   0.7     36          37        4      4.416667            26
+# 14: 2017   0.014      0.0   0.1     10          11        2      3.900000            10
+# 15: 2018   0.002     -0.1   0.1     24          25        4      5.291667            21
+# 16: 2019   0.012     -0.2   0.4     33          34        3      4.242424            20
+# 17: 2020   0.006     -0.5   0.3     58          59        5      4.758621            43
+# 18: 2021   0.012     -0.1   0.4     33          34        3      3.424242            25
+# 19: 2022   0.003     -0.7   0.2     51          52        5      5.549020            36
+
+bigcaps[close>open*1.04 & avg_delta_short<1 & lead1sell_rally/lead1open<1.5][
+            order(day_drop_norm, decreasing=T),head(.SD,1),date] %>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 

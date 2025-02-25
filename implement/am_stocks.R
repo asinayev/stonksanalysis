@@ -13,12 +13,11 @@ rally(prices)
 # rally_avg(prices,100)
 
 bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
-bigcaps[,bigcap_avg_delta:=mean(avg_delta),date]
-bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short),date]
+bigcaps[,bigcap_avg_delta:=mean(avg_delta, na.rm=T),date]
+bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short, na.rm=T),date]
 
 bigcaps[ date==max(date, na.rm=T) & 
-           (avg_delta>bigcap_avg_delta*.995 | avg_delta>.995) & 
-           (avg_delta_short<bigcap_avg_delta_short*.98 | ((MACD_slow - MACD) > .05))][
+           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.04 & avg_delta_short<1))][
            order(day_drop_norm, decreasing=F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
