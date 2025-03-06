@@ -19,6 +19,8 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
               ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+              ,sd_from0:= frollmean((1-close/lag1close)^2 ,n = roll_window, align='right',fill=NA)^.5,symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
               ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+short_roll_window), unique(symbol)],
               lagging_corr_long:=
