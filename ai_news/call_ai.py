@@ -49,6 +49,7 @@ def enrich_result(result, poly_client):
     if not result['ticker'] or result['ticker']=='UNKNOWN':
         logger.exception(f"No ticker") 
         result['message'] += f'No ticker'
+        if 'companyName' in result: result['ticker']="_"+str(result['companyName'])
         return result
     try:
         first_match=""
