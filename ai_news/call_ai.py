@@ -62,6 +62,7 @@ def enrich_result(result, poly_client):
             try:
                 first_match=next(matches)
                 assert(first_match.ticker == result['ticker'])
+                break
             except:
                 continue
         if not first_match or first_match.ticker != result['ticker']:
@@ -89,7 +90,7 @@ def enrich_result(result, poly_client):
             result['message']="DOUBLE CHECK THIS TICKER"
             result['match']=True
     except Exception as e:
-        logger.exception(f"Issue getting ticker data: {result['ticker']}") # Use logger.exception to log stack trace
+        logger.exception(f"Issue getting polygon data for ticker: {result['ticker']}") # Use logger.exception to log stack trace
         result['message'] += f'Issue getting ticker data'
     return result
 
