@@ -23,7 +23,9 @@ model = genai.GenerativeModel(
 prompt_template="""Based on the following search result, please answer yes or no about whether this constitues a NEW announcement about a {}
 Please also answer the full name of the company doing the announcement, the ticker and the time it was published. 
 Respond in this JSON format: {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"8/12/2024 3:30:00 PM"}}. 
-If any of the fields cannot be determined, write "UNKNOWN" or "0/0/0000 0:00:00 AM", for example: {{"newProgram":"No","companyName":"Thievery Corporation","ticker":"UNKNOWN","timePublished":"0/0/0000 0:00:00 AM"}}
+If any of the fields cannot be determined, write "UNKNOWN", for example: {{"newProgram":"No","companyName":"Thievery Corporation","ticker":"UNKNOWN","timePublished":"UNKNOWN"}}.
+The time published may be found in the snippet, body or metadata like pagemap metalogs in the "date" field. It may appear in any format like days ago or a datetime with timezone 
+1999-07-01T23:21:10-5:00 or other, but you have to convert it to a format like 8/12/2024 3:30:00 PM. Do not convert timezones, so if it says +3:00, that just means the timezone and you can ignore that
 
 Here is the search result: 
 """
