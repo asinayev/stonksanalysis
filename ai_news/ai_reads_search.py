@@ -55,16 +55,16 @@ def format_and_save_results(enriched_results, model, query, write_to_dir):
         all_data = []
         for r in enriched_results:
             try:
-                model_out = model.generate_content(
-                    "Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). If that is not possible, write UNKNOWN. Here is the date time string: " + r['timePublished']
-                )
-                r['timePublished'] = model_out.text.strip()
+                # model_out = model.generate_content(
+                #     "Reformat the following time as YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). If that is not possible, write UNKNOWN. Here is the date time string: " + r['timePublished']
+                # )
+                # r['timePublished'] = model_out.text.strip()
                 r['newProgram'] = r['newProgram'].lower()
             except Exception as e:
                 logging.error(f"Error processing timePublished: {e}")
                 r['timePublished'] = 'cannot be formatted'
             all_data.append(r)
-        already_tracked = pd.DataFrame(all_data).reindex(columns=['timePublished','ticker','match','message','newProgram','current','volume','link','title','companyName','market_cap_ok','liquidity_ok','overnight_in_range'])
+        already_tracked = pd.DataFrame(all_data).reindex(columns=['timePublished','ticker','match','message','newProgram','title','link','companyName','current','volume','market_cap_ok','liquidity_ok','overnight_in_range'])
         already_tracked.sort_values(["newProgram","timePublished"], ascending=False, inplace=True)
 
         # --- Logging ---
