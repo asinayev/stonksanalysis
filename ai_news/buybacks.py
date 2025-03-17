@@ -21,7 +21,7 @@ model = genai.GenerativeModel(
   )
 
 prompt_template="""
-Determine if the following search result is a NEW announcement about a {}  If the title doesn't refer to the company, respond no. Answer 'yes' or 'no'.
+Determine if the following search result is a NEW announcement about a {}  If the title doesn't refer to the company at all, respond no. Answer 'yes' or 'no'.
 
 For your response, also extract the following (except the quote, provide info if it is known even if it is not in the announcement):
 - Company Full Name
@@ -29,7 +29,7 @@ For your response, also extract the following (except the quote, provide info if
 - Publication Date and Time
 - If available, a key quote from the search result that supports your 'yes'/'no' determination.
 
-Locate the publication time in the search result's snippet, body or metadata (metadata like pagemap metalogs in the "date" field). It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
+Locate the publication time in the search result's snippet, body or metadata. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
 
 If any of these details cannot be found, use "UNKNOWN".
 
