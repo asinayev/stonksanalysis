@@ -33,8 +33,8 @@ if(!is.null(just_news)){
     dplyr::arrange(day_drop_norm) %>%
     head(1)  %>%
     dplyr::mutate( action='BUY', 
-                   order_type='Adaptive',
-                   time_in_force='DAY') %>%
+                   order_type='MKT',
+                   time_in_force='OPG') %>%
     data.table %>%
     write_strat(strat_name='div_news')
   
