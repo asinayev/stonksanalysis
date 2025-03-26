@@ -21,8 +21,8 @@ bigcaps[ date==max(date, na.rm=T) &
            order(volume, decreasing=F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='Adaptive',
-                 time_in_force='DAY') %>%
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
   write_strat(strat_name='bigcap_long')
 
 prices[date==max(date, na.rm=T) & 
@@ -32,8 +32,8 @@ prices[date==max(date, na.rm=T) &
   order(day_drop_norm, decreasing=F)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='Adaptive',
-                 time_in_force='DAY') %>%
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
   write_strat(strat_name='correlated_long')
 
 
@@ -43,8 +43,8 @@ prices[avg_delta_short<avg_delta*.985 &
          order(day_drop_norm, decreasing=T)]  %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
-                 order_type='Adaptive',
-                 time_in_force='DAY') %>%
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
  write_strat(strat_name='megacap')
 
 
@@ -57,8 +57,8 @@ prices[close>7 & volume>100000 &
            order(day_drop_norm, decreasing=F)]%>%
   head(1)%>%
   dplyr::mutate( action='BUY', 
-                 order_type='Adaptive',
-                 time_in_force='DAY') %>%
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
   write_strat(strat_name='volumelong')
 
 
