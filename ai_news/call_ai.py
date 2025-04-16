@@ -32,7 +32,10 @@ def read_results(all_results, prompt_template, model):
     
     for result in all_results:
         prompt = create_prompt(prompt_template, result)
-        response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
+        try:
+            response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
+        except google.api_core.exceptions.ServiceUnavailable as e:
+            logger.error(f"model service unavailable: {e}")
         summary = parse_response(response, result)
         if summary:
             valid_summaries.append(summary)
