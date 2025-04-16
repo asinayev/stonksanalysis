@@ -1,6 +1,7 @@
 import json
 import logging
 import datetime
+import requests
 import google.generativeai as genai
 
 # Configure logging
