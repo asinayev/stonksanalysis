@@ -4,12 +4,31 @@ import datetime
 import google.generativeai as genai
 
 # Configure logging
-logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
+log_file_path = '/tmp/read_search.log'
+logging.basicConfig(filename=log_file_path, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
 logger = logging.getLogger(__name__)
+
+def fetch_article(url):
+    """Fetches content from a URL and extracts the main text."""
+    try:
+        # Add headers to mimic a browser, some sites block simple requests
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=15) # Increased timeout
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+        return response.text
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching URL {url}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Error parsing URL {url}: {e}")
+        return None
 
 def read_results(all_results, prompt_template, model):
     """Read and process AI-generated content for all results."""
     valid_summaries = []
+    
     for result in all_results:
         prompt = create_prompt(prompt_template, result)
         response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
@@ -25,7 +44,10 @@ def create_prompt(prompt_template, result):
         prompt += f"\n Title: {result['title']}"
     if 'snippet' in result:
         prompt += f"\n Snippet from article: {result['snippet']}"
-    prompt += f"\n Full article metadata: {result}"
+    if 'link' in result:
+        prompt += f"\n Full article HTML: {fetch_article(result['link'])}" 
+    else:
+        prompt += f"\n Full article metadata: {result}"
     return prompt
 
 def parse_response(response, result):
