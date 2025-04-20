@@ -50,9 +50,11 @@ def create_prompt(prompt_template, result):
     if 'snippet' in result:
         prompt += f"\n Snippet from article: {result['snippet']}"
     if 'link' in result:
-        prompt += f"\n Full article HTML: {fetch_article(result['link'])}" 
-    else:
-        prompt += f"\n Full article metadata: {result}"
+        full_article = fetch_article(result['link'])
+        if full_article:
+            prompt += f"\n Full article HTML: {full_article}" 
+        else:
+            prompt += f"\n Full article metadata: {result}"
     return prompt
 
 def parse_response(response, result):
