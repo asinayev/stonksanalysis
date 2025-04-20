@@ -50,7 +50,7 @@ def create_prompt(prompt_template, result):
     if 'snippet' in result:
         prompt += f"\n Snippet from article: {result['snippet']}"
     if 'link' in result:
-        full_article = call_ai.fetch_article(result['link'])
+        full_article = fetch_article(result['link'])
         if full_article:
             full_article=re.sub('<[^<]+?>', '', full_article)
             prompt += f"\n Full article HTML: {full_article}" 
