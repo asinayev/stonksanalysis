@@ -41,7 +41,7 @@ Respond in JSON format as shown in this example:
 Search result:
 """
 
-buyback_description="share buyback or share repurchase program. If the announcement is simply an update about stock repurchases that already happened, respond no."
+buyback_description="share buyback or share repurchase program. If the announcement does not say that stock will be repurchased or bought back in the future, or is simply an update about stock repurchases that already happened, respond no."
 
 ai_reads_search.read_search(google_key, polygon_key, my_cse_id, query='buyback|repurchase share|stock', \
   orTerms='', prompt_template=prompt_template.format(buyback_description), model=model, write_to_dir='/tmp/stonksanalysis/')
