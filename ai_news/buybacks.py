@@ -47,7 +47,7 @@ buyback_parameters={'search_query':'buyback|repurchase share|stock',
                     'min_close':5, 'min_volume':20000, 'max_market_cap':10000000000, 'min_overnight_pchange':-1.75, 'max_overnight_pchange':9}
 
 ai_reads_search.read_search(google_key, polygon_key, my_cse_id, orTerms='', model=model, write_to_dir='/tmp/stonksanalysis/', \
-                           parameters=guidance_parameters)
+                           parameters=buyback_parameters)
 
 guidance_description="improved guidance in the newProgram field, The announcement should say that guidance for an important metric is now higher (better) than previously expected. If the announcement is simply an update about progress on existing guidance, respond no."
 guidance_parameters={'search_query':'improves|raises|increases guidance|outlook',
