@@ -73,7 +73,7 @@ def parse_response(response, result):
         logger.debug(f"Response text: {response.text if hasattr(response, 'text') else 'No response text'}") # Log the full response text at debug level
         return None
 
-def enrich_result(result, poly_client):
+def enrich_result(result, poly_client, parameters):
     """Enrich the result with financial data and match criteria."""
     result['match'] = False
     result['message'] = ''
@@ -110,11 +110,11 @@ def enrich_result(result, poly_client):
         return result
     try:
         result.update({
-            'market_cap_ok': market_cap < 10000000000,
+            'market_cap_ok': market_cap < parameters['max_market_cap'],
             'volume': snap.prev_day.volume,
             'current': snap.prev_day.close + snap.todays_change,
-            'liquidity_ok': snap.prev_day.close > 5 and snap.prev_day.volume > 10000,
-            'overnight_in_range': -1.75 < snap.todays_change_percent < 9,
+            'liquidity_ok': snap.prev_day.close > parameters['min_close'] and snap.prev_day.volume > parameters['min_volume'],
+            'overnight_in_range': parameters['min_overnight_pchange'] < snap.todays_change_percent < parameters['max_overnight_pchange'],
         })
         result['message'] += generate_message(result)
         result['match']=first_match and first_match.ticker == result['ticker'] and result['liquidity_ok'] and result['market_cap_ok'] and result['overnight_in_range']
