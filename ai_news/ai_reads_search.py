@@ -85,4 +85,4 @@ def read_search(google_key: str, polygon_key: str, search_id: str,
     search_results = fetch_search_results(search_service, search_id, query=parameters['search_query'], n_results=n_results, **kwargs)
     processed_results = process_results_with_ai(search_results, prompt_template=parameters['prompt_template'], model=model)
     enriched_results = enrich_with_financial_data(processed_results, polygon_key, parameters)
-    format_and_save_results(enriched_results, model, query, write_to_dir)
+    format_and_save_results(enriched_results, model, parameters['search_query'], write_to_dir)
