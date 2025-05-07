@@ -36,13 +36,13 @@ def process_results_with_ai(all_results, prompt_template, model):
         logging.error(f"Error processing results with AI: {e}")
         return []
 
-def enrich_with_financial_data(valid_results, polygon_key):
+def enrich_with_financial_data(valid_results, polygon_key, parameters):
     """Enriches results with data from Polygon API."""
     enriched_results = []
     poly_client = RESTClient(api_key=polygon_key)  # Initialize client outside the loop
     for r in valid_results:
         try:
-            enriched_result = call_ai.enrich_result(r, poly_client)
+            enriched_result = call_ai.enrich_result(r, poly_client, parameters)
             enriched_results.append(enriched_result) 
         except Exception as e:
             logging.error(f"Error enriching result: {r} - Error: {e}")
@@ -75,15 +75,14 @@ def format_and_save_results(enriched_results, model, query, write_to_dir):
         logging.error(f"Error formatting and saving results: {e}")
 
 def read_search(google_key: str, polygon_key: str, search_id: str, 
-                query: str, prompt_template: str, model, write_to_dir: str, 
-                n_results =90, **kwargs):
+                model, write_to_dir: str, parameters:dict, n_results =90, **kwargs):
     """
     Performs a search, processes results, enriches them with financial data, 
     and saves the output to a CSV file. 
     """
     search_service = build("customsearch", "v1", developerKey=google_key).cse()
 
-    search_results = fetch_search_results(search_service, search_id, query, n_results, **kwargs)
-    processed_results = process_results_with_ai(search_results, prompt_template, model)
-    enriched_results = enrich_with_financial_data(processed_results, polygon_key)
+    search_results = fetch_search_results(search_service, search_id, query=parameters['search_query'], n_results=n_results, **kwargs)
+    processed_results = process_results_with_ai(search_results, prompt_template=parameters['prompt_template'], model=model)
+    enriched_results = enrich_with_financial_data(processed_results, polygon_key, parameters)
     format_and_save_results(enriched_results, model, query, write_to_dir)
