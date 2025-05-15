@@ -1,6 +1,6 @@
 lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window, rolling_features=T){
   setorder(stock_dat, symbol, date)
-  stock_dat[,c("lag1close", "lag2close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,-1,-2,-5), type = "lag"),symbol]
+  stock_dat[,c("lag1close", "lag2close", "lag5close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,5,-1,-2,-5), type = "lag"),symbol]
   stock_dat[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
   stock_dat[,c("lag1high",  "lag2high", "lead1high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
   stock_dat[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
@@ -9,25 +9,30 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
   if(rolling_features){
     stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
     stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
-    
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-              avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-              avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+
+    stock_dat[,is_valid:=symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]]
+    stock_dat[is_valid==T
+              ,avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
+    stock_dat[is_valid==T
+              ,avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol ]
+    stock_dat[is_valid==T
               ,running_low:= zoo::rollapply(low,min,width=roll_window, align='right',fill=NA),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+    stock_dat[is_valid==T
               ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+    stock_dat[is_valid==T
               ,sd_from0:= frollmean((1-close/lag1close)^2 ,n = roll_window, align='right',fill=NA)^.5,symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]
+    stock_dat[is_valid==T
               ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+short_roll_window), unique(symbol)],
               lagging_corr_long:=
                 runCor( close/open, avg_delta_short, corr_window),
               symbol]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-           RSI_short:=RSI(close,n=short_roll_window),symbol ]
+    stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+roll_window+short_roll_window), unique(symbol)],
+              running_var_ratio:=
+                frollmean(runVar( close/lag5close, roll_window)/(5*runVar(close/lag1close, roll_window)), corr_window),
+              symbol]
+    stock_dat[is_valid==T
+              ,RSI_short:=RSI(close,n=short_roll_window),symbol ]
     stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
            MACD:=EMA(close ,n = 12, align='right',fill=NA)/
              EMA(close ,n = 26, align='right',fill=NA),symbol ]
@@ -37,8 +42,8 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[,day_rise_norm:=(close-low)/avg_range]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>corr_window,symbol],
            max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol],
-           avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol ]
+    stock_dat[is_valid
+              ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
     stock_dat[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
   }
