@@ -29,7 +29,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               symbol]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+roll_window+short_roll_window), unique(symbol)],
               running_var_ratio:=
-                frollmean(runVar( close/lag5close, roll_window)/(5*runVar(close/lag1close, roll_window)), corr_window),
+                frollmean(runVar( close/lag5close, n=roll_window)/(5*runVar(close/lag1close, n=roll_window)), corr_window),
               symbol]
     stock_dat[is_valid==T
               ,RSI_short:=RSI(close,n=short_roll_window),symbol ]
@@ -42,7 +42,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[,day_rise_norm:=(close-low)/avg_range]
     stock_dat[symbol %in% stock_dat[,.N,symbol][N>corr_window,symbol],
            max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol ]
-    stock_dat[is_valid
+    stock_dat[is_valid==T
               ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
     stock_dat[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
