@@ -73,6 +73,16 @@ prices[order(day_drop_norm, decreasing=F)][
                  time_in_force='DAY') %>%
   write_strat(strat_name='drop_etfs')
 
+prices[order(sd_from0, decreasing=T)][
+  date==max(date, na.rm=T) & 
+    volume>500000 & close>7 & 
+    ((lag1close-close) > avg_range*.25)  ]%>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
+  write_strat(strat_name='deviant_etfs')
+
 all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), 
                                            dataset=prices, 
                                            reference_etfs=reference_etfs)

@@ -29,10 +29,6 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               lagging_corr_long:=
                 runCor( close/open, avg_delta_short, corr_window),
               symbol_session]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+roll_window+short_roll_window), unique(symbol_session)],
-              running_var_ratio:=
-                frollmean(runVar( close/lag5close, n=roll_window)/(5*runVar(close/lag1close, n=roll_window)), corr_window),
-              symbol_session]
     stock_dat[is_valid==T
               ,RSI_short:=RSI(close,n=short_roll_window),symbol_session ]
     stock_dat[(symbol_session %in% stock_dat[!is.na(close),.N,symbol_session][N>26,symbol_session]) & !is.na(close),

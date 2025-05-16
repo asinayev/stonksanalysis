@@ -23,35 +23,12 @@ prices=fread("~/datasets/etf_prices_15y.csv")
 prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-# prices[,RSI2:=NULL ]
-# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-#        RSI2:=SMA(pmax(0, close-lag1close) ,n = 2, align='right',fill=NA)/
-#          SMA(pmax(0, lag1close-close) ,n = 2, align='right',fill=NA),symbol ]
-# 
-# prices[,PDM:=NULL ]
-# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-#        PDM:=SMA(pmax(0, high-lag1high) ,n = 3, align='right',fill=NA),
-#        symbol ]
-# prices[,NDM:=NULL ]
-# prices[(symbol %in% prices[!is.na(close-lag1close),.N,symbol][N>5,symbol]) & !is.na(close-lag1close),
-#        NDM:=SMA(pmax(0, lag1low-low  ) ,n = 3, align='right',fill=NA),
-#        symbol ]
-# prices[,ADX:=NULL ]
-# prices[(symbol %in% prices[!is.na((PDM-NDM)/(PDM+NDM)),.N,symbol][N>30,symbol]) & !is.na((PDM-NDM)/(PDM+NDM)),
-#        ADX:=EMA((PDM-NDM)/(PDM+NDM) ,n = 30, align='right',fill=NA),
-#        symbol ]
-
 setorder(prices, symbol, date)
-prices[symbol %in% prices[,.N,symbol][N>25,symbol],avg_delta_short2:=(close/SMA(lag1close,5))^(1/5),symbol]
-prices[symbol %in% prices[,.N,symbol][N>25,symbol],avg_delta2:=(close/SMA(lag1close,25))^(1/25),symbol]
-prices[,avg_delta_short3:=(close/shift(lag1close,5))^(1/5),symbol]
-prices[,avg_delta3:=(close/shift(lag1close,25))^(1/25),symbol]
-
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 rally_avg(prices,200)
 performance_features(prices)
-prices=key_etfs(prices,low_corr_thresh=.33)
+#prices=key_etfs(prices,low_corr_thresh=.33)
  
 rally(prices,sell_rule=function(dat){dat$close>dat$lag1close+dat$lag1high-dat$lag1low},varname='sell_rally2')
 prices[,lead1sell_rally2:= shift(sell_rally2,1,type='lead'),symbol]
@@ -94,7 +71,7 @@ tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
 
 
 setorder(prices, symbol, date)
-rally = prices[volume>1000000 & close>7 & 
+prices[volume>1000000 & close>7 & 
          lead1sell_rally/lead1open<2 & 
          close<lag1high & sell_rally_day>10  ][
            order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
@@ -125,7 +102,7 @@ rally = prices[volume>1000000 & close>7 &
 # 19: 2022   0.021     -1.2   2.1     99         100        5      4.898990            55
 
 
-revert = prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
+prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
          (((close-low)/avg_range)<.15 ) & 
            (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99)))
          ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
@@ -190,6 +167,34 @@ drop_etfs = prices[volume>1000000 & close>7 & !short &
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
 
+# deviant_etfs
+#       avg_year avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.008631579 0.0107027     -1.7           621         944        1
+#     year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+#  1: 2004   0.007      0.0   0.1     13          14        1      5.692308             5
+#  2: 2005   0.010      0.0   0.5     49          50        1      5.775510            22
+#  3: 2006   0.002     -0.2   0.1     46          47        1      6.195652            19
+#  4: 2007   0.000     -0.3   0.0     53          54        1      5.264151            23
+#  5: 2008   0.006     -0.3   0.3     51          52        1      5.490196            22
+#  6: 2009   0.025     -0.1   1.3     53          54        1      5.377358            17
+#  7: 2010   0.003     -0.3   0.2     48          49        1      6.125000            16
+#  8: 2011   0.016     -0.5   0.8     53          54        1      5.452830            16
+#  9: 2012   0.011     -0.2   0.7     61          62        1      4.721311            23
+# 10: 2013   0.005     -0.4   0.2     49          50        1      6.061224            19
+# 11: 2014   0.021     -0.3   1.2     55          56        1      5.109091            17
+# 12: 2015   0.021     -0.4   1.3     60          61        1      4.750000            17
+# 13: 2016  -0.003     -0.8  -0.1     48          49        1      6.187500            16
+# 14: 2017   0.009     -0.7   0.5     52          53        1      5.423077            16
+# 15: 2018   0.026     -0.3   1.4     56          57        1      4.892857            21
+# 16: 2019  -0.019     -1.0  -0.7     40          41        1      7.875000            12
+# 17: 2020   0.043     -1.0   2.5     58          59        1      4.706897            21
+# 18: 2021   0.015     -0.4   0.7     47          48        1      6.425532            16
+# 19: 2022  -0.034     -1.7  -1.1     33          34        1      5.757576            10
+
+prices[volume>500000 & close>7 & lead1sell_rally/lead1open<1.5 &
+           ((lag1close-close) > avg_range*.25) ][
+             order(sd_from0, decreasing=T),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol, lead1sell_rallydate, hold_less_than = 1))
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.01871429 0.01807512     -0.9           489         440        5
