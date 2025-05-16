@@ -1,49 +1,51 @@
 lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window, rolling_features=T){
   setorder(stock_dat, symbol, date)
-  stock_dat[,c("lag1close", "lag2close", "lag5close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,5,-1,-2,-5), type = "lag"),symbol]
-  stock_dat[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol]
-  stock_dat[,c("lag1high",  "lag2high", "lead1high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol]
-  stock_dat[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol]
-  stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol]
+  
+  stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
+  stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
+  stock_dat[,symbol_session:=paste0(symbol,'_',unbroken_session)]
+  
+  stock_dat[,c("lag1close", "lag2close", "lag5close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,5,-1,-2,-5), type = "lag"),symbol_session]
+  stock_dat[,c("lag1open",  "lag2open", "lead1open"):=shift(open,  n = c(1:2,-1), type = "lag"),symbol_session]
+  stock_dat[,c("lag1high",  "lag2high", "lead1high" ):=shift(high,  n = c(1,2,-1), type = "lag"),symbol_session]
+  stock_dat[,c("lag1low",   "lag2low"  ):=shift(low,   n = 1:2, type = "lag"),symbol_session]
+  stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol_session]
   
   if(rolling_features){
-    stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
-    stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
-
-    stock_dat[,is_valid:=symbol %in% stock_dat[,.N,symbol][N>roll_window,symbol]]
+    stock_dat[,is_valid:=symbol_session %in% stock_dat[,.N,symbol_session][N>roll_window,symbol_session]]
     stock_dat[is_valid==T
-              ,avg_delta:= SMA(close/lag1close, n = roll_window ),symbol ]
+              ,avg_delta:= SMA(close/lag1close, n = roll_window ),symbol_session ]
     stock_dat[is_valid==T
-              ,avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol ]
+              ,avg_delta_short:= SMA(close/lag1close, n = short_roll_window ),symbol_session ]
     stock_dat[is_valid==T
-              ,running_low:= zoo::rollapply(low,min,width=roll_window, align='right',fill=NA),symbol ]
+              ,running_low:= zoo::rollapply(low,min,width=roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[is_valid==T
-              ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol ]
+              ,avg_range:= frollmean(high-low ,n = roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[is_valid==T
-              ,sd_from0:= frollmean((1-close/lag1close)^2 ,n = roll_window, align='right',fill=NA)^.5,symbol ]
+              ,sd_from0:= frollmean((1-close/lag1close)^2 ,n = roll_window, align='right',fill=NA)^.5,symbol_session ]
     stock_dat[is_valid==T
               ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+short_roll_window), unique(symbol)],
+    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+short_roll_window), unique(symbol_session)],
               lagging_corr_long:=
                 runCor( close/open, avg_delta_short, corr_window),
-              symbol]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>(corr_window+roll_window+short_roll_window), unique(symbol)],
+              symbol_session]
+    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+roll_window+short_roll_window), unique(symbol_session)],
               running_var_ratio:=
                 frollmean(runVar( close/lag5close, n=roll_window)/(5*runVar(close/lag1close, n=roll_window)), corr_window),
-              symbol]
+              symbol_session]
     stock_dat[is_valid==T
-              ,RSI_short:=RSI(close,n=short_roll_window),symbol ]
-    stock_dat[(symbol %in% stock_dat[!is.na(close),.N,symbol][N>26,symbol]) & !is.na(close),
+              ,RSI_short:=RSI(close,n=short_roll_window),symbol_session ]
+    stock_dat[(symbol_session %in% stock_dat[!is.na(close),.N,symbol_session][N>26,symbol_session]) & !is.na(close),
            MACD:=EMA(close ,n = 12, align='right',fill=NA)/
-             EMA(close ,n = 26, align='right',fill=NA),symbol ]
-    stock_dat[(symbol %in% stock_dat[!is.na(MACD),.N,symbol][N>10,symbol]) & !is.na(MACD),
-           MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol ]
+             EMA(close ,n = 26, align='right',fill=NA),symbol_session ]
+    stock_dat[(symbol_session %in% stock_dat[!is.na(MACD),.N,symbol_session][N>10,symbol_session]) & !is.na(MACD),
+           MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol_session ]
     stock_dat[,day_drop_norm:=(high-close)/avg_range]
     stock_dat[,day_rise_norm:=(close-low)/avg_range]
-    stock_dat[symbol %in% stock_dat[,.N,symbol][N>corr_window,symbol],
-           max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol ]
+    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
+           max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol_session ]
     stock_dat[is_valid==T
-              ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol ]
+              ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
     stock_dat[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
   }
@@ -55,16 +57,16 @@ rally = function(stock_dat,
                  varname='sell_rally',
                  sell_close=T){
   setorder(stock_dat, symbol, date)
-  stock_dat[,sell_rally_increment:=shift(sell_rule(.SD),n=1,type='lag'),symbol]
+  stock_dat[,sell_rally_increment:=shift(sell_rule(.SD),n=1,type='lag'),symbol_session]
   stock_dat[,sell_rally_increment:=ifelse(is.na(sell_rally_increment),0,sell_rally_increment)]
-  stock_dat[,sell_rally_increment:=cumsum(sell_rally_increment), symbol]
+  stock_dat[,sell_rally_increment:=cumsum(sell_rally_increment), symbol_session]
   varnames = paste0(varname,c('','_date','_day'))
   if(sell_close==T){
     stock_dat[,c(varnames):=list(close[.N],date[.N],seq_len(.N)),
-              .(sell_rally_increment,symbol)]
+              .(sell_rally_increment,symbol_session)]
   } else {
     stock_dat[,c(varnames):=list(open[.N],date[.N],seq_len(.N)),
-              .(sell_rally_increment,symbol)]
+              .(sell_rally_increment,symbol_session)]
   }
   stock_dat[,sell_rally_increment:=NULL]
 }
@@ -82,13 +84,13 @@ rally_avg = function(stock_dat, window){
                         price_dat[days,2], price_dat[,4])/price_dat[,3]))
   }
   
-  stock_dat[symbol %in% stock_dat[,.N,symbol][N>window,symbol],
+  stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>window,symbol_session],
             sell_rally_avg:= zoo::rollapply(data=.SD[,.(sell_rally_date=as.integer(sell_rally_date),
                                                         close,open,sell_rally,
                                                         date=as.integer(date))],
                                             FUN=sell_rally_avg_column,
                                             width=window, align='right',by.column = FALSE,fill=NA
-            ),symbol ]
+            ),symbol_session ]
   }
 
 key_etfs = function(stock_dat, 
