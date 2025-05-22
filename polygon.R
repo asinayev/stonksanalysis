@@ -88,9 +88,14 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
   last_examined=""
   h=curl::new_handle()
   curl::handle_setheaders(h, "Accept"= "text/csv")
+  if (ticker_type=='fx'){
+    ticker_type_condition=paste('market',ticker_type,sep='=')
+  } else {
+    ticker_type_condition=paste('type',ticker_type,sep='=')
+  }
   while(length(go)>0 && go){
-    link = "https://api.polygon.io/v3/reference/tickers?market=stocks&date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&type=%s" %>%
-      sprintf(date, key, last_examined,ticker_type)
+    link = "https://api.polygon.io/v3/reference/tickers?date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&%s" %>%
+      sprintf(date, key, sub(":",replacement = "%3A",x = last_examined),ticker_type_condition)
     response = get_table_results(link, handle=h)
     if (is.data.table(response) && nrow(response)>0){
       last_examined = response[.N,ticker]
