@@ -20,4 +20,4 @@ prices[order(day_drop_norm, decreasing=F)][
                  order_type='Adaptive',
                  time_in_force='DAY') %>%
   head(1) %>%
-  write_strat(strat_name='revert_fx.csv')
+  write_strat(strat_name='revert_fx')
