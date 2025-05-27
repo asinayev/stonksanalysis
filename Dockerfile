@@ -11,7 +11,7 @@ RUN install2.r --error \
     
 RUN git clone https://github.com/asinayev/stonksanalysis.git && \
     cd stonksanalysis && \
-    git checkout b5b386480602d12f5d1fe1f44fc160c0d24c5268 
+    git checkout 4792356b4610f4b118c2410f58712f9e022bdb61 
 
 RUN apt-get update && apt-get install -y \
     python3-pip
