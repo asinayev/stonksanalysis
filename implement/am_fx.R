@@ -6,7 +6,7 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
-stocklist = fread("/tmp/fx_prices.csv")
+prices = fread("/tmp/fx_prices.csv")
 
 prices = prices[, .SD[1], by=.(stock, Date)][
   ,.(symbol,date, open, high, low, volume, close, market_cap=NA)]
