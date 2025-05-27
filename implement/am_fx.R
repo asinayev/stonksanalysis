@@ -8,7 +8,7 @@ source("implement/imports.R", local=T)
 
 prices = fread("/tmp/fx_prices.csv")
 
-prices = prices[, .SD[1], by=.(stock, Date)][
+prices = prices[, .SD[1], by=.(symbol, Date)][
   ,.(symbol,date, open, high, low, volume, close, market_cap=NA)]
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
