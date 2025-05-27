@@ -19,3 +19,6 @@ fi
 if [ $run_what == "buybacks" ] ; then
 	python3 /home/repos/stonksanalysis/ai_news/buybacks.py /home/repos/stonksanalysis
 fi
+if [ $run_what == "overnight_fx" ] ; then
+	python3 /home/repos/stonksanalysis/implement/forex.py /home/repos/stonksanalysis
+fi
