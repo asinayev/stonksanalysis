@@ -62,7 +62,7 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
                            days_traded=sum(days_traded),
                            max_held=max(max_held))])
   print(results_overall[order(year)])
-  return(results_daily[,.(date,n_held)])
+  return(results_daily)
 }
 
 no_doubling=function(trades){
@@ -73,6 +73,7 @@ no_doubling=function(trades){
 }
 
 performance_features=function(dataset){
+  dataset[,lead1date:= shift(date,1,type='lead'),symbol]
   dataset[,lead1sell_rally:= shift(sell_rally,1,type='lead'),symbol]
   dataset[,lead1sell_rallydate:= shift(sell_rally_date,1,type='lead'),symbol]
   
