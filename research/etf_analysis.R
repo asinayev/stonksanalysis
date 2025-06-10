@@ -42,38 +42,39 @@ prices[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol]
 
 tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
                  close>lag1close*1.03 ][
-                   order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
-  with(performance(date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-date,symbol,lead1sell_rally2date,hold_less_than=1))
+                   order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
+  with(performance(lead1date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-lead1date,symbol,lead1sell_rally2date,hold_less_than=1))
 
 # Rally ETFs
-# avg_year   avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.007473684 0.006062261     -1.3           609        1849        6
-# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004   0.012      0.0   0.1     11          12        2      1.272727             7
-# 2: 2005   0.007      0.0   0.4     55          56        5      3.600000            21
-# 3: 2006   0.002     -0.4   0.1     56          57        5      4.000000            20
-# 4: 2007   0.007     -0.1   0.5     64          65        5      4.203125            24
-# 5: 2008   0.021     -0.2   1.1     52          53        5      4.019231            23
-# 6: 2009   0.026      0.0   1.4     54          55        5      3.055556            23
-# 7: 2010   0.013     -0.1   1.0     75          76        5      3.066667            30
-# 8: 2011   0.014     -0.1   1.1     79          80        5      2.784810            41
-# 9: 2012   0.000     -0.6   0.0     76          77        5      4.105263            33
-# 10: 2013   0.007     -0.3   0.8    110         111        5      3.545455            52
-# 11: 2014   0.001     -0.2   0.1    109         110        5      3.688073            46
-# 12: 2015   0.004     -0.4   0.6    128         129        5      4.210938            50
-# 13: 2016   0.007     -1.0   1.0    142         142        6      3.330986            55
-# 14: 2017   0.005     -0.2   0.6    116         117        5      5.258621            41
-# 15: 2018   0.000     -0.2   0.1    161         162        5      3.881988            77
-# 16: 2019   0.005     -0.4   0.6    115         116        5      3.086957            51
-# 17: 2020   0.003     -1.2   0.5    149         150        5      3.503356            72
-# 18: 2021   0.004     -1.3   0.7    182         183        5      3.576923            84
-# 19: 2022   0.004     -0.4   0.4     97          98        5      6.536082            55
+#      avg_year  avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.01642105 0.01657696     -1.4           538         945        5
+#     year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+#  1: 2004   0.002      0.0   0.0      2           2        1      0.500000             1
+#  2: 2005   0.012      0.0   0.0      2           3        1      2.000000             2
+#  3: 2006   0.014      0.0   0.1      4           4        2      0.750000             2
+#  4: 2007   0.010     -0.1   0.2     20          21        5      4.050000             8
+#  5: 2008   0.031     -0.1   1.1     35          36        5      4.057143            18
+#  6: 2009   0.044     -0.1   1.6     36          37        5      3.222222            17
+#  7: 2010   0.021     -0.1   1.1     51          52        5      2.823529            18
+#  8: 2011   0.025     -0.1   1.0     41          42        5      3.487805            17
+#  9: 2012  -0.005     -0.5  -0.1     26          27        5      7.153846            12
+# 10: 2013   0.030     -0.2   1.2     40          41        5      3.125000            11
+# 11: 2014   0.020     -0.2   1.1     55          56        5      2.745455            19
+# 12: 2015   0.020     -0.4   1.2     61          62        5      3.655738            19
+# 13: 2016  -0.002     -1.4  -0.1     58          58        5      4.103448            20
+# 14: 2017   0.019     -0.3   0.7     40          41        5      2.900000            12
+# 15: 2018   0.014     -0.5   1.0     72          73        5      2.902778            28
+# 16: 2019   0.009     -0.6   0.6     61          62        5      3.786885            16
+# 17: 2020   0.012     -1.2   1.2     96          97        5      3.572917            35
+# 18: 2021   0.004     -1.0   0.6    138         139        5      3.797101            38
+# 19: 2022   0.032     -0.7   2.9     91          92        5      3.439560            34
+
 
 setorder(prices, symbol, date)
-prices[volume>1000000 & close>7 & 
-         lead1sell_rally/lead1open<2 & 
+prices[volume>1000000 & close>7 &
+         lead1sell_rally/lead1open<2 & sd_from0>.015 &
          close<lag1high & sell_rally_day>10  ][
-           order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
+           order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_less_than=5))
 
 # revert ETFs
@@ -103,7 +104,7 @@ prices[volume>1000000 & close>7 &
 prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
          (((close-low)/avg_range)<.15 ) & 
            (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99)))
-         ][order( day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+         ][order( day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_less_than=5))
 
 # Corr long etfs
@@ -133,7 +134,7 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 
 corr_long = prices[volume>1000000 & close>7 & 
          (avg_delta_short<.975) & lagging_corr_long> .35][
-           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+           order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
 # Drop ETFs
@@ -162,39 +163,39 @@ corr_long = prices[volume>1000000 & close>7 &
 
 drop_etfs = prices[volume>1000000 & close>7 & !short &
                      (avg_delta_short < ifelse(lever,.96,.98) ) ][
-           order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
+           order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, 
                    lead1sell_rallydate, hold_less_than = 5))
 
 # deviant_etfs
-# avg_year   avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.005578947 0.005976431     -1.9          1341        1201        2
-# year average drawdown total trades days_traded max_held avg_days_held stocks_traded
-# 1: 2004   0.006      0.0   0.1     14          15        1      4.214286             6
-# 2: 2005   0.010      0.0   0.6     63          64        1      4.111111            20
-# 3: 2006   0.004     -0.2   0.2     62          63        1      4.645161            20
-# 4: 2007  -0.001     -0.2  -0.1     75          76        1      3.200000            27
-# 5: 2008   0.006     -0.3   0.4     71          71        2      3.605634            25
-# 6: 2009   0.015     -0.2   1.1     77          78        1      3.090909            24
-# 7: 2010   0.006     -0.2   0.4     63          63        2      4.444444            12
-# 8: 2011   0.007     -0.7   0.5     69          69        2      4.014493            15
-# 9: 2012   0.005     -0.2   0.4     75          76        1      3.306667            25
-# 10: 2013   0.003     -0.3   0.2     65          66        1      4.369231            27
-# 11: 2014   0.010     -0.2   0.7     65          66        1      4.215385            22
-# 12: 2015   0.004     -0.7   0.3     78          79        1      3.500000            21
-# 13: 2016   0.026     -0.7   1.8     68          68        2      3.691176            20
-# 14: 2017   0.000     -1.0   0.0     55          56        1      5.254545            19
-# 15: 2018  -0.005     -1.5  -0.3     62          62        2      5.016129            19
-# 16: 2019   0.001     -1.9   0.0     55          56        1      4.854545            11
-# 17: 2020   0.008     -1.8   0.5     65          66        1      4.107692            20
-# 18: 2021   0.015     -0.8   0.9     64          64        2      4.343750            15
-# 19: 2022  -0.014     -1.2  -0.6     42          43        1      4.404762            11
+#       avg_year   avg_trade drawdown drawdown_days days_traded max_held
+# 1: 0.008052632 0.008098353     -3.9           319        4434       12
+#     year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+#  1: 2004   0.009      0.0   0.5     51          52        6      3.392157            12
+#  2: 2005   0.008     -0.2   1.9    238         239       11      4.058824            30
+#  3: 2006   0.006     -0.4   1.3    241         242        8      4.385892            29
+#  4: 2007   0.001     -0.6   0.3    234         235       10      3.414530            41
+#  5: 2008   0.017     -0.9   4.1    245         245       11      3.808163            41
+#  6: 2009   0.016     -0.4   3.7    237         237        7      3.189873            38
+#  7: 2010   0.009     -0.7   2.2    252         251       11      4.452381            31
+#  8: 2011   0.008     -1.2   1.9    252         251       12      4.246032            27
+#  9: 2012   0.004     -1.5   1.0    250         250       12      3.768000            36
+# 10: 2013   0.005     -0.9   1.3    252         252        9      4.166667            39
+# 11: 2014   0.011     -0.4   2.7    252         252       10      4.007937            39
+# 12: 2015   0.015     -1.2   3.7    252         252        9      3.539683            35
+# 13: 2016   0.005     -3.9   1.2    252         252       12      4.567460            34
+# 14: 2017   0.005     -1.6   1.2    251         251       11      4.533865            32
+# 15: 2018   0.007     -1.4   1.8    251         251        8      4.298805            33
+# 16: 2019   0.009     -2.1   2.2    252         252       11      4.658730            21
+# 17: 2020   0.011     -1.9   2.7    253         253        9      4.268775            31
+# 18: 2021   0.011     -0.9   2.9    252         251        8      4.420635            22
+# 19: 2022  -0.004     -2.3  -0.7    166         166       10      4.138554            16
 
-
-prices[volume>500000 & close>7 & lead1sell_rally/lead1open<1.5 &
-           ((lag1close-close) > avg_range*.25) ][
+prices[volume>500000 & close>7 &  lead1sell_rally/lead1open<1.5 &
+         ((lag1close-close) > avg_range*.25)  ][
              order(sd_from0, decreasing=T),head(.SD,1),date]%>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, lead1sell_rallydate, hold_less_than = 1))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, 
+                   lead1sell_rallydate, hold_less_than = ))
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.01871429 0.01807512     -0.9           489         440        5

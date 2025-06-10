@@ -34,16 +34,16 @@ rally(prices)
 prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
 prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
 
-prices[order(day_drop_norm, decreasing=F)][
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 & 
-         close<lag1high & sell_rally_day>10] %>%
+         close<lag1high & sell_rally_day>10 & sd_from0>.015 ] %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
                  time_in_force='DAY') %>%
   head(1) %>%
   write_strat(strat_name='rally_etfs')
 
-prices[order(day_drop_norm, decreasing=F)][
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 &  
          (((close-low)/avg_range)<.15 ) & 
     (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99)))]%>%
@@ -53,7 +53,7 @@ prices[order(day_drop_norm, decreasing=F)][
                  time_in_force='DAY') %>%
   write_strat(strat_name='revert_etfs')
 
-prices[order(day_drop_norm, decreasing=F)][
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
     volume>1000000 & close>7 & 
     avg_delta_short<.975 & lagging_corr_long> .35] %>%
@@ -63,7 +63,7 @@ prices[order(day_drop_norm, decreasing=F)][
                  time_in_force='DAY') %>%
   write_strat(strat_name='corr_long_etfs')
 
-prices[order(day_drop_norm, decreasing=F)][
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
     volume>1000000 & close>7 & 
     !short & (avg_delta_short < ifelse(lever,.96,.98) ) ]%>%
@@ -86,7 +86,7 @@ prices[order(sd_from0, decreasing=T)][
 all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), 
                                            dataset=prices, 
                                            reference_etfs=reference_etfs)
-all_matching_pairs[order(day_drop_norm, decreasing=F)][
+all_matching_pairs[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) &
     volume>500000 & close>7 &
     abs(1-close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>.0075  &
@@ -98,17 +98,7 @@ all_matching_pairs[order(day_drop_norm, decreasing=F)][
                  time_in_force='DAY') %>%
   write_strat(strat_name='arb_etfs')
 
-should_trade_volatility = prices[
-  date==max(date, na.rm=T) & symbol=='SPY',
-    ((high/low>1.015)|(abs(close/lag1close-1)>.01)|(abs(avg_delta_short-1)>.005))]
-
-prices[date==max(date, na.rm=T) & symbol=='SVXY' & should_trade_volatility]%>%
-  dplyr::mutate( action='BUY', 
-                 order_type='Adaptive',
-                 time_in_force='DAY') %>%
-  write_strat(strat_name='short_vix')
-
-prices[order(day_drop_norm, decreasing=F)][
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & symbol%in%c('TNA','UPRO','YINN') &
          volume>100000 & close>7 &
          close>lag1close*1.03]%>%
