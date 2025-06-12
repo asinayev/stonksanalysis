@@ -29,7 +29,7 @@ prices[date==max(date, na.rm=T) &
          close>7 & avg_volume>1000000 & 
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.975][
-  order(day_drop_norm, decreasing=F)] %>%
+  order(day_drop_norm/sd_from0, decreasing=F)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
@@ -40,7 +40,7 @@ prices[date==max(date, na.rm=T) &
 prices[avg_delta_short<avg_delta*.985 &  
          cap_order<25 & 
          date==max(date, na.rm=T)][
-         order(day_drop_norm, decreasing=T)]  %>%
+         order(day_drop_norm/sd_from0, decreasing=F)]  %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
@@ -54,7 +54,7 @@ prices[close>7 & volume>100000 &
          vp_order>cap_order &
          (close-low)/avg_range<.1  &
          date==max(date, na.rm=T)][
-           order(day_drop_norm, decreasing=F)]%>%
+           order(day_drop_norm/sd_from0, decreasing=F)]%>%
   head(1)%>%
   dplyr::mutate( action='BUY', 
                  order_type='MKT',

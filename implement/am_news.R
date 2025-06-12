@@ -30,7 +30,7 @@ if(!is.null(just_news)){
                 market_cap <10*10^9 ] %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
-    dplyr::arrange(day_drop_norm) %>%
+    dplyr::arrange(day_drop_norm/sd_from0) %>%
     head(1)  %>%
     dplyr::mutate( action='BUY', 
                    order_type='MKT',
