@@ -12,12 +12,10 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 # rally_avg(prices,100)
 
-bigcaps = prices[volume>500000 & close>7 & cap_order<200 & vp_order>50]
-bigcaps[,bigcap_avg_delta:=mean(avg_delta, na.rm=T),date]
-bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short, na.rm=T),date]
+bigcaps = prices[volume>500000 & close>7 & cap_order<250]
 
 bigcaps[ date==max(date, na.rm=T) & 
-           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.04 & avg_delta_short<1))][
+           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1))][
            order(volume, decreasing=F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
