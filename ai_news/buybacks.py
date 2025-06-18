@@ -31,7 +31,7 @@ For your response, also extract the following (except the quote, provide info if
 
 1. Locate the title. If the title doesn't refer to the company at all, or has nothing to do with the announcement respond no (this is not a new program). 
 2. Locate the publication time in the search result's snippet, body or metadata. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
-3. Read the rest of the announcement for the rest of the details
+3. Read the rest of the announcement for the rest of the details. The announcement may include links to and snippets from PREVIOUS announcements toward the end of the body of the text. Ignore these and only look at the text for this announcement.
 
 If any of these details cannot be determined, use "UNKNOWN".
 
