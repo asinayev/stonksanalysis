@@ -1,5 +1,6 @@
 require(tidyquant, quietly = T)
 require(data.table, quietly = T)
+require(ggplot2)
 
 setwd('~/stonksanalysis')
 source("implement/imports.R", local=T)
@@ -147,11 +148,12 @@ news_moves[grepl('(dividend|repurchase|buyback)', title, ignore.case = T)  &
                    lead1sell_rallydate,hold_less_than = 5))
 
 
-news_moves[lead1open/close >1.03 & 
+news_moves[lead1open/close >1.01 & 
              !is.na(single_ticker) &
-             publisher.name=='GlobeNewswire Inc.' &
-             avg_volume>100000 & volume>100000 & close>5    ][ #stock is boring
-               order(volume,decreasing = F),head(.SD,1),date]%>%
+             publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
+             #grepl('(report|result|quarter)', title, ignore.case = T)  & 
+             avg_volume>100000 & volume>100000 & close>7    ][ #stock is boring
+               order(close,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
