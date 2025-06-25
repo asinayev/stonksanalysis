@@ -9,10 +9,10 @@ prices = fread('/tmp/prices.csv')
 snapshot=fread('/tmp/current_moves.csv')
 
 setorder(prices, symbol, date)
-prices = prices[!is.na(close), tail(.SD,126), by=symbol]
+prices = prices[!is.na(close), tail(.SD,1), by=symbol]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
-trending=snapshot[((as.integer(Sys.time())-as.integer(updated))/60/60)<1 & overnight_delta>1.015]
+trending=snapshot[((as.integer(Sys.time())-as.integer(updated))/60/60)<1 & overnight_delta>1.0175]
 
 just_news = get_prev_day_news(Sys.Date(),key=POLYKEY,full_prevday = F, apply_=T)
 
@@ -21,13 +21,10 @@ if(!is.null(just_news)){
   news_moves = just_news %>%
     clean_news %>%
     merge(prices, by=c('date','symbol'), all.x=T)
-  
-  news_moves[grepl('(dividend|repurchase|buyback)', title, ignore.case = T)  & 
-                publisher.name=='GlobeNewswire Inc.' &
-                avg_delta_short<1 &
+    news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T) &
+                 avg_delta_short<1 & symbol %in% trending$symbol &
                 !is.na(single_ticker) &
-                avg_volume>100000 & volume>100000 & close>5  & 
-                market_cap <10*10^9 ] %>%
+                avg_volume>100000 & volume>100000 & close>6  ] %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(day_drop_norm/sd_from0) %>%
@@ -41,7 +38,7 @@ if(!is.null(just_news)){
   news_moves[symbol %in% trending$symbol &
                publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
                !is.na(single_ticker) &
-               avg_volume>100000 & volume>100000 & close>7 ] %>%
+               avg_volume>100000 & volume>100000 & close>6 ] %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(close) %>%

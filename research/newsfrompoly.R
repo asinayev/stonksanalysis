@@ -137,22 +137,22 @@ unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,pu
 ## WINNING
 ##
 
-news_moves[grepl('(dividend|repurchase|buyback)', title, ignore.case = T)  & 
-             avg_delta_short<1 &
+news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T)  & 
+             avg_delta_short<1 & lead1open/close >1.015 & 
+             market_cap <10*10^9 &
              !is.na(single_ticker) &
-             publisher.name=='GlobeNewswire Inc.' &
-             avg_volume>100000 & volume>100000 & close>5  & 
-             market_cap <10*10^9  ][ #stock is boring
+             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
                order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
 
-news_moves[lead1open/close >1.01 & 
+news_moves[lead1open/close >1.015 & 
              !is.na(single_ticker) &
              publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
-             #grepl('(report|result|quarter)', title, ignore.case = T)  & 
-             avg_volume>100000 & volume>100000 & close>7    ][ #stock is boring
+             #grepl('(report|result|quarter)', title, ignore.case = T)  & & 
+             # market_cap <10*10^8 &
+             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
                order(close,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
