@@ -33,6 +33,12 @@ def get_gemini_response(prompt_with_content: str) -> str:
 
 def main():
     """Main function to run the script."""
+    try:
+        # Configure the API key once at the start
+        genai.configure(api_key=os.environ["GOOGLEKEY"])
+    except KeyError:
+        sys.exit("Error: GOOGLEKEY environment variable not set. Please set your Gemini API key.")
+    
     # Hardcoded list of URLs to process
     urls_to_process = [
         "https://www.prnewswire.com/search/all/?keyword=repurchase",
