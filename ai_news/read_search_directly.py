@@ -17,10 +17,7 @@ def fetch_url_content(url: str) -> str:
 def get_gemini_response(prompt_with_content: str) -> str:
     """Sends a prompt to the Gemini API and returns the response."""
     try:
-        # Configure the API key once
-        if not genai.configure.api_key:
-             genai.configure(api_key=os.environ["GOOGLEKEY"])
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt_with_content)
         # We'll strip the header from individual responses to manage it ourselves
         # This assumes the model's response includes the header as requested
