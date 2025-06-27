@@ -72,9 +72,9 @@ def main():
 
     # Hardcoded list of URLs to process
     urls_to_process = [
-        "https://www.example-news.com/article123",
-        "https://www.finance-press.com/news-story-456",
-        "https://www.market-update.com/789"
+        "https://www.prnewswire.com/search/all/?keyword=repurchase",
+        "https://www.prnewswire.com/search/all/?keyword=buyback",
+        "https://www.globenewswire.com/en/search/keyword/repurchase,buyback/exchange/Nasdaq,NYSE?pageSize=30&page=1"
     ]
 
     initial_prompt = """
