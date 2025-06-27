@@ -1,88 +1,147 @@
-import logging
-from googleapiclient.discovery import build
-from polygon import RESTClient
-import pandas as pd
-import search_web
-import call_ai
+import os
+import io
+import csv
+import sys
+import requests
+import google.generativeai as genai
 
-# Configure logging
-logging.basicConfig(filename='/tmp/read_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')  # Log at INFO level
-
-def fetch_search_results(search_service, search_id, query, n_results, **kwargs):
-    """Fetches search results from Google Custom Search."""
+def fetch_url_content(url: str) -> str:
+    """
+    Fetches and returns the text content of a URL.
+    If fetching fails, it prints a warning and returns None.
+    """
     try:
-        all_results = search_web.all_search_pages(
-            service=search_service,
-            cse_id=search_id,
-            n_results=n_results,
-            q=query,
-            sort="date",
-            num=10,
-            **kwargs
-        )
-        logging.info(f"{len(all_results)} total results found for query: {query}")
-        return all_results
-    except Exception as e:
-        logging.error(f"Error fetching search results: {e}")
-        return [] 
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        return response.text
+    except requests.exceptions.RequestException as e:
+        # Log the error for the specific URL and continue to the next
+        print(f"Warning: Could not fetch {url}. Error: {e}", file=sys.stderr)
+        return None
 
-def process_results_with_ai(all_results, prompt_template, model):
-    """Processes search results using the AI model."""
+def get_gemini_response(prompt_with_content: str) -> list:
+    """
+    Sends a prompt to the Gemini API and returns the response as a list of CSV rows.
+    It cleans markdown formatting and removes headers from the model's response.
+    """
     try:
-        valid_results = call_ai.read_results(all_results, prompt_template, model)
-        logging.info(f"{len(valid_results)} valid results after AI processing.")
-        return valid_results
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt_with_content)
+        
+        # Clean the response text from markdown code blocks
+        clean_text = response.text.strip()
+        if clean_text.startswith("```csv"):
+            clean_text = clean_text[5:]
+        if clean_text.endswith("```"):
+            clean_text = clean_text[:-3]
+        clean_text = clean_text.strip()
+
+        # Use the csv module to parse the string
+        # io.StringIO treats the string as a file
+        f = io.StringIO(clean_text)
+        reader = csv.reader(f)
+        
+        all_rows = list(reader)
+
+        # Filter out any header rows from the response
+        header = ['timePublished', 'ticker', 'link', 'quote']
+        data_rows = [row for row in all_rows if row and row[0].strip().lower() != 'timepublished']
+        
+        return data_rows
+
     except Exception as e:
-        logging.error(f"Error processing results with AI: {e}")
+        # Log errors from the API call and return an empty list
+        print(f"Warning: Gemini API call failed or response parsing failed. Error: {e}", file=sys.stderr)
         return []
 
-def enrich_with_financial_data(valid_results, polygon_key, parameters):
-    """Enriches results with data from Polygon API."""
-    enriched_results = []
-    poly_client = RESTClient(api_key=polygon_key)  # Initialize client outside the loop
-    for r in valid_results:
-        try:
-            enriched_result = call_ai.enrich_result(r, poly_client, parameters)
-            enriched_results.append(enriched_result) 
-        except Exception as e:
-            logging.error(f"Error enriching result: {r} - Error: {e}")
-    logging.info(f"{len(enriched_results)} results enriched with Polygon data.")
-    return enriched_results
-
-def format_and_save_results(enriched_results, query, write_to_dir):
-    """Formats the results and saves them to a CSV file."""
+def main():
+    """
+    Main function to fetch content from multiple URLs, process it with Gemini,
+    sort the results by date, and save them to a single CSV file.
+    """
     try:
-        all_data = []
-        for r in enriched_results:
-            try:
-                r['newProgram'] = r['newProgram'].lower()
-                r['quote'] = r['quote'].lower()
-            except Exception as e:
-                logging.error(f"Error processing program reasoning: {e}")
-            all_data.append(r)
-        already_tracked = pd.DataFrame(all_data).reindex(columns=['timePublished','ticker','match','message','newProgram','quote','title','link','companyName','current','volume','market_cap_ok','liquidity_ok','overnight_in_range'])
-        already_tracked.sort_values(["newProgram","timePublished"], ascending=False, inplace=True)
+        # Configure the API key once at the start
+        genai.configure(api_key=os.environ["GOOGLEKEY"])
+    except KeyError:
+        sys.exit("Error: GOOGLEKEY environment variable not set. Please set your Gemini API key.")
 
-        # --- Logging ---
-        logging.info("############################ MATCHING RESULTS: " + query)
-        logging.info(f"{len([x for x in enriched_results if x['match'] ])} matching enriched results")
+    # Hardcoded list of URLs to process
+    urls_to_process = [
+        "https://www.example-news.com/article123",
+        "https://www.finance-press.com/news-story-456",
+        "https://www.market-update.com/789"
+    ]
+
+    initial_prompt = """
+    Determine if the following search results include a NEW announcement about a buyback or repurchase.
+    Only include results that match this criterion.
+
+    For your response, extract the following:
+    - Publication Date and Time
+    - Stock Ticker Symbol
+    - The link where the full result can be found
+    - If available, a short quote from the search result that supports your 'yes'/'no' determination.
+
+    1. Locate the title. If the title doesn't refer to the company or the announcement, respond 'no'.
+    2. Format the publication time to YYYY-MM-DD HH:MM (use 00:00 if no time is provided). Do not convert timezones.
+    3. Read the announcement for the remaining details.
+
+    If any details are unknown, use 'UNKNOWN'.
+
+    Respond ONLY with the data in CSV format with a header, do not add any other text or formatting:
+    timePublished,ticker,link,quote
+    2025-05-01 08:37,MSFT,https://www.example.com,"Microsoft approved a share repurchase program..."
+
+    Search results:
+    """
+
+    all_data_rows = []
+
+    for url in urls_to_process:
+        print(f"Processing URL: {url}")
+        url_content = fetch_url_content(url)
+
+        if not url_content:
+            print(f"Skipping {url} due to fetch error.")
+            continue
+
+        combined_prompt = f"{initial_prompt}\n\n---\n\n{url_content}"
+
+        print(f"Sending prompt for {url} to Gemini...")
+        # The function now returns a list of lists (rows)
+        gemini_rows = get_gemini_response(combined_prompt)
+
+        if gemini_rows:
+            all_data_rows.extend(gemini_rows)
         
-        pd.set_option('display.max_colwidth', None)
-        logging.info(already_tracked[(already_tracked.newProgram=='yes')&(already_tracked.match)][['ticker', 'timePublished', 'link']])
+        print("-" * 25)
 
-        already_tracked.to_csv(write_to_dir + query.replace('|','_') + '.csv')
-    except Exception as e:
-        logging.error(f"Error formatting and saving results: {e}")
+    # Sort the collected data by the first column (timePublished)
+    # The YYYY-MM-DD HH:MM format is lexicographically sortable
+    try:
+        all_data_rows.sort(key=lambda row: row[0])
+    except IndexError:
+        print("Warning: Could not sort data, some rows may be malformed.", file=sys.stderr)
 
-def read_search(google_key: str, polygon_key: str, search_id: str, 
-                model, write_to_dir: str, parameters:dict, n_results =90, **kwargs):
-    """
-    Performs a search, processes results, enriches them with financial data, 
-    and saves the output to a CSV file. 
-    """
-    search_service = build("customsearch", "v1", developerKey=google_key).cse()
 
-    search_results = fetch_search_results(search_service, search_id, query=parameters['search_query'], n_results=n_results, **kwargs)
-    processed_results = process_results_with_ai(search_results, prompt_template=parameters['prompt_template'], model=model)
-    enriched_results = enrich_with_financial_data(processed_results, polygon_key, parameters)
-    format_and_save_results(enriched_results, parameters['search_query'], write_to_dir)
+    # Define the output directory and file path
+    output_dir = "/tmp/stonksanalysis"
+    output_path = os.path.join(output_dir, "buybacks2.csv")
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Write the sorted results to the CSV file using the csv module
+    try:
+        with open(output_path, "w", newline="", encoding='utf-8') as f:
+            writer = csv.writer(f)
+            # Write the header first
+            writer.writerow(['timePublished', 'ticker', 'link', 'quote'])
+            # Write all the sorted data rows
+            writer.writerows(all_data_rows)
+        print(f"\n✅ Analysis complete. Results sorted and saved to: {output_path}")
+    except IOError as e:
+        print(f"\n❌ Critical Error: Could not write to file {output_path}. Error: {e}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
