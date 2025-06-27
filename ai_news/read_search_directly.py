@@ -84,13 +84,23 @@ def main():
             all_csv_rows.append(gemini_response)
         print("-" * 25)
 
-    # Print the final combined CSV
-    print("\n--- Combined Gemini Responses (CSV) ---")
-    print("timePublished,ticker,link,quote")
-    for row in all_csv_rows:
-        print(row)
-    print("---------------------------------------")
 
+    # Define the output directory and file path
+    output_dir = "/tmp/stonksanalysis"
+    output_path = os.path.join(output_dir, "buybacks2.csv")
+
+    # Ensure the output directory exists, creating it if necessary
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Write the combined results to the CSV file
+    try:
+        with open(output_path, "w", newline="") as f:
+            f.write("timePublished,ticker,link,quote\n")
+            for row in all_csv_rows:
+                f.write(row + "\n")
+        print(f"\n✅ Analysis complete. Results saved to: {output_path}")
+    except IOError as e:
+        print(f"\n❌ Critical Error: Could not write to file {output_path}. Error: {e}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
