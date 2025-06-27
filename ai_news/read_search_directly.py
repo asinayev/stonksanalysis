@@ -137,7 +137,7 @@ def main():
     # Sort the collected data by the 'timePublished' key in each dictionary
     try:
         # The YYYY-MM-DD HH:MM format is lexicographically sortable
-        all_data_rows.sort(key=lambda row: row.get('timePublished', ''))
+        all_data_rows.sort(key=lambda row: row.get('timePublished', ''), reverse=True)
     except (IndexError, AttributeError) as e:
         print(f"Warning: Could not sort data, some rows may be malformed. Error: {e}", file=sys.stderr)
 
