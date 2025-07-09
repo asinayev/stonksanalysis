@@ -39,7 +39,6 @@ prices[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol]
 # prices[symbol %in% prices[,.N,symbol][N>25,symbol]
 #        ,mid_range:= zoo::rollapply(abs(close-lag1close)/open, median ,width = 25, align='right',fill=NA),symbol ]
 
-
 tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
                  close>lag1close*1.03 ][
                    order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
@@ -110,7 +109,7 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # Corr long etfs
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
-# 1: 0.02729412 0.02242206     -1.5           463         851        5
+# 1: 0.029 0.024     -1.5           463         851        5
 # year average drawdown total trades days_traded max_held avg_days_held stocks_traded
 # 1: 2006   0.076      0.0   0.1      1           2        1      1.000000             1
 # 2: 2007   0.037      0.0   0.2      5           6        1      0.400000             2
@@ -130,11 +129,9 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 16: 2021   0.009     -1.0   1.1    120         121        5      5.233333            27
 # 17: 2022   0.010     -1.5   1.2    116         117        5      4.000000            34
 
-
-
 corr_long = prices[volume>1000000 & close>7 & 
-         (avg_delta_short<.975) & lagging_corr_long> .35][
-           order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
+                     (avg_delta_short<.975) & lagging_corr_long> .75][
+                       order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
 # Drop ETFs
@@ -195,7 +192,7 @@ prices[volume>500000 & close>7 &  lead1sell_rally/lead1open<1.5 &
          ((lag1close-close) > avg_range*.25)  ][
              order(sd_from0, decreasing=T),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, 
-                   lead1sell_rallydate, hold_less_than = ))
+                   lead1sell_rallydate, hold_less_than = 5))
 
 # avg_year  avg_trade drawdown drawdown_days days_traded max_held
 # 1: 0.01871429 0.01807512     -0.9           489         440        5

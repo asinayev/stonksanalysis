@@ -27,7 +27,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
     stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+short_roll_window), unique(symbol_session)],
               lagging_corr_long:=
-                runCor( close/open, avg_delta_short, corr_window),
+                runCor( close/open, close/lag1close, corr_window),
               symbol_session]
     stock_dat[is_valid==T
               ,RSI_short:=RSI(close,n=short_roll_window),symbol_session ]

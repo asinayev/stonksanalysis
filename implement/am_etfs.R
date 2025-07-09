@@ -56,7 +56,7 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
     volume>1000000 & close>7 & 
-    avg_delta_short<.975 & lagging_corr_long> .35] %>%
+    avg_delta_short<.975 & lagging_corr_long> .75] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
