@@ -107,10 +107,10 @@ prices[(symbol_session %in% prices[!is.na(close),.N,symbol_session][N>50,symbol_
 
 
 prices[lead1sell_rally/lead1open<1.5 & close>7 & volume>100000 & #exclude stuff that can't be traded
-         volume>=max_volume & 
+         volume>=max_volume &
+         (close-low)/avg_range<.1 & 
          avg_delta_short<.99 & 
-         vp_order>cap_order &
-         (close-low)/avg_range<.1][ #stock is boring
+         vp_order>cap_order ][ #stock is boring
            order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
@@ -247,7 +247,7 @@ prices[close>7 & avg_volume>1000000 &
 # 19: 2022   0.000     -0.9   0.0     71          72        5      4.098592            13
 
 prices[avg_delta_short<avg_delta*.985 &  
-         cap_order<25 & 
+         cap_order<50 & lagging_corr_long>.7 & 
          lead1sell_rally/lead1open<1.5][
            order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
            #order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
@@ -335,7 +335,6 @@ bigcaps[((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_
             order(volume, decreasing=T),head(.SD,1),date] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
-
 
 
 ###########

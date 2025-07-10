@@ -36,7 +36,7 @@ prices[date==max(date, na.rm=T) &
 
 
 prices[avg_delta_short<avg_delta*.985 &  
-         cap_order<25 & 
+         cap_order<50 & lagging_corr_long>.7 & 
          date==max(date, na.rm=T)][
          order(day_drop_norm/sd_from0, decreasing=F)]  %>%
   head(1) %>%
