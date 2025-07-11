@@ -101,8 +101,8 @@ prices[volume>1000000 & close>7 &
 # 19: 2022   0.020     -1.2   2.1    102         103        5      3.421569            55
 
 prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
-         (((close-low)/avg_range)<.15 ) & 
-           (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99)))
+         (((close-low)/avg_range*2)<.15 ) & 
+           (((high-close) > avg_range) | (avg_delta< ifelse(lever,.98,.99)))
          ][order( day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_less_than=5))
 
@@ -130,7 +130,7 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 17: 2022   0.010     -1.5   1.2    116         117        5      4.000000            34
 
 corr_long = prices[volume>1000000 & close>7 & 
-                     (avg_delta_short<.975) & lagging_corr_long> .75][
+                     (avg_delta_short<.975) & lagging_corr_long> .7][
                        order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, lead1sell_rallydate, hold_less_than = 5))
 
@@ -158,7 +158,7 @@ corr_long = prices[volume>1000000 & close>7 &
 # 17: 2021   0.006     -1.1   0.7    106         107        5      4.264151            31
 # 18: 2022   0.006     -2.0   0.5     92          93        5      4.347826            44
 
-drop_etfs = prices[volume>1000000 & close>7 & !short &
+drop_etfs = prices[volume>1000000 & close>7 & 
                      (avg_delta_short < ifelse(lever,.96,.98) ) ][
            order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date]%>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol, 

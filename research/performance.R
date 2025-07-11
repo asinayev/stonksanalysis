@@ -54,10 +54,11 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
   abline(v = seq(as.Date("2000-01-01"), as.Date("2030-12-31"), by = "year"),lty=2,col='gray')
   abline(v = seq(as.Date("2000-01-01"), as.Date("2030-12-31"), by = "month"),lty=3,col='lightgray')
   max_drawdown_days = max(results_daily[,.(datediff=max(date)-min(date)),drawdown_i][,datediff])
-  print(results_overall[,.(yr_total_per_held=mean(total)/max(max_held), 
+  print(results_overall[,
+                        .(yr_total_per_held=mean(total[days_traded>10])/ifelse(hold_less_than,hold_less_than,1), 
                            avg_trade=sum(total)/sum(trades),
                            drawdown=min(drawdown), 
-                           drawdown_per_held=min(drawdown)/max(max_held), 
+                           total_per_drwdn=sum(total)/abs(min(drawdown)), 
                            drawdown_days=max(max_drawdown_days),
                            days_traded=sum(days_traded),
                            max_held=max(max_held))])
