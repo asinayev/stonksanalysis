@@ -21,7 +21,7 @@ if(!is.null(just_news)){
   news_moves = just_news %>%
     clean_news %>%
     merge(prices, by=c('date','symbol'), all.x=T)
-    news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance|public offer|strategic)', title, ignore.case = T) &
+  news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance|public offer|strategic)', title, ignore.case = T) &
                  avg_delta_short<1 & symbol %in% trending$symbol &
                 !is.na(single_ticker) &
                 avg_volume>100000 & volume>100000 & close>6  ] %>%
