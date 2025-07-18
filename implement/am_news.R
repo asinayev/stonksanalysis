@@ -9,7 +9,7 @@ prices = fread('/tmp/prices.csv')
 snapshot=fread('/tmp/current_moves.csv')
 
 setorder(prices, symbol, date)
-prices = prices[!is.na(close), tail(.SD,1), by=symbol]
+prices = prices[!is.na(close), tail(.SD,150), by=symbol]
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 
 trending=snapshot[((as.integer(Sys.time())-as.integer(updated))/60/60)<1 & overnight_delta>1.0175]
