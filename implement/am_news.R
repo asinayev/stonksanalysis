@@ -21,7 +21,7 @@ if(!is.null(just_news)){
   news_moves = just_news %>%
     clean_news %>%
     merge(prices, by=c('date','symbol'), all.x=T)
-    news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T) &
+    news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance|public offer|strategic)', title, ignore.case = T) &
                  avg_delta_short<1 & symbol %in% trending$symbol &
                 !is.na(single_ticker) &
                 avg_volume>100000 & volume>100000 & close>6  ] %>%
@@ -48,6 +48,20 @@ if(!is.null(just_news)){
                    time_in_force='OPG') %>%
     data.table %>%
     write_strat(strat_name='news_trend')
+  
+  news_moves[avg_delta_short<.99 & 
+               grepl('(public offer|quarter)', title, ignore.case = T)  &  
+               !is.na(single_ticker) &
+               avg_volume>100000 & volume>100000 & close>6 ] %>%
+    dplyr::group_by(symbol) %>%
+    dplyr::filter(dplyr::row_number()==1) %>%
+    dplyr::arrange(day_drop_norm/sd_from0) %>%
+    head(1)  %>%
+    dplyr::mutate( action='BUY', 
+                   order_type='MKT',
+                   time_in_force='OPG') %>%
+    data.table %>%
+    write_strat(strat_name='news_revert')
   
   news_moves%>%
     dplyr::group_by(symbol) %>%

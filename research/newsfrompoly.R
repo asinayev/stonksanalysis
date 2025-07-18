@@ -133,21 +133,28 @@ byword[
 unnest_tokens(news_moves[!is.na(single_ticker),.(date,ticker,title, delta=c/o,publisher.name)], bigram, title)[
   bigram=='daily j']
 
+x=news_moves[!is.na(title) & lead1close>0 & !is.na(single_ticker) & close>6 & volume>500000 &,
+             .(word = unlist(strsplit(tolower(title), "\\W+"))), by = .(score=close/lead1close)][
+               word != "", 
+               .(avg_score = mean(score), count = .N), by = .(word)][
+                 order(-count, -avg_score)
+               ]
+
+
 ##
 ## WINNING
 ##
 
-news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T)  & 
-             avg_delta_short<1 & lead1open/close >1.015 & 
-             market_cap <10*10^9 &
+news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T) &
+             avg_delta_short<1 & lead1open/close >1.0175 & 
              !is.na(single_ticker) &
-             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
-               order(day_drop_norm,decreasing = F),head(.SD,1),date]%>%
+             avg_volume>100000 & volume>100000 & close>6    ][ 
+               order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
 
 
-news_moves[lead1open/close >1.015 & 
+news_moves[lead1open/close >1.0175 & 
              !is.na(single_ticker) &
              publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
              #grepl('(report|result|quarter)', title, ignore.case = T)  & & 
@@ -156,6 +163,19 @@ news_moves[lead1open/close >1.015 &
                order(close,decreasing = F),head(.SD,1),date]%>%
   with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
                    lead1sell_rallydate,hold_less_than = 5))
+
+
+news_moves[grepl('(public offer|quarter)', title, ignore.case = T)  &  
+             avg_delta_short<.99 & 
+             #publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.', "Benzinga", "MarketWatch", "Seeking Alpha") &
+             !is.na(single_ticker) &
+             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
+               order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
+  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
+                   lead1sell_rallydate,hold_less_than = 5))
+
+
+
 
 
 news=fread("https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/All_external.csv?download=true")
