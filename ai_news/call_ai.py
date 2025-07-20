@@ -32,6 +32,7 @@ def read_results(all_results, prompt_template, model):
     valid_summaries = []
     
     for result in all_results:
+        result['message'] = ''
         prompt = create_prompt(prompt_template, result)
         try:
             response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
@@ -77,7 +78,6 @@ def parse_response(response, result):
 def enrich_result(result, poly_client, parameters):
     """Enrich the result with financial data and match criteria."""
     result['match'] = False
-    result['message'] = ''
     if not result['ticker'] or result['ticker']=='UNKNOWN':
         logger.exception(f"No ticker") 
         result['message'] += f'No ticker'
