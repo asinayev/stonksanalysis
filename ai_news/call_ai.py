@@ -49,6 +49,8 @@ def create_prompt(prompt_template, result):
     prompt = prompt_template
     if 'title' in result:
         prompt += f"\n Title: {result['title']}"
+    if 'snippet' in result:
+        prompt += f"\n Snippet from article: {result['snippet']}"
     if 'link' in result:
         full_article = fetch_article(result['link'])
         if full_article:
