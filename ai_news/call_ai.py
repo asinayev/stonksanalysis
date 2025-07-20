@@ -57,6 +57,7 @@ def create_prompt(prompt_template, result):
             prompt += f"\n Full article HTML: {full_article}" 
         else:
             prompt += f"\n Full article metadata: {result}"
+            result['message'] += f'No full text'
     return prompt
 
 def parse_response(response, result):
