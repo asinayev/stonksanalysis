@@ -68,6 +68,7 @@ def parse_response(response, result):
         response_dict = json.loads(json_text)
         response_dict['link'] = result['link']
         response_dict['title'] = result['title']
+        response_dict['message'] = result['message']
         return response_dict
     except (json.JSONDecodeError, AttributeError, TypeError) as e: # More specific exceptions
         title = result.get('title', 'No Title')
