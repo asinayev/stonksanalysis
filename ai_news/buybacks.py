@@ -41,7 +41,7 @@ Respond in JSON format as shown in this example:
 Search result:
 """
 
-buyback_description="share buyback or share repurchase program. If the announcement does not say that stock will be repurchased or bought back in the future, or is simply an update about stock repurchases that already happened, respond no."
+buyback_description="an announcement of a share buyback or share repurchase program. If the announcement does not say that stock will be repurchased or bought back IN THE FUTURE, (e.g., is simply an update about stock repurchases that already happened, or reminds shareholders of a previously announced repurchase), respond no."
 buyback_parameters={'search_query':'buyback|repurchase share|stock',
                     'prompt_template':prompt_template.format(buyback_description), 
                     'min_close':5, 'min_volume':20000, 'max_market_cap':10000000000, 'min_overnight_pchange':-1.75, 'max_overnight_pchange':9}
