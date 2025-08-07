@@ -194,7 +194,8 @@ rally_avg(prices,100)
 
 
 
-prices[close>7 & avg_volume>1000000 & 
+prices[close>7 & cap_order<1500 &
+         avg_volume>1000000 &
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.98][
          ][order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
