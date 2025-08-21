@@ -110,10 +110,10 @@ prices[lead1sell_rally/lead1open<1.5 & close>7 & volume>100000 & #exclude stuff 
          volume>=max_volume &
          (close-low)/avg_range<.1 & 
          avg_delta_short<.99 & 
-         vp_order>cap_order ][ #stock is boring
-           order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
-                   lead1sell_rallydate,hold_less_than = 1))
+         vp_order>cap_order ][
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 
 
@@ -198,11 +198,9 @@ prices[close>7 & cap_order<1500 &
          avg_volume>1000000 &
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.98][
-         ][order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
-  with(performance(lead1date,
-                   lead1sell_rally/lead1open-1,
-                   lead1sell_rallydate-lead1date,symbol,
-                   lead1sell_rallydate, hold_less_than = 5))
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # prices[close>7 & avg_volume>500000 & 
 #          close>lag1high & sell_rally_day<2 & 
@@ -250,10 +248,10 @@ prices[close>7 & cap_order<1500 &
 prices[avg_delta_short<avg_delta*.985 &  
          cap_order<50 & lagging_corr_long>.7 & 
          lead1sell_rally/lead1open<1.5][
-           order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
-           #order(day_drop_norm, decreasing=F),head(.SD,1),date] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
-                   lead1sell_rallydate,hold_less_than = 5))
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
 
 #############
 # earners
@@ -279,10 +277,11 @@ prices[avg_delta_short<avg_delta*.985 &
 prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
     ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
         (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-      (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][ 
-      order(mid_eps/close, decreasing=T),head(.SD,1),date]%>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
-+                    lead1sell_rallydate,hold_less_than = 5))
+      (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][
+        order(date,close/mid_eps, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
 
 
 prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
@@ -333,9 +332,10 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
 bigcaps[((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1)) &
           lead1sell_rally/lead1open<1.5][
-            order(volume, decreasing=T),head(.SD,1),date] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
-                   lead1sell_rallydate,hold_less_than = 5))
+            order(date,-volume, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
 
 
 ###########

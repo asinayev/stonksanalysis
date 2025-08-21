@@ -5,23 +5,68 @@ drawdown = function(x){
   x,0, accumulate=T)[-1]
 }
 
-performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F, hold_less_than=F){
+performance=function(date, outcome, days_held, symbol, sell_date=date, hold_max=F, buy_per_day_max=5, hold_same_max=F){
   results = data.table(date=date,outcome=outcome,days_held=days_held,symbol=symbol,sell_date=sell_date)
   results=na.omit(results)
-  if(no_doubling){
-    results=no_doubling(results)
-  }
-  if(hold_less_than){
-    results[,to_include:=T]
-    currently_held=c()
-    for(da in sort(unique(results$date))  ){
-      if(length(currently_held)<hold_less_than){
-        currently_held=c(currently_held,results[date==da,sell_date])
-      } else {
-        results[date==da,to_include:=F]
+  if(hold_max | buy_per_day_max | hold_same_max){
+    results[, row_id := .I]
+    results[, to_include := FALSE]
+    held_positions <- results[T==F,.(symbol,sell_date)]
+    for (current_date in unique(results$date)) {
+      
+      # 1. Update Portfolio: "Sell" anything that was due to be sold before today.
+      # We keep positions where sell_date is today or in the future.
+      held_positions <- held_positions[sell_date >= current_date]
+      
+      # 2. Get today's potential trades from the main table
+      candidates_today <- results[date == current_date]
+      
+      # 3. Initialize daily counters
+      buys_made_today      <- 0
+      symbols_bought_today <- list() # Tracks buys of specific symbols for today
+      
+      # If there are no potential trades for today, skip to the next day
+      if (nrow(candidates_today) == 0) next
+      
+      # 4. Decide which trades to make today
+      for (i in 1:nrow(candidates_today)) {
+        candidate_row <- candidates_today[i]
+        
+        # --- Check all constraints IN ORDER ---
+        
+        # Constraint A: Do we have capacity in the portfolio?
+        # (Current holdings + what we've already decided to buy today)
+        if (hold_max & (nrow(held_positions) + buys_made_today) >= hold_max) {
+          break # Portfolio is full, can't buy anything else today
+        }
+        
+        # Constraint B: Have we already bought the max number of symbols for today?
+        if (buys_made_today & buys_made_today >= buy_per_day_max) {
+          break # Daily buy limit reached
+        }
+        
+        # Constraint C: Do we already hold too much of this symbol?
+        current_symbol <- candidate_row$symbol
+        if (hold_same_max & held_positions[,sum(symbol == current_symbol)] >= hold_same_max) {
+          next # Skip to the next candidate row
+        }
+        
+        # --- If all checks pass, we "buy" the symbol ---
+        
+        # Mark this row in the original table as included
+        results[row_id == candidate_row$row_id, to_include := TRUE]
+        
+        # Update our daily counters
+        buys_made_today <- buys_made_today + 1
+
+        # Add the newly acquired position to our portfolio for the next day's calculation
+        new_position <- candidate_row[, .(symbol, sell_date)]
+        held_positions <- rbindlist(list(held_positions, new_position))
       }
-      currently_held=currently_held[currently_held>da]
     }
+    
+    # Clean up by removing the temporary row_id column
+    results[, row_id := NULL]    
     results=results[to_include==T]
     results[,to_include:=NULL]
   }
@@ -55,7 +100,7 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
   abline(v = seq(as.Date("2000-01-01"), as.Date("2030-12-31"), by = "month"),lty=3,col='lightgray')
   max_drawdown_days = max(results_daily[,.(datediff=max(date)-min(date)),drawdown_i][,datediff])
   print(results_overall[,
-                        .(yr_total_per_held=mean(total[days_traded>10])/ifelse(hold_less_than,hold_less_than,1), 
+                        .(yr_total_per_held=mean(total[days_traded>10])/ifelse(hold_max,hold_max,1), 
                            avg_trade=sum(total)/sum(trades),
                            drawdown=min(drawdown), 
                            total_per_drwdn=sum(total)/abs(min(drawdown)), 
@@ -64,13 +109,6 @@ performance=function(date,outcome,days_held,symbol,sell_date=date, no_doubling=F
                            max_held=max(max_held))])
   print(results_overall[order(year)])
   return(results_daily)
-}
-
-no_doubling=function(trades){
-  setorder(trades, symbol, date)
-  trades[,prev_sold:=shift(sell_date, n = 1, type = "lag"),symbol]
-  setorder(trades, date, symbol)
-  trades[is.na(prev_sold) | prev_sold<date]
 }
 
 performance_features=function(dataset){
