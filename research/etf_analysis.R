@@ -40,9 +40,9 @@ prices[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol]
 #        ,mid_range:= zoo::rollapply(abs(close-lag1close)/open, median ,width = 25, align='right',fill=NA),symbol ]
 
 tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
-                 close>lag1close*1.03 ][
-                   order(day_drop_norm/sd_from0, decreasing=F),head(.SD,1),date] %>%
-  with(performance(lead1date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-lead1date,symbol,lead1sell_rally2date,hold_less_than=1))
+                 close>lag1close*1.05 ][
+                     order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-lead1date,symbol,lead1sell_rally2date,hold_max = 1,buy_per_day_max = 1, hold_same_max = F))
 
 # Rally ETFs
 #    yr_total_per_held  avg_trade drawdown total_per_drwdn drawdown_days days_traded max_held
@@ -216,10 +216,9 @@ all_matching_pairs=parallel::mclapply(c(2009:2022),matching_pairs_for_year,
 
 arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mult.reference_delta_short))>.0075  & avg_delta_short<1 &
                                 rsq>.98 & abs(mult.reference_delta_short-round(mult.reference_delta_short))<.15 &
-                                volume>1000000][
-                                  order(day_drop_norm, decreasing=F),head(.SD,1),date]%>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,
-                   lead1sell_rallydate, hold_less_than = 5))
+                                volume>500000][
+                                  order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 
 # avg_year   avg_trade drawdown drawdown_days days_traded max_held
