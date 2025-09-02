@@ -40,9 +40,10 @@ prices[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol]
 #        ,mid_range:= zoo::rollapply(abs(close-lag1close)/open, median ,width = 25, align='right',fill=NA),symbol ]
 
 tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
-                 close>lag1close*1.05 ][
+                 close>lag1close*1.03 ][
                      order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally2/lead1open-1,lead1sell_rally2date-lead1date,symbol,lead1sell_rally2date,hold_max = 1,buy_per_day_max = 1, hold_same_max = F))
+
 
 # Rally ETFs
 #    yr_total_per_held  avg_trade drawdown total_per_drwdn drawdown_days days_traded max_held
@@ -102,7 +103,7 @@ prices[volume>1000000 & close>7 &
 
 prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
          (((close-low)/avg_range)<.15 ) & 
-           (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99)))][
+           (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99))| (close/max_price_short< ifelse(lever,8,.9)) )][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
@@ -160,7 +161,7 @@ corr_long = prices[volume>1000000 & close>7 &
 
 drop_etfs = prices[volume>1000000 & close>7 & 
                      (avg_delta_short < ifelse(lever,.96,.98) ) ][
-                       order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+                       order(date,max_price_short/close, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # deviant_etfs
