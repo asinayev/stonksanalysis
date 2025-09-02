@@ -43,7 +43,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
           max_price:= zoo::rollapply(high,max,width=roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
-          max_price_short:= zoo::rollapply(volume,max,width=short_roll_window, align='right',fill=NA),symbol_session ]
+          max_price_short:= zoo::rollapply(high,max,width=short_roll_window, align='right',fill=NA),symbol_session ]
     
     stock_dat[is_valid==T
               ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol_session ]
