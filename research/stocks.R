@@ -330,7 +330,8 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
 
 
-bigcaps[((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1)) &
+bigcaps[((avg_delta>.995 & avg_delta_short<.975) | 
+           (close>open*1.05 & avg_delta_short<1)) &
           lead1sell_rally/lead1open<1.5][
             order(date,-volume, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
