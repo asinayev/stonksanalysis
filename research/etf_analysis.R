@@ -160,8 +160,8 @@ corr_long = prices[volume>1000000 & close>7 &
 # 18: 2022   0.000     -1.8  -0.1    124         125        5      4.274194            31
 
 drop_etfs = prices[volume>1000000 & close>7 & 
-                     (avg_delta_short < ifelse(lever,.96,.98) ) ][
-                       order(date,max_price_short/close, decreasing=F)] %>%
+                     avg_delta_short < ifelse(lever,.96,.98)  ][
+                       order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # deviant_etfs
