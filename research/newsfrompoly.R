@@ -53,15 +53,15 @@ insights=merge(prices,
                insights[,.(publisher.name,date,sentiment,symbol=ticker)],
                by=c('date','symbol'), all.y=T)
 
-# x=sapply(unique(floor_date(news_moves$date,'month')),function(yrmth) {
-#   top_authors = news_moves[order(close/lag1close)][close>6 & date<as.Date(yrmth),head(.SD,5),.(date,author)][, 
-#                            .(median(lead5close/lead1open),.N),author][
-#                              V1>1.01 & N>50, author]
-#   news_moves[close>6 & floor_date(date,'month')==as.Date(yrmth) & author %in% top_authors,
-#                    head(.SD,5),date][,.(as.Date(yrmth),mean(lead1sell_rally/lead1close,na.rm=T),.N)]
-# })
-# x = data.table(t(x))
-# x[,.(sum(as.numeric(V2)*unlist(N),na.rm=T)/sum(unlist(N)),sum(unlist(N)))]
+x=sapply(unique(floor_date(news_moves$date,'month')),function(yrmth) {
+  top_authors = news_moves[order(close/lag1close)][close>6 & date<as.Date(yrmth),head(.SD,5),.(date,author)][,
+                           .(median(lead5close/lead1open),.N),author][
+                             V1>1.01 & N>50, author]
+  news_moves[close>6 & floor_date(date,'month')==as.Date(yrmth) & author %in% top_authors,
+                   head(.SD,5),date][,.(as.Date(yrmth),mean(lead1sell_rally/lead1close,na.rm=T),.N)]
+})
+x = data.table(t(x))
+x[,.(sum(as.numeric(V2)*unlist(N),na.rm=T)/sum(unlist(N)),sum(unlist(N)))]
 
 byword = news_moves[!sapply(keywords, is.null),
                     .(keywords=unlist(keywords) ),
@@ -148,33 +148,36 @@ x=news_moves[!is.na(title) & lead1close>0 & !is.na(single_ticker) & close>6 & vo
 news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T) &
              avg_delta_short<1 & lead1open/close >1.0175 & 
              !is.na(single_ticker) &
-             avg_volume>100000 & volume>100000 & close>6    ][ 
-               order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate,hold_less_than = 5))
-
+             avg_volume>100000 & volume>100000 & close>6    ][
+               order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 news_moves[lead1open/close >1.0175 & 
              !is.na(single_ticker) &
              publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
              #grepl('(report|result|quarter)', title, ignore.case = T)  & & 
              # market_cap <10*10^8 &
-             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
-               order(close,decreasing = F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate,hold_less_than = 5))
+             avg_volume>100000 & volume>100000 & close>6    ][
+               order(date,close, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
 
 
 news_moves[grepl('(public offer|quarter)', title, ignore.case = T)  &  
              avg_delta_short<.99 & 
              #publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.', "Benzinga", "MarketWatch", "Seeking Alpha") &
              !is.na(single_ticker) &
-             avg_volume>100000 & volume>100000 & close>6    ][ #stock is boring
-               order(day_drop_norm/sd_from0,decreasing = F),head(.SD,1),date]%>%
-  with(performance(date,lead1sell_rally/lead1open-1,lead1sell_rallydate-date,symbol,
-                   lead1sell_rallydate,hold_less_than = 5))
+             avg_volume>100000 & volume>100000 & close>6    ][
+               order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
-
+insights[sentiment %in% c('positive')& publisher.name%in% c('The Motley Fool') & market_cap<10^10 & close>7 & volume>100000 &  close<open & lead1open>close][
+  order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 
 
