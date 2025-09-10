@@ -7,7 +7,7 @@ write_strat = function(strat_dat, strat_name, base_dir=out_dir, append=F, col.na
   if(! ('strike_price' %in% names(strat_dat))){
     strat_dat[,strike_price:=close]  
   }
-  write_cols=c(symbol,action,order_type,strike_price,time_in_force)
+  write_cols=c('symbol','action','order_type','strike_price','time_in_force')
   if(price_condition_min){
       write_cols=c(write_cols,'price_condition_min')
     }
