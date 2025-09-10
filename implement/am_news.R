@@ -34,7 +34,7 @@ if(!is.null(just_news)){
                    order_type='MKT',
                    time_in_force='OPG') %>%
     data.table %>%
-    write_strat(strat_name='div_news')
+    write_strat(strat_name='div_news', price_condition_min=1.0175)
   
   news_moves[symbol %in% trending$symbol &
                publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
@@ -48,7 +48,7 @@ if(!is.null(just_news)){
                    order_type='MKT',
                    time_in_force='OPG') %>%
     data.table %>%
-    write_strat(strat_name='news_trend')
+    write_strat(strat_name='news_trend', price_condition_min=1.0175)
   
   news_moves[avg_delta_short<.99 & 
                grepl('(public offer|quarter)', title, ignore.case = T)  &  
