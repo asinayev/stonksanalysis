@@ -26,6 +26,7 @@ if(!is.null(just_news)){
                  avg_delta_short<1 & symbol %in% trending$symbol &
                 !is.na(single_ticker) &
                 avg_volume>100000 & volume>100000 & close>6  ] %>%
+    dplyr::mutate(price_condition_min = close*1.0175) %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(day_drop_norm/sd_from0) %>%
@@ -34,12 +35,13 @@ if(!is.null(just_news)){
                    order_type='Adaptive',
                    time_in_force='DAY') %>%
     data.table %>%
-    write_strat(strat_name='div_news', price_condition_min=1.0175)
+    write_strat(strat_name='div_news', price_condition_min=T)
   
   news_moves[symbol %in% trending$symbol &
                publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
                !is.na(single_ticker) &
                avg_volume>100000 & volume>100000 & close>6 ] %>%
+    dplyr::mutate(price_condition_min = close*1.0175) %>%
     dplyr::group_by(symbol) %>%
     dplyr::filter(dplyr::row_number()==1) %>%
     dplyr::arrange(close) %>%
@@ -48,7 +50,7 @@ if(!is.null(just_news)){
                    order_type='Adaptive',
                    time_in_force='DAY') %>%
     data.table %>%
-    write_strat(strat_name='news_trend', price_condition_min=1.0175)
+    write_strat(strat_name='news_trend', price_condition_min=T)
   
   news_moves[avg_delta_short<.99 & 
                grepl('(public offer|quarter)', title, ignore.case = T)  &  
