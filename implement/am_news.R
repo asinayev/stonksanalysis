@@ -31,8 +31,8 @@ if(!is.null(just_news)){
     dplyr::arrange(day_drop_norm/sd_from0) %>%
     head(1)  %>%
     dplyr::mutate( action='BUY', 
-                   order_type='MKT',
-                   time_in_force='OPG') %>%
+                   order_type='Adaptive',
+                   time_in_force='DAY') %>%
     data.table %>%
     write_strat(strat_name='div_news', price_condition_min=1.0175)
   
@@ -45,8 +45,8 @@ if(!is.null(just_news)){
     dplyr::arrange(close) %>%
     head(1)  %>%
     dplyr::mutate( action='BUY', 
-                   order_type='MKT',
-                   time_in_force='OPG') %>%
+                   order_type='Adaptive',
+                   time_in_force='DAY') %>%
     data.table %>%
     write_strat(strat_name='news_trend', price_condition_min=1.0175)
   
