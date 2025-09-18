@@ -1,5 +1,5 @@
 write_strat = function(strat_dat, strat_name, base_dir=out_dir, append=F, col.names=T,
-                      blacklist=c('GOOG','GOOGL','FUTY','FBND','BAR'), 
+                      blacklist=c('GOOG','GOOGL','FUTY','FBND','BAR','GGLS','GGLL','GOOW','GOOP','GOOY'), 
                       price_condition_min=FALSE, price_condition_max=FALSE){
   strat_dat[,symbol:=gsub("[^[:alnum:] ]", " ", symbol)]
   strat_dat = strat_dat[!symbol %in% blacklist]
