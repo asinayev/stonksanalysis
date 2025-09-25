@@ -339,6 +339,18 @@ bigcaps[((avg_delta>.995 & avg_delta_short<.975) |
 
 
 
+################
+# night_rebound
+################
+# executed directly, not via R
+
+prices[volume>500000 & close>7 & close/open<.825 & close<lag5close & 
+         lead1sell_rally/lead1open<1.5][
+           order(date,close/open, decreasing=F)] %>%
+  with(performance(lead1date,lead1open/close-1,0,
+                   symbol,lead1date,hold_max = 1,buy_per_day_max = F, hold_same_max = F))
+
+
 ###########
 # No working strategies here yet
 wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
@@ -373,6 +385,5 @@ all_splits= prices$symbol %>% unique %>%
 
 merge(prices,
       all_splits[,.(date=as.Date(execution_date),split_from,split_to,symbol=ticker)])
-
 
 
