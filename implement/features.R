@@ -29,19 +29,14 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               lagging_corr_long:=
                 runCor( close/open, close/lag1close, corr_window),
               symbol_session]
-    stock_dat[is_valid==T
-              ,RSI_short:=RSI(close,n=short_roll_window),symbol_session ]
     stock_dat[(symbol_session %in% stock_dat[!is.na(close),.N,symbol_session][N>26,symbol_session]) & !is.na(close),
            MACD:=EMA(close ,n = 12, align='right',fill=NA)/
              EMA(close ,n = 26, align='right',fill=NA),symbol_session ]
     stock_dat[(symbol_session %in% stock_dat[!is.na(MACD),.N,symbol_session][N>10,symbol_session]) & !is.na(MACD),
            MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol_session ]
     stock_dat[,day_drop_norm:=(high-close)/avg_range]
-    stock_dat[,day_rise_norm:=(close-low)/avg_range]
     stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
            max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol_session ]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
-          max_price:= zoo::rollapply(high,max,width=roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
           max_price_short:= zoo::rollapply(high,max,width=short_roll_window, align='right',fill=NA),symbol_session ]
     
@@ -49,6 +44,21 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               ,avg_vp:= frollmean(close*volume ,n = roll_window, align='right',fill=NA),symbol_session ]
     stock_dat[order(avg_vp,    decreasing=T),vp_order :=seq_len(.N),date]
     stock_dat[order(market_cap,decreasing=T),cap_order:=seq_len(.N),date]
+    
+    cube_root_workaround = function(x){
+      ifelse(x>=0, x^(1/3),-((-x)^(1/3)))
+    }
+    
+    stock_dat[is_valid==T
+           ,avg_root_delta:= cube_root_workaround(SMA((close/lag1close-1)^3, n = short_roll_window ))
+           ,symbol_session ]
+    stock_dat[is_valid==T
+           ,avg_root_delta_lag:= shift(avg_root_delta, short_roll_window)
+           ,symbol_session ]
+    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+short_roll_window*2), unique(symbol_session)],
+           root_delta_corr:=
+             runCor( close/lag5close, avg_root_delta_lag, corr_window),
+           symbol_session]
   }
   setorder(stock_dat, symbol, date)
 }

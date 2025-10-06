@@ -221,6 +221,50 @@ arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mu
                                   order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
+####################
+### corr_reverse
+####################
+#    yr_total_per_held  avg_trade drawdown total_per_drwdn drawdown_days days_traded max_held
+# 1:         0.1623529 0.01369863     -1.9        7.368421           510        1040        5
+#     year average drawdown total trades days_traded max_held avg_days_held stocks_traded
+#  1: 2005   0.043      0.0   0.2      5           6        5     10.600000             1
+#  2: 2006   0.009      0.0   0.1     16          17        2      1.000000             2
+#  3: 2007   0.025      0.0   0.4     16          17        2      0.625000             6
+#  4: 2008   0.013     -0.4   0.8     59          60        5      2.932203            24
+#  5: 2009   0.025     -0.1   0.7     29          30        5      2.758621             6
+#  6: 2010   0.002     -0.2   0.1     26          27        5      4.500000             9
+#  7: 2011   0.021     -0.3   0.8     38          39        5      3.078947            14
+#  8: 2012   0.011     -0.1   0.5     45          46        4      2.177778             7
+#  9: 2013   0.013     -0.1   0.5     36          37        4      2.166667            12
+# 10: 2014   0.017     -0.4   1.2     73          74        5      3.465753            21
+# 11: 2015   0.007     -0.5   0.6     96          97        5      3.197917            18
+# 12: 2016   0.028     -0.2   1.7     60          61        5      3.033333            11
+# 13: 2017   0.004     -0.9   0.2     56          57        5      3.857143            10
+# 14: 2018  -0.017     -1.2  -1.1     65          66        5      4.553846            20
+# 15: 2019   0.026     -1.2   2.4     95          96        5      2.094737            20
+# 16: 2020   0.021     -1.9   2.8    132         133        5      3.674242            32
+# 17: 2021   0.021     -0.2   1.8     85          86        5      3.694118            17
+# 18: 2022   0.003     -1.8   0.3     90          91        5      3.533333            33
+
+cube_root_workaround = function(x){
+  ifelse(x>=0, x^(1/3),-((-x)^(1/3)))
+}
+
+prices[is_valid==T
+       ,avg_root_delta:= cube_root_workaround(SMA((close/lag1close-1)^3, n = 5 )),symbol_session ]
+prices[is_valid==T
+       ,avg_root_delta_lag:= shift(avg_root_delta, 5),symbol_session ]
+prices[symbol_session %in% prices[,.N,symbol_session][N>(200), unique(symbol_session)],
+       root_delta_corr:=
+         runCor( close/lag5close, avg_root_delta_lag, 100),
+       symbol_session]
+
+corr_reverse = prices[volume>1000000 & close>7 & !short & #!lever &
+           (avg_root_delta< -.02) & root_delta_corr > .15][
+             order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
+
 
 # avg_year   avg_trade drawdown drawdown_days days_traded max_held
 # <num>       <num>    <num>         <int>       <int>    <num>

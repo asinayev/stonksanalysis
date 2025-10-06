@@ -108,5 +108,15 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
                  time_in_force='DAY') %>%
   write_strat(strat_name='tru_rally')
 
+prices[order(day_drop_norm/sd_from0, decreasing=F)][
+  date==max(date, na.rm=T) & 
+    volume>1000000 & close>7 & !short &
+    avg_root_delta< -.02 & root_delta_corr > .15]%>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='Adaptive',
+                 time_in_force='DAY') %>%
+  write_strat(strat_name='corr_reverse')
+
 prices[date==max(date, na.rm=T) ] %>%
   fwrite('/tmp/stonksanalysis/all_etfs.csv')
