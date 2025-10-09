@@ -29,7 +29,7 @@ For your response, also extract the following (except the quote, provide info if
 - Publication Date and Time
 - If available, a short quote from the search result that supports your 'yes'/'no' determination.
 
-1. Locate the title. If the title doesn't refer to the company at all, respond no (this is not a new program). If the full text is not available, use the title, not the snippet to determine if you should respond yes or no. 
+1. Locate the title. If the title doesn't refer to the company at all, respond no (this is not a new program). If the title says the company names a date to announce earnings or will attend some conference or something else totally unrelated, respond no. If the full text is not available, use the title, not the snippet to determine if you should respond yes or no. 
 2. Locate the publication time in the search result's snippet, body or metadata. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 00:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
 3. Read the rest of the announcement for the rest of the details. Note that businesswire articles include previous announcements at the bottom, which may show up in the snippet. If the full text is not available, use the title to determine your yes or no answer.
 
