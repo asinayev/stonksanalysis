@@ -123,3 +123,26 @@ performance_features=function(dataset){
   dataset[,lead1sell_lowclose:= shift(sell_lowclose,1,type='lead'),symbol]
   dataset[,lead1sell_lowclosedate:= shift(sell_lowclose_date,1,type='lead'),symbol]
 }
+
+other_rallies=function(dataset){
+  rally(dataset,sell_rule=function(dat){dat$close>dat$lag1close+dat$lag1high-dat$lag1low},varname='sell_rally2')
+  dataset[,lead1sell_rally2:= shift(sell_rally2,1,type='lead'),symbol_session]
+  dataset[,lead1sell_rally2date:= shift(sell_rally2_date,1,type='lead'),symbol_session]
+  
+  setorder(dataset, symbol, date)
+  dataset[,sell_rally_increment:=(dataset$close>=dataset$lag1high) | (dataset$lag1close<dataset$lag1open*.825)]
+  dataset[,sell_rally_increment:=shift(sell_rally_increment,n=1,type='lag'),symbol_session]
+  dataset[,sell_rally_increment:=ifelse(is.na(sell_rally_increment),0,sell_rally_increment)]
+  dataset[,sell_rally_increment:=cumsum(sell_rally_increment), symbol_session]
+  dataset[,sell_price:=ifelse(dataset$lag1close<dataset$lag1open*.825, open, ifelse(dataset$close>=dataset$lag1high, close, NA))]
+  varnames = paste0("sell_rally3",c('','_date','_day'))
+  dataset[,c(varnames):=list(sell_price[.N],date[.N],seq_len(.N)),
+            .(sell_rally_increment,symbol_session)]
+  dataset[,sell_rally_increment:=shift(sell_rally3,n=1,type='lead'), symbol_session]
+  dataset[,sell_rally3:=ifelse(dataset$lag1close<dataset$lag1open*.825, sell_rally_increment, sell_rally3)]
+  dataset[,sell_rally_increment:=NULL]
+  dataset[,sell_price:=NULL]
+  
+  dataset[,lead1sell_rally3:= shift(sell_rally3,1,type='lead'),symbol]
+  dataset[,lead1sell_rally3date:= shift(sell_rally3_date,1,type='lead'),symbol]
+}
