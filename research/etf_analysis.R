@@ -246,19 +246,6 @@ arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mu
 # 17: 2021   0.021     -0.2   1.8     85          86        5      3.694118            17
 # 18: 2022   0.003     -1.8   0.3     90          91        5      3.533333            33
 
-cube_root_workaround = function(x){
-  ifelse(x>=0, x^(1/3),-((-x)^(1/3)))
-}
-
-prices[is_valid==T
-       ,avg_root_delta:= cube_root_workaround(SMA((close/lag1close-1)^3, n = 5 )),symbol_session ]
-prices[is_valid==T
-       ,avg_root_delta_lag:= shift(avg_root_delta, 5),symbol_session ]
-prices[symbol_session %in% prices[,.N,symbol_session][N>(200), unique(symbol_session)],
-       root_delta_corr:=
-         runCor( close/lag5close, avg_root_delta_lag, 100),
-       symbol_session]
-
 corr_reverse = prices[volume>1000000 & close>7 & !short & #!lever &
            (avg_root_delta< -.02) & root_delta_corr > .15][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
