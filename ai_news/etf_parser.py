@@ -60,11 +60,11 @@ The JSON object must contain the following three keys:
     * "No" if they typically do not (e.g., physical commodities, cryptocurrencies).
 
 Example for SPY (SPDR S&P 500 ETF Trust):
-{
+{{
   "category": "traditional equities",
   "leverage": 1,
   "income_producing": "Yes"
-}
+}}
 """
 
 def read_input_csv(filename, ticker_column, name_column):
