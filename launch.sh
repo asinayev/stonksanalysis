@@ -19,8 +19,8 @@ fi
 if [ $run_what == "buybacks" ] ; then
 	python3 /home/repos/stonksanalysis/ai_news/buybacks.py /home/repos/stonksanalysis
 fi
-if [ $run_what == "buybacks2" ] ; then
-	python3 /home/repos/stonksanalysis/ai_news/read_search_directly.py /home/repos/stonksanalysis
+if [ $run_what == "etf_parser" ] ; then
+	python3 /home/repos/stonksanalysis/ai_news/etf_parser.py /home/repos/stonksanalysis
 fi
 if [ $run_what == "overnight_fx" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/am_fx.R /home/repos/stonksanalysis
