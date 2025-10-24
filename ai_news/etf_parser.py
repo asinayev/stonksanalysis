@@ -9,7 +9,7 @@ import google.generativeai as genai
 
 # PLEASE CONFIGURE THESE VALUES
 GOOGLE_API_KEY = os.environ["GOOGLEKEY"]  # Set your Google AI API key
-INPUT_CSV_FILE = '/tmp/etf_list_short.csv'           # The name of your input CSV file
+INPUT_CSV_FILE = '/tmp/etf_list.csv'           # The name of your input CSV file
 OUTPUT_CSV_FILE = '/tmp/etf_analysis.csv'  # The name of the file to save results
 TICKER_COLUMN_NAME = 'ticker'         # The exact column name in your CSV that contains the ETF ticker
 NAME_COLUMN_NAME = 'name'             # The exact column name in your CSV that contains the ETF name/description
