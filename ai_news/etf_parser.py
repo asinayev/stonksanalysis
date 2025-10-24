@@ -13,7 +13,7 @@ INPUT_CSV_FILE = '/tmp/etf_list_short.csv'           # The name of your input CS
 OUTPUT_CSV_FILE = '/tmp/etf_analysis.csv'  # The name of the file to save results
 TICKER_COLUMN_NAME = 'ticker'         # The exact column name in your CSV that contains the ETF ticker
 NAME_COLUMN_NAME = 'name'             # The exact column name in your CSV that contains the ETF name/description
-MODEL_NAME = 'gemini-pro'             # The model you want to use
+MODEL_NAME = 'gemini-2.5-flash'             # The model you want to use
 
 # Configure logging
 log_file_path = '/tmp/etf_analysis.log'
