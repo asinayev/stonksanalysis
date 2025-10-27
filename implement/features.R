@@ -2,7 +2,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
   setorder(stock_dat, symbol, date)
   
   stock_dat[,unbroken_session:=cumsum(10<date-shift(date,n=1,type='lag', fill=as.Date('1970-01-01'))),symbol]
-  stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol,unbroken_session)]
+  stock_dat[,days_around:=cumsum(!is.na(close)),.(symbol)]
   stock_dat[,symbol_session:=paste0(symbol,'_',unbroken_session)]
   
   stock_dat[,c("lag1close", "lag2close", "lag5close", "lead1close", "lead2close", "lead5close"):=shift(close, n = c(1,2,5,-1,-2,-5), type = "lag"),symbol_session]

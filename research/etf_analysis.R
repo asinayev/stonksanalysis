@@ -21,7 +21,7 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 prices=fread("~/datasets/etf_prices_15y.csv")
 
 prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
-prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
+prices[,lever:=grepl('2x|3x|leverag|betapro', name, ignore.case = T) | (grepl('ultra', name, ignore.case = T) & !grepl('income|muni|bond|govern|investment grade', name, ignore.case = T)) ]
 
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
@@ -71,7 +71,7 @@ tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
 
 
 setorder(prices, symbol, date)
-prices[volume>1000000 & close>7 &
+prices[volume>1000000 & close>7 & 
          lead1sell_rally/lead1open<2 & sd_from0>.015 &
          close<lag1high & sell_rally_day>10   ][
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
@@ -102,8 +102,8 @@ prices[volume>1000000 & close>7 &
 # 19: 2022   0.028     -1.2   2.8    100         101        5      3.840000            51
 
 prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & 
-         (((close-low)/avg_range)<.15 ) & 
-           (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99))| (close/max_price_short< ifelse(lever,8,.9)) )][
+         (((close-low)/avg_range)<.1 ) & 
+         sd_from0>.025][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
@@ -131,7 +131,7 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  &
 # 17: 2022   0.013     -1.9   1.7    131         132        5      4.251908            33
 
 corr_long = prices[volume>1000000 & close>7 & 
-                     (avg_delta_short<.975) & lagging_corr_long> .7][
+                     avg_delta_short<.975 & lagging_corr_long> .7][
                        order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
@@ -160,7 +160,7 @@ corr_long = prices[volume>1000000 & close>7 &
 # 18: 2022   0.000     -1.8  -0.1    124         125        5      4.274194            31
 
 drop_etfs = prices[volume>1000000 & close>7 & 
-                     avg_delta_short < ifelse(lever,.96,.98)  ][
+                     avg_delta_short < ifelse(lever,.96,.98)   ][
                        order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
@@ -188,7 +188,7 @@ drop_etfs = prices[volume>1000000 & close>7 &
 # 18: 2021   0.014     -1.0   2.9    211         211        5      4.511848            21
 # 19: 2022  -0.008     -2.3  -1.1    138         139        5      4.224638            16
 
-prices[volume>500000 & close>7 &  lead1sell_rally/lead1open<1.5 &
+prices[volume>500000 & close>7 &  lead1sell_rally/lead1open<1.5 & 
          ((lag1close-close) > avg_range*.25)  ][
            order(date,-sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
@@ -246,7 +246,7 @@ arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mu
 # 17: 2021   0.021     -0.2   1.8     85          86        5      3.694118            17
 # 18: 2022   0.003     -1.8   0.3     90          91        5      3.533333            33
 
-corr_reverse = prices[volume>1000000 & close>7 & !short & #!lever &
+corr_reverse = prices[volume>1000000 & close>7 & !short & 
            (avg_root_delta< -.02) & root_delta_corr > .15][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))

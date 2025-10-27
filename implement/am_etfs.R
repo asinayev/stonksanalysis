@@ -32,7 +32,7 @@ rally(prices)
 #prices=key_etfs(prices, low_corr_thresh=.33)
 
 prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
-prices[,lever:=grepl('2x|3x|leverag|ultra', name, ignore.case = T)]
+prices[,lever:=grepl('2x|3x|leverag|betapro', name, ignore.case = T) | (grepl('ultra', name, ignore.case = T) & !grepl('income|muni|bond|govern|investment grade', name, ignore.case = T)) ]
 
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 & 
@@ -45,8 +45,8 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & volume>1000000 & close>7 &  
-         (((close-low)/avg_range)<.15 ) & 
-    (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99))| (close/max_price_short< ifelse(lever,8,.9)) )]%>%
+    ((close-low)/avg_range)<.1  & 
+    sd_from0>.025 ]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
