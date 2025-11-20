@@ -25,6 +25,7 @@ prices = prices[, .SD[1], by=.(stock, Date)][
   merge(stocklist[,.(symbol=ticker, name)], all.x=T)
 
 prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
+prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F, passing_date='2024-05-29')
 
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
