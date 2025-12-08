@@ -40,8 +40,8 @@ The JSON object must contain the following keys:
 'debt' -- includes derivatives that track debt like leveraged treasuries
 'physical commodities' -- tracks commodities like gold or oil, including indirectly (like gold miners)
 'cryptocurrency' -- tracks cryptocurrencies including, including indirectly (like MARA Holdings or Strategy Inc)
-'risky strategies' -- financial derivatives intended only to hedge or for speculation (like volatility, buying puts, credit default swaps etc.)', 
-'safe strategies' -- financial derivatives intended to be safe or produce income (like collared trades, income)', 
+'risky strategies' -- financial derivatives intended only to hedge or for speculation (like volatility, buying puts, credit default swaps etc.) and excluding derivatives for tracking the other categories above like cryptocurrency and equity', 
+'safe strategies' -- financial derivatives intended to be safe or produce income (like collared trades, income) and excluding derivatives for tracking the other categories aboce like cryptocurrency and equity', 
 'other'
 
 **2. leverage:** Specify the leverage factor as a number.
