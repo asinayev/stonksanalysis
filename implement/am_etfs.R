@@ -6,7 +6,7 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
-allowed_etfs = fread("/tmp/stonksanalysis/etf_list.csv")[category %in% c('equity basket', 'physical commodities')]
+allowed_etfs = fread("other_datasources/etf_list.csv")[category %in% c('equity basket', 'physical commodities')]
 
 splits = 16
 

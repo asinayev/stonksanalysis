@@ -20,6 +20,8 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 prices=fread("~/datasets/etf_prices_15y.csv")
 
+etf_list=fread("other_datasources/etf_list.csv")
+
 prices=merge(prices, etf_list[,.(ticker, category, leverage)], by.x='symbol', by.y='ticker', all.x = T)
 
 prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
