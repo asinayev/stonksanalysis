@@ -6,12 +6,15 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
+allowed_etfs = fread("/tmp/stonksanalysis/etf_list.csv")[category %in% c('equity basket', 'physical commodities')]
+
 splits = 16
 
 stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                    cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
-                               cores=splits, ticker_type='ETV'))
+                               cores=splits, ticker_type='ETV')) %>%
+  subset(ticker %in% allowed_etfs$ticker)
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
