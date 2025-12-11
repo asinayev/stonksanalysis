@@ -106,8 +106,8 @@ prices[volume>1000000 & close>7 & category %in% c('equity basket', 'physical com
 # 19: 2022   0.028     -1.2   2.8    100         101        5      3.840000            51
 
 prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & category %in% c('equity basket', 'physical commodities') &
-         (((close-low)/avg_range)<.1 ) & 
-         sd_from0>.025][
+         (((close-low)/avg_range)<.15 ) & 
+         (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99))| (close/max_price_short< ifelse(lever,.8,.9)) )][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
