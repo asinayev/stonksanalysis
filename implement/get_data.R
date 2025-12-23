@@ -8,7 +8,7 @@ source("implement/imports.R", local=T)
 
 splits = 16
 
-stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-100, details=T, cores=splits)
+stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-30, details=T, cores=splits)
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
