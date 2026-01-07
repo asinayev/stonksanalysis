@@ -55,7 +55,7 @@ stock_deets = function( key, stockname, date){
     sprintf(stockname, date, key) %>%
     hit_polygon
   if(!'results' %in% names(x)){return(NULL)}
-  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik')]
+  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik','weighted_shares_outstanding','share_class_shares_outstanding')]
 }
 
 stock_deets_v = function(key, stocknames, cores, date){
@@ -91,7 +91,7 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
   if (ticker_type=='fx'){
     ticker_type_condition=paste('market',ticker_type,sep='=')
   } else {
-    ticker_type_condition=paste('type',ticker_type,sep='=')
+    ticker_type_condition=paste('market=stocks&type', ticker_type, sep='=')
   }
   while(length(go)>0 && go){
     link = "https://api.polygon.io/v3/reference/tickers?date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&%s" %>%
@@ -349,6 +349,5 @@ get_financials = function(stocks,id_type='cik', key=POLYKEY){
        shares=mean(shares)),
     names(stocks)]
 }
-
 
 
