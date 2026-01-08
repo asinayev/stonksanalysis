@@ -1,5 +1,10 @@
+make_request = function(base='https://api.polygon.io/', path, 
+                        query = list()){
+  httr::modify_url(base, path=path, query=query)
+}
+
 add_key = function(link,key){
-  paste0(link,"&apiKey=",key)
+  httr::modify_url(link, query=list("apiKey"=key))
 }
 
 hit_polygon = function(link, tries = 3,results_contain=F,key=POLYKEY){
@@ -36,12 +41,13 @@ select_field = function(response, field){
   return(response[['results']][[field]])
 }
 
-stock_deets = function( key, stockname, date){
-  x = "https://api.polygon.io/v3/reference/tickers/%s?date=%s" %>%
-    sprintf(stockname, date) %>%
+stock_deets = function( key, stockname, date, 
+                        fields_to_get = c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik','weighted_shares_outstanding','share_class_shares_outstanding')){
+  x = make_request(path=paste0("v3/reference/tickers/", stockname), 
+                   query = list('date'=date )) %>%
     hit_polygon(key=key)
   if(!'results' %in% names(x)){return(NULL)}
-  x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik','weighted_shares_outstanding','share_class_shares_outstanding')]
+  x$results[names(x$results)%in%fields_to_get]
 }
 
 stock_deets_v = function(key, stocknames, cores, date){
@@ -54,14 +60,14 @@ stock_deets_v = function(key, stocknames, cores, date){
 financials_from_polygon = function( key, identifier, identifier_type='cik', field=F){
   if(identifier_type=='symbol'){
     out=
-      "https://api.polygon.io/vX/reference/financials?ticker=%s&limit=100&sort=period_of_report_date&order=asc" %>%
-      sprintf(identifier) %>%
+      make_request(path="vX/reference/financials", 
+                   query = list('limit'=100, 'sort'='period_of_report_date', 'order'='asc', 'ticker'=identifier )) %>%
       hit_polygon(results_contain = field, key=key)
   }
   if(identifier_type=='cik'){
     out=
-      "https://api.polygon.io/vX/reference/financials?cik=%s&limit=100&sort=period_of_report_date&order=asc" %>%
-      sprintf(identifier) %>%
+      make_request(path="vX/reference/financials", 
+                   query = list('limit'=100, 'sort'='period_of_report_date', 'order'='asc', 'cik'=identifier ))
       hit_polygon(results_contain = field, key=key)
   }
   out[[identifier_type]]=identifier
@@ -69,9 +75,9 @@ financials_from_polygon = function( key, identifier, identifier_type='cik', fiel
 }
 
 stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16, ticker_type='CS', market='stocks'){
-  link = "https://api.polygon.io/v3/reference/tickers?date=%s&sort=ticker&order=asc&limit=1000&market=%s&type=%s" %>%
-    sprintf(date, market,ticker_type)
-    out = get_all_results(link, key = key)
+  out = make_request(path="v3/reference/tickers", 
+                      query = list('date'=date, 'sort'='ticker', 'order'='asc', 'limit'=1000, 'market'=market, 'type'=ticker_type )) %>%
+    get_all_results(link, key = key)
   if(details) {
     out$ticker %>%
       stock_deets_v(key=key, cores=cores, date=date) %>%
@@ -83,17 +89,9 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
 }
 
 
-ticker_info_from_polygon = function( key, stockname, date, field=F) {
-  "https://api.polygon.io/vX/reference/tickers/%s?date=%s" %>%
-    sprintf(stockname, date) %>%
-    hit_polygon(key=key) %>%
-    select_field(field=field)
-}
-
-
 stock_splits = function( key, stockname) {
-  "https://api.polygon.io/v3/reference/splits?ticker=%s&order=asc&limit=1000&sort=execution_date" %>%
-    sprintf(stockname) %>%
+  make_request(path="v3/reference/splits", 
+               query = list('ticker'=stockname, 'sort'='execution_date', 'order'='asc', 'limit'=1000 ))%>%
     get_all_results(key=key)
 }
 
@@ -101,12 +99,12 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
   if(check_ticker){
     start_cik = end_cik = 'none'
     while(start_cik == 'none'){
-      start_cik = ticker_info_from_polygon(key, stockname, start_date, field = 'cik')
+      start_cik = stock_deets(key, stockname, start_date, 'cik')$cik
       start_date = start_date+7
     }
     
     while((start_cik != end_cik) & (end_date>start_date+360)){
-      end_cik = ticker_info_from_polygon(key, stockname, end_date, field = 'cik')
+      end_cik = stock_deets(key, stockname, end_date, field = 'cik')$cik
       end_date = end_date-7
     }
   }
