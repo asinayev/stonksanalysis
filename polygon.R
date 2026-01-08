@@ -1,8 +1,12 @@
-hit_polygon = function(link, tries = 3,results_contain=F){
+add_key = function(link,key){
+  paste0(link,"&apiKey=",key)
+}
+
+hit_polygon = function(link, tries = 3,results_contain=F,key=POLYKEY){
   counter = response = tries
   while(is(response, 'numeric') && counter>0){
     counter = tryCatch({
-      response = link %>%jsonlite::fromJSON()
+      response = link %>% add_key(key=key) %>%jsonlite::fromJSON()
       stopifnot( response$status %in% c('OK', "DELAYED")  )
       if(results_contain!=F){
         stopifnot(results_contain %in% names(response$results))
@@ -16,34 +20,16 @@ hit_polygon = function(link, tries = 3,results_contain=F){
   return(counter)
 }
 
-get_all_results = function(link,results_contain=F){
-  response = hit_polygon(link,results_contain = F)
+get_all_results = function(link,results_contain=F, key=POLYKEY){
+  response = hit_polygon(link,results_contain = F, key=key)
   if(!'results' %in% names(response)){return(NULL)}
   results=response$results
   while('next_url' %in% names(response)){
-    response=hit_polygon(response$next_url,results_contain = F)
+    response=hit_polygon(response$next_url,results_contain = F, key=key)
     if(!'results' %in% names(response)){break}
     results=rbind(results,response$results)
   }
-  return(results)
-}
-
-get_table_results = function(link, handle, tries=3, results_contain=F){
-  counter = response = tries
-  while(!is.data.table(response) && counter>0){
-    counter = tryCatch({
-      response=link %>%curl::curl(handle = handle)%>%read.csv%>%data.table
-      stopifnot( is.data.table(response)  )
-      if(results_contain!=F){
-        stopifnot(results_contain %in% names(response))
-      }
-      return(response)
-    },
-    error = function(error){
-      return(counter-1) }
-    )
-  }
-  return(counter)
+  results %>% data.table %>% return()
 }
 
 select_field = function(response, field){
@@ -51,9 +37,9 @@ select_field = function(response, field){
 }
 
 stock_deets = function( key, stockname, date){
-  x = "https://api.polygon.io/v3/reference/tickers/%s?date=%s&apiKey=%s" %>%
-    sprintf(stockname, date, key) %>%
-    hit_polygon
+  x = "https://api.polygon.io/v3/reference/tickers/%s?date=%s" %>%
+    sprintf(stockname, date) %>%
+    hit_polygon(key=key)
   if(!'results' %in% names(x)){return(NULL)}
   x$results[names(x$results)%in%c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik','weighted_shares_outstanding','share_class_shares_outstanding')]
 }
@@ -68,42 +54,24 @@ stock_deets_v = function(key, stocknames, cores, date){
 financials_from_polygon = function( key, identifier, identifier_type='cik', field=F){
   if(identifier_type=='symbol'){
     out=
-      "https://api.polygon.io/vX/reference/financials?ticker=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-      sprintf(identifier, key) %>%
-      hit_polygon(results_contain = field)
+      "https://api.polygon.io/vX/reference/financials?ticker=%s&limit=100&sort=period_of_report_date&order=asc" %>%
+      sprintf(identifier) %>%
+      hit_polygon(results_contain = field, key=key)
   }
   if(identifier_type=='cik'){
     out=
-      "https://api.polygon.io/vX/reference/financials?cik=%s&limit=100&sort=period_of_report_date&order=asc&apiKey=%s" %>%
-      sprintf(identifier, key) %>%
-      hit_polygon(results_contain = field)
+      "https://api.polygon.io/vX/reference/financials?cik=%s&limit=100&sort=period_of_report_date&order=asc" %>%
+      sprintf(identifier) %>%
+      hit_polygon(results_contain = field, key=key)
   }
   out[[identifier_type]]=identifier
   return(out)
 }
 
 stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16, ticker_type='CS', market='stocks'){
-  resultlist=list()
-  go=T
-  last_examined=""
-  h=curl::new_handle()
-  curl::handle_setheaders(h, "Accept"= "text/csv")
-  while(length(go)>0 && go){
-    link = "https://api.polygon.io/v3/reference/tickers?date=%s&sort=ticker&order=asc&limit=1000&apiKey=%s&ticker.gt=%s&market=%s&type=%s" %>%
-      sprintf(date, key, sub(":",replacement = "%3A",x = last_examined),market,ticker_type)
-    response = get_table_results(link, handle=h)
-    if (is.data.table(response) && nrow(response)>0){
-      last_examined = response[.N,ticker]
-      resultlist[[last_examined]]= response
-      go=nrow(response)==1000
-    } else {
-      go=F
-    }
-  }
-  
-  out = resultlist %>%
-    rbindlist(use.names=TRUE, fill = T)
-  out = out[,.SD[.N],ticker]
+  link = "https://api.polygon.io/v3/reference/tickers?date=%s&sort=ticker&order=asc&limit=1000&market=%s&type=%s" %>%
+    sprintf(date, market,ticker_type)
+    out = get_all_results(link, key = key)
   if(details) {
     out$ticker %>%
       stock_deets_v(key=key, cores=cores, date=date) %>%
@@ -116,18 +84,17 @@ stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16,
 
 
 ticker_info_from_polygon = function( key, stockname, date, field=F) {
-  "https://api.polygon.io/vX/reference/tickers/%s?date=%s&apiKey=%s" %>%
-    sprintf(stockname, date, key) %>%
-    hit_polygon %>%
+  "https://api.polygon.io/vX/reference/tickers/%s?date=%s" %>%
+    sprintf(stockname, date) %>%
+    hit_polygon(key=key) %>%
     select_field(field=field)
 }
 
 
 stock_splits = function( key, stockname) {
-  out="https://api.polygon.io/v3/reference/splits?ticker=%s&order=asc&limit=1000&sort=execution_date&apiKey=%s" %>%
-    sprintf(stockname, key) %>%
-    hit_polygon
-  out$results
+  "https://api.polygon.io/v3/reference/splits?ticker=%s&order=asc&limit=1000&sort=execution_date" %>%
+    sprintf(stockname) %>%
+    get_all_results(key=key)
 }
 
 stock_history = function(stockname, start_date, end_date, key, print=F, check_ticker=T){
@@ -143,28 +110,28 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
       end_date = end_date-7
     }
   }
-  link = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&limit=50000&apiKey=%s" %>%
-    sprintf(stockname, start_date, end_date, key)
-  response = hit_polygon(link, tries = 3, results_contain = "c")
-  if (!is(response, 'numeric')){
+  response = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=true&sort=asc&limit=50000" %>%
+    sprintf(stockname, start_date, end_date) %>%
+    get_all_results(results_contain = "c", key = key)
+  if (!is.null(response)){
     return(
       data.table(stock = stockname,
-                 AdjClose = response$results$c,
-                 open = response$results$o,
-                 high = response$results$h,
-                 low = response$results$l,
-                 volume = response$results$v,
-                 Date= (response$results$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
+                 close = response$c,
+                 open = response$o,
+                 high = response$h,
+                 low = response$l,
+                 volume = response$v,
+                 date= (response$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
     )
   } else {
     return(
       data.table(stock = stockname,
-                 AdjClose = NA,
+                 close = NA,
                  open = NA,
                  high = NA,
                  low = NA,
                  volume = NA,
-                 Date= as.Date(start_date) )
+                 date= as.Date(start_date) )
     )
   }
 }
