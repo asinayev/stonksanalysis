@@ -42,7 +42,11 @@ select_field = function(response, field){
 }
 
 stock_deets = function( key, stockname, date, 
-                        fields_to_get = c('ticker','name','market_cap','list_date','locale','total_employees','sic_description','description','cik','weighted_shares_outstanding','share_class_shares_outstanding')){
+                        fields_to_get = c('ticker','name','market_cap','list_date',
+                                          'locale','total_employees','sic_description',
+                                          'description','cik','weighted_shares_outstanding',
+                                          'share_class_shares_outstanding','active',
+                                          'type', 'market')){
   x = make_request(path=paste0("v3/reference/tickers/", stockname), 
                    query = list('date'=date )) %>%
     hit_polygon(key=key)
@@ -205,8 +209,8 @@ get_hours_for_stocks = function(stocknames,
 }
 
 sampled_data=function(key, date, end_date = as.Date(date)+365,
-                      ticker_type=c('CS'),details=F){
-  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,details = details)
+                      ticker_type=c('CS'), market='stocks', details=F){
+  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,market = market, details = details)
   stocklist = parallel::mclapply(stocks$ticker, stock_history,
                                  start_date = as.Date(date),
                                  end_date = end_date,
