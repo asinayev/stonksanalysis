@@ -1,0 +1,13 @@
+get_data_for_years = function(key, yrs, ticker_type, market, details){
+  lapply(yrs, function(x){ 
+    sampled_data(
+      key=key, 
+      date=paste(x,"01","01", sep='-'), 
+      end_date = paste(x,"12","31", sep='-'),
+      ticker_type=ticker_type,
+      market=market,
+      details=details)}) %>%
+    rbindlist(use.names = T, fill=T)
+}
+get_data_for_years(POLYKEY, 2004:2005, ticker_type='', market='stocks', details=T)
+
