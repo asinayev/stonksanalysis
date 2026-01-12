@@ -12,7 +12,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
   stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol_session]
   
   if(rolling_features){
-    stock_dat[,is_valid:=symbol_session %in% stock_dat[,.N,symbol_session][N>roll_window,symbol_session]]
+    stock_dat[,is_valid:=symbol_session %in% stock_dat[,.N,symbol_session][N>roll_window+10,symbol_session]]
     stock_dat[is_valid==T
               ,avg_delta:= SMA(close/lag1close, n = roll_window ),symbol_session ]
     stock_dat[is_valid==T
