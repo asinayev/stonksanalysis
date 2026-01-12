@@ -10,7 +10,7 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2004:2020,
+prices=lapply(2004:2018,
               function(yr){
                 fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz")) %>%
                   subset(type %in% c('CS','PF',''))
