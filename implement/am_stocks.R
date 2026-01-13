@@ -54,7 +54,7 @@ prices[avg_delta_short<.975 &
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
-  write_strat(strat_name='megacap2')
+  write_strat(strat_name='megacaphist')
 
 
 prices[close>7 & volume>100000 & 
@@ -82,7 +82,7 @@ prices[close>7 & volume>100000 &
   dplyr::mutate( action='BUY', 
                  order_type='MKT',
                  time_in_force='OPG') %>%
-  write_strat(strat_name='volumelong2')
+  write_strat(strat_name='volumehist')
 
 
 prices[date==max(date, na.rm=T) ] %>%
