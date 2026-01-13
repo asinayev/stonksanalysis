@@ -12,7 +12,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
   stock_dat[,c("lag1volume"  ):=shift(volume,   n = 1, type = "lag"),symbol_session]
   
   if(rolling_features){
-    stock_dat[,is_valid:=symbol_session %in% stock_dat[,.N,symbol_session][N>roll_window+10,symbol_session]]
+    stock_dat[, is_valid := sum(!is.na(close/lag1close)) >= roll_window, by = symbol_session]
     stock_dat[is_valid==T
               ,avg_delta:= SMA(close/lag1close, n = roll_window ),symbol_session ]
     stock_dat[is_valid==T
@@ -25,7 +25,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
               ,sd_from0:= frollmean((1-close/lag1close)^2 ,n = roll_window, align='right',fill=NA)^.5,symbol_session ]
     stock_dat[is_valid==T
               ,avg_volume:= frollmean(volume ,n = roll_window, align='right',fill=NA),symbol ]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+short_roll_window), unique(symbol_session)],
+    stock_dat[symbol_session %in% stock_dat[!is.na(close/lag1close),.N,symbol_session][N>(corr_window+short_roll_window), unique(symbol_session)],
               lagging_corr_long:=
                 runCor( close/open, close/lag1close, corr_window),
               symbol_session]
@@ -35,9 +35,9 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[(symbol_session %in% stock_dat[!is.na(MACD),.N,symbol_session][N>10,symbol_session]) & !is.na(MACD),
            MACD_slow:=EMA(MACD ,n = 9, align='right',fill=NA),symbol_session ]
     stock_dat[,day_drop_norm:=(high-close)/avg_range]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
+    stock_dat[symbol_session %in% stock_dat[!is.na(high-volume),.N,symbol_session][N>corr_window,symbol_session],
            max_volume:= zoo::rollapply(volume,max,width=corr_window, align='right',fill=NA),symbol_session ]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>corr_window,symbol_session],
+    stock_dat[symbol_session %in% stock_dat[!is.na(high-volume),.N,symbol_session][N>corr_window,symbol_session],
           max_price_short:= zoo::rollapply(high,max,width=short_roll_window, align='right',fill=NA),symbol_session ]
     
     stock_dat[is_valid==T
@@ -55,7 +55,7 @@ lag_lead_roll = function(stock_dat, corr_window, roll_window, short_roll_window,
     stock_dat[is_valid==T
            ,avg_root_delta_lag:= shift(avg_root_delta, short_roll_window)
            ,symbol_session ]
-    stock_dat[symbol_session %in% stock_dat[,.N,symbol_session][N>(corr_window+short_roll_window*2), unique(symbol_session)],
+    stock_dat[symbol_session %in% stock_dat[!is.na(close/lag5close),.N,symbol_session][N>(corr_window+short_roll_window*2), unique(symbol_session)],
            root_delta_corr:=
              runCor( close/lag5close, avg_root_delta_lag, corr_window),
            symbol_session]

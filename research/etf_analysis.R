@@ -18,7 +18,14 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 # 
 # setorder(prices, symbol, date)
 
-prices=fread("~/datasets/etf_prices_15y.csv")
+prices=lapply(2018:2025,
+              function(yr){
+                fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz")) %>%
+                  subset(type %in% c('ETF','INDEX','ETV'))
+              })%>%
+  rbindlist(use.names=T, fill=T)
+setnames(prices, 'stock', 'symbol')
+prices = prices[ volume*open*close > 0]
 
 etf_list=fread("other_datasources/etf_list.csv")
 
