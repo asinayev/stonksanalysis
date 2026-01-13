@@ -10,14 +10,15 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2004:2018,
+prices=lapply(2012:2019,
               function(yr){
                 fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz")) %>%
                   subset(type %in% c('CS','PF',''))
               })%>%
   rbindlist(use.names=T, fill=T)
+setnames(prices, 'stock', 'symbol')
 
-prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
+prices = prices[ volume*open*close > 0]
 # prices=get_financials(prices,id_type='symbol')
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
@@ -110,47 +111,57 @@ prices[(symbol_session %in% prices[!is.na(close),.N,symbol_session][N>50,symbol_
 # 17: 2021   0.011     -0.9   0.7     67          68        4      5.731343            65
 # 18: 2022   0.015     -0.5   0.7     46          47        4      4.891304            45
 
-
-prices[lead1sell_rally/lead1open<1.5 & close>7 & volume>100000 & #exclude stuff that can't be traded
-         volume>=max_volume &
-         (close-low)/avg_range<.1 & 
+prices[lead1sell_rally/lead1open<1.5 & #close>7 & volume>100000 & #exclude stuff that can't be traded
+         close>7 & volume>100000 & 
+         volume>=max_volume & 
          avg_delta_short<.99 & 
-         vp_order>cap_order ][
+         vp_order>cap_order &
+         (close-low)/avg_range<.1 ][
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+
+# new version works without market cap 
+prices[lead1sell_rally/lead1open<1.5 & #close>7 & volume>100000 & #exclude stuff that can't be traded
+         volume>=max_volume & volume<lag1volume*1.5 &
+         close<lag1close*.975 &
+         vp_order<500 ][
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 
 
+
 #####
 # Regression strategy
-sq=function(x)x^2
-prices[,reg_predict := as.numeric(32)]
-prices[,reg_predict := NA]
-regression_features(prices)
-for (yr in 2008:2021 ){
-  IS = prices[year(date) %between% c(yr-3, yr-1) & volume>75000 & close>7 ]
-  lm1 = lm(future_day_delta ~
-             day_delta + night_delta + day_fall + day_rise 
-           ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
-  )
-  print(yr)
-  print(round(lm1$coefficients,3))
-  prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
-  gc()
-}
-
-
-IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30 & volume>75000 & close>7]
-lm1 = lm(future_day_delta ~
-           day_delta + night_delta + day_fall + day_rise
-         ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
-)
-prices[year(date)==2022,
-       reg_predict:=predict(lm1,data.frame(.SD))  ]
-
-prices[,reg_predict:=ifelse(is.na(reg_predict),1,reg_predict)]
-prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=1),.995), date]
+# sq=function(x)x^2
+# prices[,reg_predict := as.numeric(32)]
+# prices[,reg_predict := NA]
+# regression_features(prices)
+# for (yr in 2008:2021 ){
+#   IS = prices[year(date) %between% c(yr-3, yr-1) & volume>75000 & close>7 ]
+#   lm1 = lm(future_day_delta ~
+#              day_delta + night_delta + day_fall + day_rise 
+#            ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
+#   )
+#   print(yr)
+#   print(round(lm1$coefficients,3))
+#   prices[year(date)==yr, reg_predict:=predict(lm1,data.frame(.SD))  ]
+#   gc()
+# }
+# 
+# 
+# IS = prices[date>Sys.Date()-3*365 & date<Sys.Date()-30 & volume>75000 & close>7]
+# lm1 = lm(future_day_delta ~
+#            day_delta + night_delta + day_fall + day_rise
+#          ,IS, weights = (IS$date-min(IS$date))/as.integer(max(IS$date-min(IS$date)))
+# )
+# prices[year(date)==2022,
+#        reg_predict:=predict(lm1,data.frame(.SD))  ]
+# 
+# prices[,reg_predict:=ifelse(is.na(reg_predict),1,reg_predict)]
+# prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=1),.995), date]
 
 # year        V1   N
 # 1: 2015 1.0015948 320
@@ -161,13 +172,13 @@ prices[volume>75000 & close>7,threshold:=pmin(quantile(reg_predict,.001,type=1),
 # 6: 2020 0.9776544 733
 # 7: 2021 0.9858612 677
 # 8: 2022 0.9796050  85
-prices[reg_predict<threshold  & #!day_delta>1.2 &
-         volume>75000 & close>7]%>% 
-  with(performance(date,1-lead1close/lead1open,1,symbol))
-
-prices[!is.na(future_day_delta) & reg_predict<threshold  & volume>75000 & close>7][order(date, symbol)][
-  ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
-x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
+# prices[reg_predict<threshold  & #!day_delta>1.2 &
+#          volume>75000 & close>7]%>% 
+#   with(performance(date,1-lead1close/lead1open,1,symbol))
+# 
+# prices[!is.na(future_day_delta) & reg_predict<threshold  & volume>75000 & close>7][order(date, symbol)][
+#   ,.(date, MA = EMA(future_day_delta,na.rm=T,50))] %>% with(plot(date, MA, type='l', ylim=c(.8,1.2)))
+# x_ <- c(1, .99, 1.01,.95,1.05) %>% lapply( function(x)abline(h=x))
 
 
 
@@ -199,7 +210,7 @@ rally_avg(prices,100)
 
 
 
-prices[close>7 & cap_order<1500 &
+prices[close>7 & !is.na(market_cap) & #cap_order<1500 &
          avg_volume>1000000 &
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.98][
@@ -257,6 +268,13 @@ prices[avg_delta_short<avg_delta*.985 &
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
+# New version works without market cap
+prices[avg_delta_short<.975 &  
+         vp_order<25 & 
+         lead1sell_rally/lead1open<1.5][
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 #############
 # earners
@@ -294,7 +312,7 @@ prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
             (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
                 order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
 
-bigcaps = prices[volume>500000 & close>7 & cap_order<250]
+bigcaps = prices[volume>500000 & close>7 & vp_order<250]
 bigcaps[,bigcap_avg_delta:=mean(avg_delta,na.rm=T),date]
 bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
@@ -334,14 +352,11 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 # 19: 2022   0.000     -0.6   0.0     84          85        5      5.047619            31
 
 
-
-bigcaps[((avg_delta>.995 & avg_delta_short<.975) | 
-           (close>open*1.05 & avg_delta_short<1)) &
-          lead1sell_rally/lead1open<1.5][
-            order(date,-volume, decreasing=F)] %>%
+bigcaps[ lead1sell_rally/lead1open<1.5 &
+           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1))][
+             order(date,-volume, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
-
 
 
 ################
@@ -358,26 +373,6 @@ prices[volume>500000 & close>7 & close/open<.825 & close<lag5close &
 
 ###########
 # No working strategies here yet
-wins_by_hour = function(trade_data){ #Needs date, ticker, open and delta
-  pennyshort_hours = get_hours_for_stocks(trade_data$symbol,
-                                          start_date=min(trade_data$date),
-                                          end_date=Sys.Date(),
-                                          key=POLYKEY)
-  res = merge(trade_data, pennyshort_hours,
-              by.x=c('symbol','date'),by.y=c('stock','bar_date'))
-  print(res[ !is.na(AdjClose_9),.(mean(open/Open_9,na.rm=T),
-                                  at10=mean(AdjClose_9/open,na.rm=T),
-                                  mean(AdjClose_10/open,na.rm=T),
-                                  mean(AdjClose_11/open,na.rm=T),
-                                  mean(AdjClose_12/open,na.rm=T),
-                                  mean(AdjClose_13/open,na.rm=T),
-                                  mean(AdjClose_14/open,na.rm=T),
-                                  at359 = mean(AdjClose_15/open,na.rm=T),
-                                  atclose = mean(Open_16/open,na.rm=T),
-                                  delta = mean(close/open,na.rm=T),.N)])
-  res
-}
-
 
 
 # stock splits

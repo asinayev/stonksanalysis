@@ -46,6 +46,17 @@ prices[avg_delta_short<avg_delta*.985 &
  write_strat(strat_name='megacap')
 
 
+prices[avg_delta_short<.975 &  
+         vp_order<25 & 
+         date==max(date, na.rm=T)][
+           order(day_drop_norm/sd_from0, decreasing=F)]  %>%
+  head(1) %>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='megacap2')
+
+
 prices[close>7 & volume>100000 & 
          volume>=max_volume & 
          avg_delta_short<.99 & 
@@ -58,6 +69,20 @@ prices[close>7 & volume>100000 &
                  order_type='MKT',
                  time_in_force='OPG') %>%
   write_strat(strat_name='volumelong')
+
+
+prices[close>7 & volume>100000 & 
+         volume>=max_volume & 
+         volume<lag1volume*1.5 &
+         close<lag1close*.975 &
+         vp_order<500  &
+         date==max(date, na.rm=T)][
+           order(day_drop_norm/sd_from0, decreasing=F)]%>%
+  head(1)%>%
+  dplyr::mutate( action='BUY', 
+                 order_type='MKT',
+                 time_in_force='OPG') %>%
+  write_strat(strat_name='volumelong2')
 
 
 prices[date==max(date, na.rm=T) ] %>%
