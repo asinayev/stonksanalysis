@@ -71,7 +71,7 @@ financials_from_polygon = function( key, identifier, identifier_type='cik', fiel
   if(identifier_type=='cik'){
     out=
       make_request(path="vX/reference/financials", 
-                   query = list('limit'=100, 'sort'='period_of_report_date', 'order'='asc', 'cik'=identifier ))
+                   query = list('limit'=100, 'sort'='period_of_report_date', 'order'='asc', 'cik'=identifier )) %>%
       hit_polygon(results_contain = field, key=key)
   }
   out[[identifier_type]]=identifier
