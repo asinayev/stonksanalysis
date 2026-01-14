@@ -56,7 +56,7 @@ For your response, also extract (or infer) the following:
 2. Locate the publication time in the search result's snippet, body or metadata. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 24:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
 3. Read the rest of the announcement for the rest of the details. Pay special attention to the link and title and pay secondary attention to the actual text. Note that businesswire articles include previous announcements at the end of the announcement, which may show up in the snippet. If the full text is not available, use the title to determine your yes or no answer.
 
-If any of these details cannot be determined, use "UNKNOWN".
+If any of these details cannot be determined, use "UNKNOWN". For time, if the date is available, but the time is not known, you can return something like "2025-01-05 HH:MM"
 
 Respond in JSON format as shown in this example:
 {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"2024-08-12 15:30","quote":"In June, the board announced plans for a new shareholder incentive..."}}
