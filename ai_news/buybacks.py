@@ -15,7 +15,7 @@ client = genai.Client(api_key=google_key)
 
 # 3. Define Model ID and Safety Settings
 # We use strings for the new SDK's safety enums for cleaner code
-model_id = 'gemini-2.5-flash-lite'
+model_id = 'gemini-2.0-flash'
 
 safety_settings = [
     types.SafetySetting(
@@ -53,8 +53,9 @@ For your response, also extract (or infer) the following:
 - A short quote from the search result that supports your 'yes'/'no' determination.
 
 1. Locate the title. If the title doesn't refer to the company at all, respond no (not a new program). If the title says the company announces a date to announce earnings or will attend some conference or something else totally unrelated, respond no (not a new program). If the full text is not available, use the title, not the snippet to determine if you should respond yes or no. 
-2. Locate the publication time in the search result's snippet, body or metadata. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or other. Reformat to YYYY-MM-DD HH:MM using military time (put 24:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
+2. Locate the publication time in the search result's snippet, body or metadata, also try searching inside the URL for the date. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or within the URL like /20200105... . Reformat to YYYY-MM-DD HH:MM using military time (put 24:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
 3. Read the rest of the announcement for the rest of the details. Pay special attention to the link and title and pay secondary attention to the actual text. Note that businesswire articles include previous announcements at the end of the announcement, which may show up in the snippet. If the full text is not available, use the title to determine your yes or no answer.
+4. If you did not find the ticker anywhere, but are sure that you know the ticker for this company, use what you know.
 
 If any of these details cannot be determined, use "UNKNOWN". For time, if the date is available, but the time is not known, you can return something like "2025-01-05 HH:MM"
 
