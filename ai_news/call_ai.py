@@ -68,11 +68,17 @@ def read_results(all_results, prompt_template, client, model_id, config):
 
 def create_prompt(prompt_template, result):
     """Create a prompt from the template and result data."""
+    
+    if 'link' in result:
+        full_article = fetch_article(result['link'])
+    else: full_article = None
+    
     search_data = (
         f"\n\nSearch Result Details:\n"
         f"Title: {result.get('title', 'Unknown')}\n"
         f"Snippet: {result.get('snippet', 'Unknown')}\n"
         f"Link: {result.get('link', 'Unknown')}\n"
+        f"Full Article: {full_article}\n"
     )
     return prompt_template + search_data
 
