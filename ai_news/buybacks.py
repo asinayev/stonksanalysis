@@ -57,7 +57,7 @@ For your response, also extract (or infer) the following:
 3. Read the rest of the announcement for the rest of the details. Pay special attention to the link and title and pay secondary attention to the actual text. Note that businesswire articles include previous announcements at the end of the announcement, which may show up in the snippet. If the full text is not available, use the title to determine your yes or no answer.
 4. If you did not find the ticker anywhere, but are sure that you know the ticker for this company, use what you know.
 
-If any of these details cannot be determined, use "UNKNOWN". For time, if the date is available, but the time is not known, you can return something like "2025-01-05 HH:MM"
+If any of these details cannot be determined, use "UNKNOWN". For time, 
 
 Respond in JSON format as shown in this example:
 {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"2024-08-12 15:30","quote":"In June, the board announced plans for a new shareholder incentive..."}}
