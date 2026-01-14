@@ -54,10 +54,10 @@ For your response, also extract (or infer) the following:
 
 1. Locate the title. If the title doesn't refer to the company at all, RESPOND NO (not a new program).  
 2. Locate the publication time in the search result's snippet, body or metadata, also try searching inside the URL for the date. It may appear in any format like 'days ago' or a datetime with timezone like '1999-07-01T23:21:10-5:00' or within the URL like /20200105... . Reformat to YYYY-MM-DD HH:MM using military time (put 24:00 if no time is provided). Do not convert timezones, so if it says +3:00, that refers to the timezone and you can ignore that.
-3. Read the rest of the announcement for the rest of the details. Pay special attention to the link and title and pay secondary attention to the actual text. Note that businesswire articles include previous announcements at the end of the announcement, which may show up in the snippet. If the full text is not available, use the title to determine your yes or no answer.
+3. Read the rest of the announcement for the rest of the details. Pay special attention to the link and title and pay secondary attention to the actual text. 
 4. If you did not find the ticker anywhere, but are sure that you know the ticker for this company, use what you know.
 
-If any of these details cannot be determined, use "UNKNOWN". For time, 
+If any of these details cannot be determined, use "UNKNOWN".
 
 Respond in JSON format as shown in this example:
 {{"newProgram":"No","companyName":"Microsoft Corporation","ticker":"MSFT","timePublished":"2024-08-12 15:30","quote":"In June, the board announced plans for a new shareholder incentive..."}}

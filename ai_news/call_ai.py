@@ -37,18 +37,10 @@ def fetch_article(url):
         # 4. Unescape HTML entities (e.g., "&amp;" -> "&", "&nbsp;" -> " ")
         text_only = html.unescape(text_only)
         
-        # 5. The "News Heuristic": Filter for content density
-        # - Split into lines
-        # - Strip whitespace
-        # - KEEP only lines that are long enough to be a sentence (e.g., > 50 chars)
-        #   or lines that end in punctuation (to catch short dialogue or headers)
-        lines = []
-        for line in text_only.splitlines():
-            clean_line = line.strip()
-            # Threshold: 50 chars is a good balance for financial news
-            if len(clean_line) > 50: 
-                lines.append(clean_line)
-        return '\n'.join(lines)
+        # 5. Remove last quarter of the text because this has links to other articles
+        cutoff_index = int(len(text_only) * 0.75)
+        text_only = text[:cutoff_index]
+        return text_only
     except Exception as e:
         logger.error(f"Error extracting content from {url}: {e}")
         return None
@@ -105,7 +97,6 @@ def create_prompt(prompt_template, result):
         search_data = (
             f"\n\nSearch Result Details:\n"
             f"Title: {result.get('title', 'Unknown')}\n"
-            f"Snippet: {result.get('snippet', 'Unknown')}\n"
             f"Link: {result.get('link', 'Unknown')}\n"
             f"Full Article: {full_article}\n"
         )
