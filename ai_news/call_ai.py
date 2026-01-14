@@ -3,7 +3,6 @@ import json
 import logging
 import datetime
 import requests
-import google.generativeai as genai
 
 # Configure logging
 log_file_path = '/tmp/read_search.log'
