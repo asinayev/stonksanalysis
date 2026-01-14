@@ -66,13 +66,6 @@ def read_results(all_results, prompt_template, client, model_id, config):
             valid_summaries.append(summary)
             
     return valid_summaries
-search_data = (
-        f"\n\nSearch Result Details:\n"
-        f"Title: {result.get('title', 'Unknown')}\n"
-        f"Snippet: {result.get('snippet', 'Unknown')}\n"
-        f"Link: {result.get('link', 'Unknown')}\n"
-    )
-    return template + search_data
 
 def create_prompt(prompt_template, result):
     """Create a prompt from the template and result data."""
