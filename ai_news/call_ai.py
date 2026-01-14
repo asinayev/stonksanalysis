@@ -1,5 +1,6 @@
 import re
 import json
+import html
 import logging
 import datetime
 import requests
@@ -10,21 +11,48 @@ logging.basicConfig(filename=log_file_path, level=logging.INFO, format='%(asctim
 logger = logging.getLogger(__name__)
 
 def fetch_article(url):
-    """Fetches content from a URL and extracts the main text."""
+    """
+    Fetches content and extracts main text using Standard Library tools only.
+    No BeautifulSoup or Trafilatura required.
+    """
     try:
-        # Add headers to mimic a browser, some sites block simple requests
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        response = requests.get(url, headers=headers, timeout=15) # Increased timeout
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-        return response.text
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching URL {url}: {e}")
-        return None
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+        raw_html = response.text
+        
+        # 1. Remove JavaScript and CSS
+        # This regex looks for <script>...</script> and <style>...</style> blocks
+        # flags=re.DOTALL allows the dot (.) to match newlines
+        clean_html = re.sub(r'<(script|style|head|title|noscript)[^>]*>.*?</\1>', ' ', raw_html, flags=re.DOTALL | re.IGNORECASE)
+        
+        # 2. Remove HTML Comments clean_html = re.sub(r'', ' ', clean_html, flags=re.DOTALL)
+        
+        # 3. Strip all remaining HTML tags
+        # Replaces <any_tag> with a newline to prevent words merging
+        text_only = re.sub(r'<[^>]+>', '\n', clean_html)
+        
+        # 4. Unescape HTML entities (e.g., "&amp;" -> "&", "&nbsp;" -> " ")
+        text_only = html.unescape(text_only)
+        
+        # 5. The "News Heuristic": Filter for content density
+        # - Split into lines
+        # - Strip whitespace
+        # - KEEP only lines that are long enough to be a sentence (e.g., > 50 chars)
+        #   or lines that end in punctuation (to catch short dialogue or headers)
+        lines = []
+        for line in text_only.splitlines():
+            clean_line = line.strip()
+            # Threshold: 50 chars is a good balance for financial news
+            if len(clean_line) > 50: 
+                lines.append(clean_line)
+        return '\n'.join(lines)
     except Exception as e:
-        logger.error(f"Error parsing URL {url}: {e}")
+        logger.error(f"Error extracting content from {url}: {e}")
         return None
+
 
 def read_results(all_results, prompt_template, client, model_id, config):
     """
@@ -73,13 +101,19 @@ def create_prompt(prompt_template, result):
         full_article = fetch_article(result['link'])
     else: full_article = None
     
-    search_data = (
-        f"\n\nSearch Result Details:\n"
-        f"Title: {result.get('title', 'Unknown')}\n"
-        f"Snippet: {result.get('snippet', 'Unknown')}\n"
-        f"Link: {result.get('link', 'Unknown')}\n"
-        f"Full Article: {full_article}\n"
-    )
+    if full_article:
+        search_data = (
+            f"\n\nSearch Result Details:\n"
+            f"Title: {result.get('title', 'Unknown')}\n"
+            f"Snippet: {result.get('snippet', 'Unknown')}\n"
+            f"Link: {result.get('link', 'Unknown')}\n"
+            f"Full Article: {full_article}\n"
+        )
+    else:
+        search_data = (
+            f"\n\nSearch Result Details:\n"
+            f"Title: {result.get('title', 'Unknown')}\n"
+            f"Link: {result.get('link', 'Unknown')}\n"
     return prompt_template + search_data
 
 
