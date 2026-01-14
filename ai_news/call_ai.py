@@ -114,6 +114,7 @@ def create_prompt(prompt_template, result):
             f"\n\nSearch Result Details:\n"
             f"Title: {result.get('title', 'Unknown')}\n"
             f"Link: {result.get('link', 'Unknown')}\n"
+        )
     return prompt_template + search_data
 
 
