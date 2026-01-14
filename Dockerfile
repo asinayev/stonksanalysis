@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install --upgrade \
     google-api-python-client\ 
-    google-generativeai\
+    google.genai\
     polygon-api-client\
     pandas\
     --break-system-packages
