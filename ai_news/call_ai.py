@@ -27,53 +27,81 @@ def fetch_article(url):
         logger.error(f"Error parsing URL {url}: {e}")
         return None
 
-def read_results(all_results, prompt_template, model):
-    """Read and process AI-generated content for all results."""
+def read_results(all_results, prompt_template, client, model_id, config):
+    """
+    Read and process AI-generated content for all results.
+    
+    Args:
+        all_results (list): List of search result dictionaries.
+        prompt_template (str): The prompt string with placeholders.
+        client (genai.Client): The initialized Google GenAI Client.
+        model_id (str): The model ID string (e.g., 'gemini-2.0-flash').
+        config (types.GenerateContentConfig): Configuration object with safety settings.
+    """
     valid_summaries = []
     
     for result in all_results:
         result['message'] = ''
+        
+        # Ensure your create_prompt function exists in this module or is imported
         prompt = create_prompt(prompt_template, result)
+        
         try:
-            response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=5))
+            # NEW SDK CALL
+            response = client.models.generate_content(
+                model=model_id,
+                contents=prompt,
+                config=config
+            )
         except Exception as e:
+            # The new SDK raises google.genai.errors.ClientError or similar
             logger.error(f"model did not respond: {e}")
             continue
+            
+        # Ensure your parse_response function handles the new response object
+        # (response.text is still the standard way to access content)
         summary = parse_response(response, result)
+        
         if summary:
             valid_summaries.append(summary)
+            
     return valid_summaries
+search_data = (
+        f"\n\nSearch Result Details:\n"
+        f"Title: {result.get('title', 'Unknown')}\n"
+        f"Snippet: {result.get('snippet', 'Unknown')}\n"
+        f"Link: {result.get('link', 'Unknown')}\n"
+    )
+    return template + search_data
 
 def create_prompt(prompt_template, result):
     """Create a prompt from the template and result data."""
-    prompt = prompt_template
-    if 'title' in result:
-        prompt += f"\n Title: {result['title']}"
-    if 'snippet' in result:
-        prompt += f"\n Snippet from article: {result['snippet']}"
-    if 'link' in result:
-        full_article = fetch_article(result['link'])
-        if full_article:
-            full_article=re.sub('<[^<]+?>', '', full_article)
-            prompt += f"\n Full article HTML: {full_article}" 
-        else:
-            prompt += f"\n Full article metadata: {result}"
-            result['message'] += f'No full text'
-    return prompt
+    search_data = (
+        f"\n\nSearch Result Details:\n"
+        f"Title: {result.get('title', 'Unknown')}\n"
+        f"Snippet: {result.get('snippet', 'Unknown')}\n"
+        f"Link: {result.get('link', 'Unknown')}\n"
+    )
+    return prompt_template + search_data
+
 
 def parse_response(response, result):
     """Parse the response from the model and extract relevant data."""
     try:
-        json_text = response.text[response.text.find("{"):response.text.find("}")+1]
-        response_dict = json.loads(json_text)
-        response_dict['link'] = result['link']
-        response_dict['title'] = result['title']
-        response_dict['message'] = result['message']
-        return response_dict
-    except (json.JSONDecodeError, AttributeError, TypeError) as e: # More specific exceptions
-        title = result.get('title', 'No Title')
-        logger.error(f"Issue parsing result for title: {title}. Error: {e}")
-        logger.debug(f"Response text: {response.text if hasattr(response, 'text') else 'No response text'}") # Log the full response text at debug level
+        raw_text = response.text
+        if not raw_text:
+            return None
+
+        clean_text = re.sub(r"```json\s*|\s*```", "", raw_text).strip()
+        ai_data = json.loads(clean_text)
+        result.update(ai_data)
+        return result
+        
+    except json.JSONDecodeError:
+        logger.error(f"Failed to parse JSON. Raw text: {raw_text[:100]}...")
+        return None
+    except Exception as e:
+        logger.error(f"Error processing response: {e}")
         return None
 
 def enrich_result(result, poly_client, parameters):
