@@ -147,7 +147,7 @@ def main():
     analysis_results = analyze_etfs(etf_list, TICKER_COLUMN_NAME, NAME_COLUMN_NAME, client)
     etf_list = read_input_csv(INPUT_CSV_FILE, TICKER_COLUMN_NAME, NAME_COLUMN_NAME)
     if etf_list:
-        results = analyze_etfs(etf_list, TICKER_COLUMN_NAME, NAME_COLUMN_NAME, model)
+        results = analyze_etfs(etf_list, TICKER_COLUMN_NAME, NAME_COLUMN_NAME, client)
         write_output_csv(OUTPUT_CSV_FILE, results)
 
 if __name__ == "__main__":
