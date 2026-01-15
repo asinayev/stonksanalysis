@@ -3,17 +3,17 @@ import os
 import json
 import logging
 import time
-import google.generativeai as genai
+from google import genai # UPDATED IMPORT
 
 # --- Configuration ---
 
 # PLEASE CONFIGURE THESE VALUES
-GOOGLE_API_KEY = os.environ["GOOGLEKEY"]  # Set your Google AI API key
-INPUT_CSV_FILE = '/tmp/etf_list.csv'           # The name of your input CSV file
+GOOGLE_API_KEY = os.environ.get("GOOGLEKEY")  # Set your Google AI API key
+INPUT_CSV_FILE = '/tmp/etf_list.csv'            # The name of your input CSV file
 OUTPUT_CSV_FILE = '/tmp/etf_analysis.csv'  # The name of the file to save results
 TICKER_COLUMN_NAME = 'ticker'         # The exact column name in your CSV that contains the ETF ticker
 NAME_COLUMN_NAME = 'name'             # The exact column name in your CSV that contains the ETF name/description
-MODEL_NAME = 'gemini-2.5-flash'             # The model you want to use
+MODEL_NAME = 'gemini-2.0-flash'             # UPDATED: Common available model for new SDK (Adjust if you specifically need 2.5)
 
 # Configure logging
 log_file_path = '/tmp/etf_analysis.log'
@@ -163,7 +163,7 @@ def parse_response(response, etf_data, ticker_column):
         etf_data['llm_message'] = f"Failed to parse LLM response: {e}"
         return etf_data
 
-def analyze_etfs(etf_list, ticker_column, name_column, model):
+def analyze_etfs(etf_list, ticker_column, name_column, client):
     """Read and process AI-generated content for all ETFs."""
     processed_etfs = []
     
@@ -180,7 +180,11 @@ def analyze_etfs(etf_list, ticker_column, name_column, model):
         try:
             # Add a small delay to avoid hitting rate limits
             time.sleep(1) 
-            response = model.generate_content(prompt, request_options=genai.types.RequestOptions(timeout=30))
+            # UPDATED: Use client.models.generate_content
+            response = client.models.generate_content(
+                model=MODEL_NAME, 
+                contents=prompt
+            )
             
             analysis_result = parse_response(response, etf_data, ticker_column)
             processed_etfs.append(analysis_result)
@@ -242,15 +246,15 @@ def main():
     logger.info("--- Starting new ETF analysis run ---")
     
     # Configure the Generative AI model
-    if GOOGLE_API_KEY == 'YOUR_API_KEY_HERE':
+    if not GOOGLE_API_KEY:
         logger.error("GOOGLE_API_KEY is not set.")
-        print("Error: Please set your GOOGLE_API_KEY at the top of the script.")
+        print("Error: Please set your GOOGLE_API_KEY as an environment variable or at the top of the script.")
         return
         
     try:
-        genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel(MODEL_NAME)
-        logger.info(f"Google AI Model '{MODEL_NAME}' configured.")
+        # UPDATED: Initialize Client
+        client = genai.Client(api_key=GOOGLE_API_KEY)
+        logger.info(f"Google AI Client initialized for model '{MODEL_NAME}'.")
     except Exception as e:
         logger.error(f"Failed to configure Google AI: {e}")
         print(f"Error: Failed to configure Google AI. Check your API key and permissions. {e}")
@@ -266,7 +270,8 @@ def main():
 
     # 2. Analyze ETFs
     print(f"Analyzing {len(etf_list)} ETFs using model '{MODEL_NAME}'. This may take a while...")
-    analysis_results = analyze_etfs(etf_list, TICKER_COLUMN_NAME, NAME_COLUMN_NAME, model)
+    # UPDATED: Pass client instead of model object
+    analysis_results = analyze_etfs(etf_list, TICKER_COLUMN_NAME, NAME_COLUMN_NAME, client)
 
     # 3. Write output CSV
     print(f"Writing results to {OUTPUT_CSV_FILE}...")
