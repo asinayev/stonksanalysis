@@ -5072,79 +5072,80 @@ UUP,,Invesco DB US Dollar Index Bullish Fund,other,1,Success
 WEAT,,Teucrium Wheat Fund,physical commodities,1,Success
 YCL,,ProShares Ultra Yen,other,2,Success
 YCS,,ProShares UltraShort Yen,risky strategies,-2,Success
-ZSL,,ProShares UltraShort Silver,physical commodities,-2,SuccessADRE,BLDRS EMERGING MKTS 50 ARR,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BGU,DIREXION DAILY LARGE CAP BULL 3X SHARES,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BGZ,DIREXION DAILY LARGE CAP BEAR,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCJ,Invesco BulletShares 2019 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCK,Invesco BulletShares 2020 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCL,Invesco BulletShares 2021 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCM,Invesco BulletShares 2022 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCN,Invesco BulletShares 2023 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSCO,Invesco BulletShares 2024 Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSJI,Guggenheim BulletShares 2018 High Yield Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSJK,Invesco BulletShares 2020 High Yield Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSJL,Invesco BulletShares 2021 High Yield Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSJM,Invesco BulletShares 2022 High Yield Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BSJN,Invesco BulletShares 2023 High Yield Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-BZF,WISDOMTREE  BRAZILIAN REAL FUND,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CETH,21Shares Core Ethereum ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CIU,iShares Intermediate Credit Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CLRG,IQ Chaikin U.S. Large Cap ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CLSA,Cabana Target Leading Sector Aggressive ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CLSC,Cabana Target Leading Sector Conservative ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CMD,PROSHARES ULTRASHORT  DJ-UBS COMMODITY,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CSJ,iShares 1-3 Year Credit Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-CYB,WISDOMTREE DREYFUS CHINESE YUAN FUND,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-DBKO,DEUTSCHE X-TRACKERS MSCI SOUTH KOREA HEDGED EQUITY ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-DSLV,VelocitySharesTM 3x Inverse Silver ETN linked to the S&P GSCI Silver Inverse Index ER,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-DXGE,WISDOMTREE GERMANY HEDGED EQUITY FUND,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-EDOC,Global X Telemedicine & Digital Health ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-EEB,BNY BRAZIL RUSSIA INDIA & CHINA PORT CLAYMORE EXCH TRD FD,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-ENTR,ERShares Entrepreneur 30 ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-ERUS,iShares MSCI Russia ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-EWMD,RYDEX ETF TR S&P MIDCAP 400 EQUAL WEIGHT,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-EXIV,VelocityShares 1x Daily Inverse VSTOXX Futures ETN,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-FBZ,First Trust Brazil AlphaDEX Fund,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-FIG,Simplify Macro Strategy ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-FIO,ISHARES FTSE NAREIT IND/OFFICE CAPPED INDEX FD,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-FM,iShares MSCI Frontier and Select EM ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-GASX,Direxion Daily Natural Gas Bear 3X Shares,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-GLDB,GOLD BANC CORP INC,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-GWL,SPDR S&P World ex-US ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-HEWG,iShares Currency Hedged MSCI Germany ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-HHH,INTERNET HLDRS TSTHLD DEP RCPT,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-HYLD,ADVISORSHARES TRUST PERITUS HIGH YIELD ETF (MD),Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IBDN,iShares iBonds Dec 2022 Term Corporate ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IBDO,iShares iBonds Dec 2023 Term Corporate ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IBDP,iShares iBonds Dec 2024 Term Corporate ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IBTD,iShares iBonds Dec 2023 Term Treasury ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IBTE,iShares iBonds Dec 2024 Term Treasury ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-IGW,ISHARES S&P GSTI SEMICONDUCTOR INDEX FUND,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-ITE,SPDR Bloomberg Barclays Intermediate Term Treasury ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-ITR,SPDR Bloomberg Barclays Intermediate Term Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-JAGG,JPMorgan U.S. Aggregate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-JAMF,WisdomTree Japan Multifactor Fund,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-META,Roundhill Ball Metaverse ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-MJUS,ETFMG U.S. Alternative Harvest ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-MJX,ETFMG Alternative Harvest ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-MOON,Direxion Moonshot Innovators ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-NKY,PRECIDIAN INVESTMENTS MAXIS NIKKEI 225 INDEX,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-RESP,WisdomTree U.S. ESG Fund,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-RKH,MARKET VECTORS ETF TR BROKERAGE ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-RSX,VanEck Russia ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-RUSL,Direxion Daily Russia Bull 2X Shares,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-RUSS,Direxion Daily Russia Bear 3x Shares,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-SCPB,SPDR Bloomberg Barclays Short Term Corporate Bond ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-SNLN,Highland/iBoxx Senior Loan ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-SSPX,SSP SOLUTIONS INC,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-SWH,SOFTWARE DEP (HOLDRS) TR 2040,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-TTH,TELECOM HLDRS TST DP REC 12/40,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-TVIX,VelocityShares Daily 2x VIX Short Term ETN,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-TYH,DIREXION DAILY TECHNOLOGY BULL 3X SHARES,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-TYP,DIREXION DAILY TECHNOLOGY BEAR 3X SHARES,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-ULTR,ULTRAPETROL (BAHAMAS) LTD COM STK,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-USLV,VelocitySharesTM 3x Long Silver ETN linked to the S&P GSCI Silver Index ER,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-UTH,UTILITIES HOLDRS TST,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-VMIN,REX VolMAXX Inverse VIX Weekly Futures Strategy ETF,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-VXXB,iPath Series B S&P 500 VIX Short-Term Futures ETN,Parsing Error: Expecting value: line 1 column 1 (char 0),,
-XIV,VelocityShares Daily Inverse VIX Short Term ETN,Parsing Error: Expecting value: line 1 column 1 (char 0),,
+ZSL,,ProShares UltraShort Silver,physical commodities,-2,Success
+ADRE,BLDRS EMERGING MKTS 50 ARR,Success
+BGU,DIREXION DAILY LARGE CAP BULL 3X SHARES,Success
+BGZ,DIREXION DAILY LARGE CAP BEAR,Success
+BSCJ,Invesco BulletShares 2019 Corporate Bond ETF,Success
+BSCK,Invesco BulletShares 2020 Corporate Bond ETF,Success
+BSCL,Invesco BulletShares 2021 Corporate Bond ETF,Success
+BSCM,Invesco BulletShares 2022 Corporate Bond ETF,Success
+BSCN,Invesco BulletShares 2023 Corporate Bond ETF,Success
+BSCO,Invesco BulletShares 2024 Corporate Bond ETF,Success
+BSJI,Guggenheim BulletShares 2018 High Yield Corporate Bond ETF,Success
+BSJK,Invesco BulletShares 2020 High Yield Corporate Bond ETF,Success
+BSJL,Invesco BulletShares 2021 High Yield Corporate Bond ETF,Success
+BSJM,Invesco BulletShares 2022 High Yield Corporate Bond ETF,Success
+BSJN,Invesco BulletShares 2023 High Yield Corporate Bond ETF,Success
+BZF,WISDOMTREE  BRAZILIAN REAL FUND,Success
+CETH,21Shares Core Ethereum ETF,Success
+CIU,iShares Intermediate Credit Bond ETF,Success
+CLRG,IQ Chaikin U.S. Large Cap ETF,Success
+CLSA,Cabana Target Leading Sector Aggressive ETF,Success
+CLSC,Cabana Target Leading Sector Conservative ETF,Success
+CMD,PROSHARES ULTRASHORT  DJ-UBS COMMODITY,Success
+CSJ,iShares 1-3 Year Credit Bond ETF,Success
+CYB,WISDOMTREE DREYFUS CHINESE YUAN FUND,Success
+DBKO,DEUTSCHE X-TRACKERS MSCI SOUTH KOREA HEDGED EQUITY ETF,Success
+DSLV,VelocitySharesTM 3x Inverse Silver ETN linked to the S&P GSCI Silver Inverse Index ER,Success
+DXGE,WISDOMTREE GERMANY HEDGED EQUITY FUND,Success
+EDOC,Global X Telemedicine & Digital Health ETF,Success
+EEB,BNY BRAZIL RUSSIA INDIA & CHINA PORT CLAYMORE EXCH TRD FD,Success
+ENTR,ERShares Entrepreneur 30 ETF,Success
+ERUS,iShares MSCI Russia ETF,Success
+EWMD,RYDEX ETF TR S&P MIDCAP 400 EQUAL WEIGHT,Success
+EXIV,VelocityShares 1x Daily Inverse VSTOXX Futures ETN,Success
+FBZ,First Trust Brazil AlphaDEX Fund,Success
+FIG,Simplify Macro Strategy ETF,Success
+FIO,ISHARES FTSE NAREIT IND/OFFICE CAPPED INDEX FD,Success
+FM,iShares MSCI Frontier and Select EM ETF,Success
+GASX,Direxion Daily Natural Gas Bear 3X Shares,Success
+GLDB,GOLD BANC CORP INC,Success
+GWL,SPDR S&P World ex-US ETF,Success
+HEWG,iShares Currency Hedged MSCI Germany ETF,Success
+HHH,INTERNET HLDRS TSTHLD DEP RCPT,Success
+HYLD,ADVISORSHARES TRUST PERITUS HIGH YIELD ETF (MD),Success
+IBDN,iShares iBonds Dec 2022 Term Corporate ETF,Success
+IBDO,iShares iBonds Dec 2023 Term Corporate ETF,Success
+IBDP,iShares iBonds Dec 2024 Term Corporate ETF,Success
+IBTD,iShares iBonds Dec 2023 Term Treasury ETF,Success
+IBTE,iShares iBonds Dec 2024 Term Treasury ETF,Success
+IGW,ISHARES S&P GSTI SEMICONDUCTOR INDEX FUND,Success
+ITE,SPDR Bloomberg Barclays Intermediate Term Treasury ETF,Success
+ITR,SPDR Bloomberg Barclays Intermediate Term Corporate Bond ETF,Success
+JAGG,JPMorgan U.S. Aggregate Bond ETF,Success
+JAMF,WisdomTree Japan Multifactor Fund,Success
+META,Roundhill Ball Metaverse ETF,Success
+MJUS,ETFMG U.S. Alternative Harvest ETF,Success
+MJX,ETFMG Alternative Harvest ETF,Success
+MOON,Direxion Moonshot Innovators ETF,Success
+NKY,PRECIDIAN INVESTMENTS MAXIS NIKKEI 225 INDEX,Success
+RESP,WisdomTree U.S. ESG Fund,Success
+RKH,MARKET VECTORS ETF TR BROKERAGE ETF,Success
+RSX,VanEck Russia ETF,Success
+RUSL,Direxion Daily Russia Bull 2X Shares,Success
+RUSS,Direxion Daily Russia Bear 3x Shares,Success
+SCPB,SPDR Bloomberg Barclays Short Term Corporate Bond ETF,Success
+SNLN,Highland/iBoxx Senior Loan ETF,Success
+SSPX,SSP SOLUTIONS INC,Success
+SWH,SOFTWARE DEP (HOLDRS) TR 2040,Success
+TTH,TELECOM HLDRS TST DP REC 12/40,Success
+TVIX,VelocityShares Daily 2x VIX Short Term ETN,Success
+TYH,DIREXION DAILY TECHNOLOGY BULL 3X SHARES,Success
+TYP,DIREXION DAILY TECHNOLOGY BEAR 3X SHARES,Success
+ULTR,ULTRAPETROL (BAHAMAS) LTD COM STK,Success
+USLV,VelocitySharesTM 3x Long Silver ETN linked to the S&P GSCI Silver Index ER,Success
+UTH,UTILITIES HOLDRS TST,Success
+VMIN,REX VolMAXX Inverse VIX Weekly Futures Strategy ETF,Success
+VXXB,iPath Series B S&P 500 VIX Short-Term Futures ETN,Success
+XIV,VelocityShares Daily Inverse VIX Short Term ETN,Success

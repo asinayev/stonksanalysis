@@ -55,19 +55,36 @@ def read_input_csv(filename, ticker_column, name_column):
 def parse_response(response, etf_data):
     """Parse the JSON response from the model."""
     try:
-        # The SDK now handles JSON formatting if configured in generation_config
-        response_dict = json.loads(response.text)
+        # Get the text content from the response
+        content = response.text
+        
+        # Strip Markdown code blocks if the model included them
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+        content = content.strip()
+
+        response_dict = json.loads(content)
         etf_data.update(response_dict)
         etf_data['llm_message'] = 'Success'
         return etf_data
     except Exception as e:
         etf_data['llm_message'] = f"Parsing Error: {str(e)}"
+        # Log the actual raw response to help debug
+        logger.error(f"Failed to parse content: {response.text}")
         return etf_data
 
 def analyze_etfs(etf_list, ticker_column, name_column, client):
     """Read and process AI-generated content for all ETFs."""
     processed_etfs = []
     
+    # Define the output schema for the model to follow strictly
+    # This feature is available in the 'google-genai' SDK
+    generation_config = {
+        "response_mime_type": "application/json",
+    }
+
     for i, etf_data in enumerate(etf_list):
         ticker = etf_data.get(ticker_column, "UNKNOWN")
         name = etf_data.get(name_column, "")
@@ -76,12 +93,12 @@ def analyze_etfs(etf_list, ticker_column, name_column, client):
         prompt = PROMPT_TEMPLATE.format(etf_ticker=ticker, etf_name=name)
 
         try:
-            # Add a small delay to avoid hitting rate limits
-            time.sleep(1) 
-            # UPDATED: Use client.models.generate_content
+            time.sleep(1) # Rate limit protection
+            
             response = client.models.generate_content(
                 model=MODEL_NAME, 
-                contents=prompt
+                contents=prompt,
+                config=generation_config # Force JSON output
             )
             
             result = parse_response(response, etf_data)
