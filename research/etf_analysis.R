@@ -20,9 +20,9 @@ POLYKEY = Sys.getenv('POLYGONKEY')
 
 prices=lapply(2004:2025,
               function(yr){
-                x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"))
+                x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
                 if(nrow(x)<1000){
-                  x=data.table(read.csv(paste0("/home/rstudio/datasets/stocks_by_yr/",2023,".csv.gz")))
+                  x=data.table(read.csv(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character")))
                   x[,date := as.IDate(date)]
                   x[,list_date := as.IDate(list_date)]
                 }

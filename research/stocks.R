@@ -10,16 +10,21 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2012:2019,
+prices=lapply(2004:2025,
               function(yr){
-                fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz")) %>%
-                  subset(type %in% c('CS','PF',''))
-              })%>%
-  rbindlist(use.names=T, fill=T)
+                x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
+                if(nrow(x)<1000){
+                  x=data.table(read.csv(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character")))
+                  x[,date := as.IDate(date)]
+                  x[,list_date := as.IDate(list_date)]
+                }
+                subset(x, type %in% c('CS','PF',''))
+              })
+prices = rbindlist(prices, use.names=T, fill=T)
 setnames(prices, 'stock', 'symbol')
 
 prices = prices[ volume*open*close > 0]
-# prices=get_financials(prices,id_type='symbol')
+# prices=get_financials(prices,id_type='cik')
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
