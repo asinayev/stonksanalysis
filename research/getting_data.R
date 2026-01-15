@@ -5,5 +5,4 @@ sampled_data_yr = function(yr, ...)(
     fwrite(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"))
 )
 
-lapply(2004:2025, sampled_data_yr, key=POLYKEY, ticker_type='', market='stocks', details=T) %>%
-  rbindlist
+lapply(2004:2025, sampled_data_yr, key=POLYKEY, ticker_type='', market='stocks', details=T)
