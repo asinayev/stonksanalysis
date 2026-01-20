@@ -10,7 +10,7 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2004:2025,
+prices=lapply(2016:2021, #16:22
               function(yr){
                 x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
                 if(nrow(x)<1000){
@@ -24,14 +24,20 @@ prices = rbindlist(prices, use.names=T, fill=T)
 setnames(prices, 'stock', 'symbol')
 
 prices = prices[ volume*open*close > 0]
-# prices=get_financials(prices,id_type='cik')
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 performance_features(prices)
 
+prices=prices[close*volume>500000]
+gc()
+x=get_financials(prices[symbol<'g'],id_type='cik')
+y=get_financials(prices[symbol>'g' & symbol<'o'],id_type='cik')
+z=get_financials(prices[symbol>'o'],id_type='cik')
+prices=rbind(x,y,z)
+
 prices[(symbol_session %in% prices[!is.na(close),.N,symbol_session][N>50,symbol_session]) & !is.na(close),
-          dema_delta:=DEMA(close/lag1close,   n = 25),symbol_session ]
+       dema_delta:=DEMA(close/lag1close,   n = 25),symbol_session ]
 
 #####bandlong
 # prices[!is.na(lag1close),
@@ -302,20 +308,19 @@ prices[avg_delta_short<.975 &
 # 13: 2021   0.014     -0.7   1.3     93          94        5             1             9
 # 14: 2022   0.026     -0.3   1.8     72          73        5             1            10
 
-prices[lead1sell_rally/lead1open<1.5 & close>7 & avg_volume>250000 & 
-    ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
-        (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-      (mid_eps/close) >.2 &  eps_unit=="USD / shares"  ][
-        order(date,close/mid_eps, decreasing=F)] %>%
+prices[lead1sell_rally/lead1open<1.5 & vp_order<1000 & (market_cap>10^9 | is.na(market_cap)) &
+         (  (low<running_low*1.001) | 
+              (avg_delta_short<avg_delta*.98)) & 
+         (mid_eps/close) >.15 &  eps_unit=="USD / shares"  ][
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
-                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
-
+                   symbol,lead1sell_rallydate,hold_max = 3,buy_per_day_max = 1, hold_same_max = F))
 
 
 prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
-             avg_delta<1 & avg_delta_short<.995 &
-            (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
-                order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
+         avg_delta<1 & avg_delta_short<.995 &
+         (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
+           order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
 
 bigcaps = prices[volume>500000 & close>7 & vp_order<250]
 bigcaps[,bigcap_avg_delta:=mean(avg_delta,na.rm=T),date]
@@ -323,7 +328,7 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
 #############
 # bigcap_short
-                                          
+
 # bigcaps[(avg_delta>1.0075 | avg_delta>bigcap_avg_delta*1.0075) & 
 #           (avg_delta_short>1.015 | avg_delta_short>bigcap_avg_delta_short*1.015) &
 #           lead1sell_lowclose/lead1open>.5][

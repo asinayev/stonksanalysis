@@ -14,10 +14,10 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 
 prices[date==max(date, na.rm=T) & 
-         close>7 & avg_volume>250000 & 
+         close>7 & avg_volume>250000 & market_cap>10^9 & 
          ( ((MACD_slow - MACD) > .1) | (low<running_low*1.001) | 
-             (avg_delta_short<avg_delta*.98) | (sell_rally_day>10)) & 
-         (mid_eps/close) >.2 &  eps_unit=="USD / shares"   ][
+             (avg_delta_short<avg_delta*.98) ) & 
+         (mid_eps/close) >.15 &  eps_unit=="USD / shares"   ][
            order(mid_eps/close, decreasing=T)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
