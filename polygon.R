@@ -99,7 +99,7 @@ stock_splits = function( key, stockname) {
     get_all_results(key=key)
 }
 
-stock_history = function(stockname, start_date, end_date, key, print=F, check_ticker=T){
+stock_history = function(stockname, start_date, end_date, key, check_ticker=T, get_unadjusted=F){
   if(check_ticker){
     start_cik = end_cik = 'none'
     while(start_cik == 'none'){
@@ -116,25 +116,43 @@ stock_history = function(stockname, start_date, end_date, key, print=F, check_ti
     sprintf(stockname, start_date, end_date) %>%
     get_all_results(results_contain = "c", key = key)
   if (!is.null(response)){
-    return(
+    if(get_unadjusted){
+      unadjusted = "https://api.polygon.io/v2/aggs/ticker/%s/range/1/day/%s/%s?adjusted=false&sort=asc&limit=50000" %>%
+        sprintf(stockname, start_date, end_date) %>%
+        get_all_results(results_contain = "c", key = key) %>%
+        subset(select=c('t','c'))
+      response = merge(response, unadjusted[,.(t, unadjClose=c)], by='t', all=T)
       data.table(stock = stockname,
                  close = response$c,
                  open = response$o,
                  high = response$h,
                  low = response$l,
                  volume = response$v,
-                 date= (response$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date() )
-    )
-  } else {
-    return(
+                 date= (response$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date(),
+                 unadjClose = response$unadjClose) %>%
+        return
+    } else {
       data.table(stock = stockname,
-                 close = NA,
-                 open = NA,
-                 high = NA,
-                 low = NA,
-                 volume = NA,
-                 date= as.Date(start_date) )
-    )
+                 close = response$c,
+                 open = response$o,
+                 high = response$h,
+                 low = response$l,
+                 volume = response$v,
+                 date= (response$t/1000) %>% as.POSIXct(origin="1970-01-01", tz = 'New York') %>% as.Date(),
+                 unadjClose = NA) %>%
+        return
+    }
+  } else {
+    data.table(stock = stockname,
+               close = NA,
+               open = NA,
+               high = NA,
+               low = NA,
+               volume = NA,
+               date= as.Date(start_date),
+               unadjClose = NA) %>%
+      return
+    
   }
 }
 
@@ -209,12 +227,16 @@ get_hours_for_stocks = function(stocknames,
 }
 
 sampled_data=function(key, date, end_date = as.Date(date)+365,
-                      ticker_type=c('CS'), market='stocks', details=F){
-  stocks = stocklist_from_polygon(key = key, date = date, ticker_type=ticker_type,market = market, details = details)
+                      ticker_type=c('CS'), market='stocks', details=F,
+                      get_unadjusted=F){
+  stocks = stocklist_from_polygon(key = key, date = date, 
+                                  ticker_type=ticker_type,market = market, 
+                                  details = details)
   stocklist = parallel::mclapply(stocks$ticker, stock_history,
                                  start_date = as.Date(date),
                                  end_date = end_date,
                                  key = key,
+                                 get_unadjusted = get_unadjusted,
                                  mc.cores = 16, check_ticker=F)
   if(details){
     stocklist[unlist(lapply(stocklist,is.data.frame))] %>%

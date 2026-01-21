@@ -80,7 +80,7 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 
 prices[order(sd_from0, decreasing=T)][
   date==max(date, na.rm=T) & 
-    volume>500000 & close>7 & 
+    volume>500000 & close>7 & symbol %in% allowed_etfs[category=='equity basket', unique(ticker)] &
     ((lag1close-close) > avg_range*.25)  ]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -116,7 +116,7 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
     volume>1000000 & close>7 & !short &
-    avg_root_delta< -.02 & root_delta_corr > .15]%>%
+    avg_root_delta< -.03 & root_delta_corr > .15]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',

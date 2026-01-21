@@ -91,11 +91,12 @@ tru_rally = prices[symbol%in%c('TNA','UPRO','YINN') &
 
 
 setorder(prices, symbol, date)
-prices[volume>1000000 & close>7 & category %in% c('equity basket', 'physical commodities') &
+prices[(volume*close/unadjClose) >1000000 & unadjClose>7 & category %in% c('equity basket') &
          lead1sell_rally/lead1open<2 & sd_from0>.015 &
          close<lag1high & sell_rally_day>10   ][
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,
+                   hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # revert ETFs
 #    yr_total_per_held  avg_trade drawdown total_per_drwdn drawdown_days days_traded max_held
@@ -124,11 +125,12 @@ prices[volume>1000000 & close>7 & category %in% c('equity basket', 'physical com
 # 21: 2024  -0.003     -1.2  -0.3     76          77        5      6.065789            27
 # 22: 2025   0.009     -0.6   0.7     77          78        4      4.519481            37
 
-prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & category %in% c('equity basket', 'physical commodities') &
+prices[(volume*close/unadjClose) >1000000 & unadjClose>7 & (lead1sell_rally/lead1open<2)  & category %in% c('equity basket','physical commodities') &
          (((close-low)/avg_range)<.15 ) & 
          (((high-close) > avg_range*2) | (avg_delta< ifelse(lever,.98,.99))| (close/max_price_short< ifelse(lever,.8,.9)) )][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,
+                   hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # Corr long etfs
 
@@ -157,10 +159,11 @@ prices[volume>1000000 & close>7 & (lead1sell_rally/lead1open<2)  & category %in%
 # 20: 2024   0.015     -0.8   2.0    130         131        5      4.261538            14
 # 21: 2025   0.011     -0.6   1.6    145         146        5      3.882759            20
 
-corr_long = prices[volume>1000000 & close>7 & category %in% c('equity basket', 'physical commodities') &
+corr_long = prices[(volume*close/unadjClose) >1000000 & unadjClose>7 & (lead1sell_rally/lead1open<2)  & category %in% c('equity basket','physical commodities') &
                      avg_delta_short<.975 & lagging_corr_long> .7][
                        order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,
+                   hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # Drop ETFs
 
@@ -191,10 +194,11 @@ corr_long = prices[volume>1000000 & close>7 & category %in% c('equity basket', '
 # 22: 2025   0.019     -0.7   1.6     84          85        5      3.380952            21
 
 #crypto might be ok
-drop_etfs = prices[volume>1000000 & close>7 & category %in% c('equity basket', 'physical commodities') &
+drop_etfs = prices[(volume*close/unadjClose) >1000000 & unadjClose>7 & (lead1sell_rally/lead1open<2) & category %in% c('equity basket', 'physical commodities') &
                      avg_delta_short < ifelse(lever,.96,.98)   ][
                        order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,
+                   hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # deviant_etfs
 #    yr_total_per_held avg_trade drawdown total_per_drwdn drawdown_days days_traded max_held
@@ -223,7 +227,7 @@ drop_etfs = prices[volume>1000000 & close>7 & category %in% c('equity basket', '
 # 21: 2024  -0.002     -0.5  -0.1     60          61        1      4.550000            10
 # 22: 2025   0.000     -1.0   0.0     59          60        1      4.745763            14
 
-prices[volume>500000 & close>7 &  lead1sell_rally/lead1open<1.5 & category %in% c('equity basket', 'physical commodities') &
+prices[(volume*close/unadjClose) >500000 & unadjClose>7 & lead1sell_rally/lead1open<1.5 & category %in% c('equity basket') &
          ((lag1close-close) > avg_range*.25)  ][
            order(date,-sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 1,buy_per_day_max = 1, hold_same_max = F))
@@ -284,10 +288,12 @@ arb_etfs = all_matching_pairs[abs(1-close/lag1close-(reference_delta-1)*round(mu
 # 20: 2024   0.011     -0.5   1.2    109         110        5      2.486239            26
 # 21: 2025   0.031     -0.4   2.0     64          65        4      2.296875            23
 
-corr_reverse = prices[volume>1000000 & close>7 & !short & category %in% c('equity basket', 'physical commodities') &
-           (avg_root_delta< -.02) & root_delta_corr > .15][
+corr_reverse = prices[(volume*close/unadjClose) >1000000 & unadjClose>7  & 
+                        !short & category %in% c('equity basket', 'physical commodities') &
+           (avg_root_delta< -.03) & root_delta_corr > .15][
              order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
-  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,symbol,lead1sell_rallydate,
+                   hold_max = 3,buy_per_day_max = 1, hold_same_max = F))
 
 
 
