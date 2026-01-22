@@ -10,7 +10,7 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2016:2021, #16:22
+prices=lapply(2018:2025, #16:22
               function(yr){
                 x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
                 if(nrow(x)<1000){
@@ -29,12 +29,18 @@ lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
 rally(prices)
 performance_features(prices)
 
-prices=prices[close*volume>500000]
-gc()
-x=get_financials(prices[symbol<'g'],id_type='cik')
-y=get_financials(prices[symbol>'g' & symbol<'o'],id_type='cik')
-z=get_financials(prices[symbol>'o'],id_type='cik')
-prices=rbind(x,y,z)
+prices[order(ifelse(is.na(market_cap),ifelse(is.na(weighted_shares_outstanding),share_class_shares_outstanding*unadjClose,weighted_shares_outstanding*close),market_cap),decreasing=T),
+       cap_order:=seq_len(.N),date]
+
+prices[order(market_cap,decreasing=T),
+       cap_order0:=seq_len(.N),date]
+
+#prices=prices[close*volume>500000]
+#gc()
+#x=get_financials(prices[symbol<'g'],id_type='cik')
+#y=get_financials(prices[symbol>'g' & symbol<'o'],id_type='cik')
+#z=get_financials(prices[symbol>'o'],id_type='cik')
+#prices=rbind(x,y,z)
 
 prices[(symbol_session %in% prices[!is.na(close),.N,symbol_session][N>50,symbol_session]) & !is.na(close),
        dema_delta:=DEMA(close/lag1close,   n = 25),symbol_session ]
@@ -122,8 +128,9 @@ prices[(symbol_session %in% prices[!is.na(close),.N,symbol_session][N>50,symbol_
 # 17: 2021   0.011     -0.9   0.7     67          68        4      5.731343            65
 # 18: 2022   0.015     -0.5   0.7     46          47        4      4.891304            45
 
-prices[lead1sell_rally/lead1open<1.5 & #close>7 & volume>100000 & #exclude stuff that can't be traded
-         close>7 & volume>100000 & 
+# works well until 2023, but not after
+prices[lead1sell_rally/lead1open<1.5 & 
+         (volume*close/unadjClose) >100000 & unadjClose>15 & 
          volume>=max_volume & 
          avg_delta_short<.99 & 
          vp_order>cap_order &
@@ -133,7 +140,7 @@ prices[lead1sell_rally/lead1open<1.5 & #close>7 & volume>100000 & #exclude stuff
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
 # new version works without market cap 
-prices[lead1sell_rally/lead1open<1.5 & #close>7 & volume>100000 & #exclude stuff that can't be traded
+prices[lead1sell_rally/lead1open<1.5 & (volume*close/unadjClose) >100000 & unadjClose>7 & 
          volume>=max_volume & volume<lag1volume*1.5 &
          close<lag1close*.975 &
          vp_order<500 ][
@@ -220,8 +227,8 @@ rally_avg(prices,100)
 # 18: 2022  -0.032     -2.4  -1.6     50          51        5      6.500000            19
 
 
-
-prices[close>7 & !is.na(market_cap) & #cap_order<1500 &
+# very noisy but seems to work until 2020
+prices[(volume*close/unadjClose) >100000 & unadjClose>7 & cap_order<1500 &
          avg_volume>1000000 &
          close<lag1high & sell_rally_day>4 & 
          avg_delta<.98][
@@ -272,6 +279,7 @@ prices[close>7 & !is.na(market_cap) & #cap_order<1500 &
 # 18: 2021   0.009     -0.2   0.6     63          64        5      3.269841            15
 # 19: 2022   0.000     -0.9   0.0     71          72        5      4.098592            13
 
+#works until 2025 with a dip in the end of 2008
 prices[avg_delta_short<avg_delta*.985 &  
          cap_order<50 & lagging_corr_long>.7 & 
          lead1sell_rally/lead1open<1.5][
@@ -322,7 +330,7 @@ prices[close>7 & avg_volume>250000 & #is.na(in_split_range) &
          (mean_eps/close) >.05 &  eps_unit=="USD / shares"  ][
            order(avg_delta, decreasing=F),head(.SD,1),date][,.(lead1open[1],lead300close[1]/lead1open[1],date[1]),.(year(date),symbol)][order(year)][,.(mean(V2,na.rm=T),.N)]
 
-bigcaps = prices[volume>500000 & close>7 & vp_order<250]
+bigcaps = prices[(volume*close/unadjClose) >500000 & unadjClose>7 & cap_order<250]
 bigcaps[,bigcap_avg_delta:=mean(avg_delta,na.rm=T),date]
 bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 
@@ -361,10 +369,10 @@ bigcaps[,bigcap_avg_delta_short:=mean(avg_delta_short,na.rm=T),date]
 # 18: 2021   0.007     -0.6   0.5     67          68        4      3.000000            36
 # 19: 2022   0.000     -0.6   0.0     84          85        5      5.047619            31
 
-
+#04 and 14 were really bad years
 bigcaps[ lead1sell_rally/lead1open<1.5 &
-           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1))][
-             order(date,-volume, decreasing=F)] %>%
+           ((avg_delta>1.0025 & avg_delta_short<.985) | (close>open*1.05 & avg_delta_short<1) )][
+             order(date,-volume*close/unadjClose, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 

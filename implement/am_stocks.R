@@ -15,7 +15,7 @@ rally(prices)
 bigcaps = prices[volume>500000 & close>7 & cap_order<250]
 
 bigcaps[ date==max(date, na.rm=T) & 
-           ((avg_delta>.995 & avg_delta_short<.975) | (close>open*1.05 & avg_delta_short<1))][
+           ((avg_delta>1.0025 & avg_delta_short<.985) | (close>open*1.05 & avg_delta_short<1))][
            order(volume, decreasing=F)]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -57,7 +57,7 @@ prices[avg_delta_short<.975 &
   write_strat(strat_name='megacaphist')
 
 
-prices[close>7 & volume>100000 & 
+prices[close>25 & volume>100000 & 
          volume>=max_volume & 
          avg_delta_short<.99 & 
          vp_order>cap_order &
