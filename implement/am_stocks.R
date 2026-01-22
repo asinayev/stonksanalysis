@@ -71,7 +71,7 @@ prices[close>25 & volume>100000 &
   write_strat(strat_name='volumelong')
 
 
-prices[close>7 & volume>100000 & 
+prices[close>25 & volume>100000 & 
          volume>=max_volume & 
          volume<lag1volume*1.5 &
          close<lag1close*.975 &
