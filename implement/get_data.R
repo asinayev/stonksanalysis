@@ -14,7 +14,7 @@ prices = stocklist$ticker %>%
   parallel::mclapply(
     stock_history,
     start_date = Sys.Date()-5*365, end_date = Sys.Date()+2, key = POLYKEY, 
-    print=F, check_ticker=F,mc.cores = splits) %>% 
+    check_ticker=F,mc.cores = splits) %>% 
   rbindlist(use.names=TRUE, fill=T)
 
 prices = prices[, .SD[1], by=.(stock, date)][
