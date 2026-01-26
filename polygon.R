@@ -81,7 +81,7 @@ financials_from_polygon = function( key, identifier, identifier_type='cik', fiel
 stocklist_from_polygon = function(key, date = '2018-01-01', details=F, cores=16, ticker_type='CS', market='stocks'){
   out = make_request(path="v3/reference/tickers", 
                       query = list('date'=date, 'sort'='ticker', 'order'='asc', 'limit'=1000, 'market'=market, 'type'=ticker_type )) %>%
-    get_all_results(link, key = key)
+    get_all_results(key = key)
   if(details) {
     out$ticker %>%
       stock_deets_v(key=key, cores=cores, date=date) %>%
