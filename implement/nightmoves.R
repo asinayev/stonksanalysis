@@ -11,6 +11,9 @@ current_moves = "https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tic
   sprintf(POLYKEY) %>%
   hit_polygon
 current_moves_dt = data.table(current_moves$tickers)
+names_to_keep = names(current_moves_dt)[(sapply(current_moves_dt, class)!='list')]
+current_moves_dt = current_moves_dt[,..names_to_keep]
+
 fwrite(current_moves_dt[ticker=='SPY'], '/tmp/spy_change.csv') #has todaysChangePerc
 
 current_moves_dt = current_moves_dt[,
