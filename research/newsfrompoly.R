@@ -5,7 +5,19 @@ require(ggplot2)
 setwd('~/stonksanalysis')
 source("implement/imports.R", local=T)
 source("research/performance.R", local=T)
-source("implement/get_data.R", local=T)
+
+prices=lapply(2022:2025, #16:22
+              function(yr){
+                x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
+                if(nrow(x)<1000){
+                  x=data.table(read.csv(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character")))
+                  x[,date := as.IDate(date)]
+                  x[,list_date := as.IDate(list_date)]
+                }
+                subset(x, type %in% c('CS','PF',''))
+              })
+prices = rbindlist(prices, use.names=T, fill=T)
+setnames(prices, 'stock', 'symbol')
 
 days_to_look_at = as.Date(as.Date("2022-04-20"):Sys.Date(),origin='1970-01-01')
 
@@ -21,7 +33,7 @@ just_news = parallel::mclapply(
   rbindlist(use.names=TRUE, fill=T)
 
 setorder(prices, symbol, date)
-prices = prices[!is.na(volume) & !is.na(close) & !is.na(open)]
+prices = prices[ volume*open*close > 0]
 
 setorder(prices, symbol, date)
 lag_lead_roll(prices, corr_window=100, roll_window=25, short_roll_window=5)
@@ -148,7 +160,7 @@ x=news_moves[!is.na(title) & lead1close>0 & !is.na(single_ticker) & close>6 & vo
 news_moves[grepl('(dividend|repurchase|buyback|outlook|guidance)', title, ignore.case = T) &
              avg_delta_short<1 & lead1open/close >1.0175 & 
              !is.na(single_ticker) &
-             avg_volume>100000 & volume>100000 & close>6    ][
+             (volume*close/unadjClose) >100000 & unadjClose>6 & unadjClose>6    ][
                order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
@@ -158,7 +170,7 @@ news_moves[lead1open/close >1.0175 &
              publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.') &
              #grepl('(report|result|quarter)', title, ignore.case = T)  & & 
              # market_cap <10*10^8 &
-             avg_volume>100000 & volume>100000 & close>6    ][
+             (volume*close/unadjClose) >100000 & unadjClose>6     ][
                order(date,close, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
@@ -169,7 +181,7 @@ news_moves[grepl('(public offer|quarter)', title, ignore.case = T)  &
              avg_delta_short<.99 & 
              #publisher.name %in% c('The Motley Fool','GlobeNewswire Inc.', "Benzinga", "MarketWatch", "Seeking Alpha") &
              !is.na(single_ticker) &
-             avg_volume>100000 & volume>100000 & close>6    ][
+             (volume*close/unadjClose) >100000 & unadjClose>6     ][
                order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))

@@ -26,7 +26,7 @@ hit_polygon = function(link, tries = 3,results_contain=F,key=POLYKEY){
 }
 
 get_all_results = function(link,results_contain=F, key=POLYKEY){
-  response = hit_polygon(link,results_contain = F, key=key)
+  response = hit_polygon(link,results_contain = results_contain, key=key)
   if(!'results' %in% names(response)){return(NULL)}
   results=response$results
   while('next_url' %in% names(response)){
@@ -269,11 +269,11 @@ get_prev_day_news = function(date, key, full_prevday=T, apply_=F){
   } else {
     close = lubridate::as_datetime(paste(date,"07:30:00",collapse = "T"),tz='America/New_York')
   }
-  today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&apiKey=%s&limit=1000" %>%
+  today_news = "https://api.polygon.io/v2/reference/news?published_utc.gt=%s&published_utc.lt=%s&limit=1000" %>%
     sprintf(open %>% lubridate::with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%SZ"),
-            close %>% lubridate::with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%SZ"), key) %>%
-    get_all_results(results_contain = 'published_utc')
-  if(!all(c('id', 'publisher', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
+            close %>% lubridate::with_tz('UTC') %>% format("%Y-%m-%dT%H:%M:%SZ")) %>%
+    get_all_results(results_contain = 'published_utc', key)
+  if(!all(c('id', 'publisher.name', "published_utc", 'title', 'author', 'tickers') %in% names(today_news)) ){
     return(NULL)
   }
   today_news$date=yesterday

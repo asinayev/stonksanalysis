@@ -10,7 +10,7 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2004:2011, #16:22
+prices=lapply(2022:2011, #16:22
               function(yr){
                 x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
                 if(nrow(x)<1000){
