@@ -6,7 +6,7 @@ if(length(args)==0){
 }
 source("implement/imports.R", local=T)
 
-allowed_etfs = fread("other_datasources/etf_list.csv")[category %in% c('equity basket', 'physical commodities')]
+etf_list = fread("other_datasources/etf_list.csv")
 
 splits = 16
 
@@ -14,7 +14,7 @@ stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1,
                                    cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                cores=splits, ticker_type='ETV')) %>%
-  subset(ticker %in% allowed_etfs$ticker)
+  merge(etf_list, by='ticker', all.x=T)
 
 prices = stocklist$ticker %>%
   parallel::mclapply(
@@ -25,7 +25,7 @@ prices = stocklist$ticker %>%
 
 prices = prices[, .SD[1], by=.(stock, date)][
   ,.(symbol=stock, date, open, high, low, volume, close, market_cap=NA)] %>%
-  merge(stocklist[,.(symbol=ticker, name)], all.x=T)
+  merge(stocklist[,.(symbol=ticker, name, category, leverage)], all.x=T)
 
 prices = only_passing(prices, min_volume=75000, min_close=7, last_n = F)
 
@@ -34,11 +34,8 @@ rally(prices)
 #rally_avg(prices,200)
 #prices=key_etfs(prices, low_corr_thresh=.33)
 
-prices[,short:=grepl('bear|inverse', name, ignore.case = T) | (grepl('short', name, ignore.case = T) & !grepl('term|duration|matur|long|income', name, ignore.case = T))]
-prices[,lever:=grepl('2x|3x|leverag|betapro', name, ignore.case = T) | (grepl('ultra', name, ignore.case = T) & !grepl('income|muni|bond|govern|investment grade', name, ignore.case = T)) ]
-
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
-  date==max(date, na.rm=T) & volume>1000000 & close>7 & 
+  date==max(date, na.rm=T) & volume>1000000 & close>7 & category %in% c('equity basket') &
          close<lag1high & sell_rally_day>10 & sd_from0>.015 ] %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
@@ -47,11 +44,10 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
   write_strat(strat_name='rally_etfs')
 
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
-  date==max(date, na.rm=T) & volume>1000000 & close>7 &  
-    (((close-low)/avg_range)<.15 ) & 
-    (((high-close) > avg_range*2) | 
-       (avg_delta< ifelse(lever,.98,.99))| 
-       (close/max_price_short< ifelse(lever,.8,.9)) ) ]%>%
+  date==max(date, na.rm=T) & volume>1000000 & close>7 & 
+    category %in% c('equity basket','physical commodities') &
+    ((high-close)/avg_range > 1)  & 
+    (avg_delta< (1-.005*abs(leverage)) ) ]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
@@ -60,7 +56,7 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
-    volume>1000000 & close>7 & 
+    volume>1000000 & close>7 & category %in% c('equity basket','physical commodities') &
     avg_delta_short<.975 & lagging_corr_long> .7] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -71,7 +67,8 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
     volume>1000000 & close>7 & 
-    (avg_delta_short < ifelse(lever,.96,.98) ) ]%>%
+    category %in% c('equity basket','physical commodities') &
+    (((close-low)/(high-low))<.15 ) & (MACD/MACD_slow)< .98 ]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
                  order_type='Adaptive',
@@ -80,7 +77,7 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 
 prices[order(sd_from0, decreasing=T)][
   date==max(date, na.rm=T) & 
-    volume>500000 & close>7 & symbol %in% allowed_etfs[category=='equity basket', unique(ticker)] &
+    volume>500000 & close>7 & category=='equity basket' &
     ((lag1close-close) > avg_range*.25)  ]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
@@ -89,7 +86,7 @@ prices[order(sd_from0, decreasing=T)][
   write_strat(strat_name='deviant_etfs')
 
 all_matching_pairs=matching_pairs_for_year(year(max(prices$date)), 
-                                           dataset=prices, 
+                                           dataset=prices[category %in% c('equity basket', 'physical commodities')], 
                                            reference_etfs=reference_etfs)
 all_matching_pairs[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) &
@@ -115,7 +112,8 @@ prices[order(day_drop_norm/sd_from0, decreasing=F)][
 
 prices[order(day_drop_norm/sd_from0, decreasing=F)][
   date==max(date, na.rm=T) & 
-    volume>1000000 & close>7 & !short &
+    category %in% c('equity basket', 'physical commodities') &
+    volume>1000000 & close>7 & leverage>0 &
     avg_root_delta< -.03 & root_delta_corr > .15]%>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
