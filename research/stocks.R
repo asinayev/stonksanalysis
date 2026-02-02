@@ -10,16 +10,19 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2022:2011, #16:22
+prices=lapply(2004:2015, #16:22
               function(yr){
-                x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
-                if(nrow(x)<1000){
+                # x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
+                # if(nrow(x)<1000){
                   x=data.table(read.csv(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character")))
                   x[,date := as.IDate(date)]
                   x[,list_date := as.IDate(list_date)]
-                }
+                # }
                 subset(x, type %in% c('CS','PF',''))
               })
+
+rbindlist(prices, use.names=T, fill=T)[,.N,year(date)] %>% plot
+
 prices = rbindlist(prices, use.names=T, fill=T)
 setnames(prices, 'stock', 'symbol')
 
@@ -143,7 +146,6 @@ prices[lead1sell_rally/lead1open<1.5 &
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
 
-
 # 1: 2004   0.004     -0.2   0.1     20          21        3      5.400000            20
 # 2: 2005   0.015     -0.4   0.6     40          41        3      4.175000            35
 # 3: 2006   0.001     -0.5   0.0     52          53        4      5.634615            47
@@ -174,7 +176,6 @@ prices[lead1sell_rally/lead1open<1.5 & (volume*close/unadjClose) >100000 & unadj
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
                    symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
-
 
 
 
@@ -257,13 +258,14 @@ rally_avg(prices,100)
 # 7: 2024   0.012     -3.0   0.9     76          77        5      4.250000            23
 # 8: 2025   0.011     -1.7   0.8     69          70        5      4.405797            22
 
+
 prices[(volume*close/unadjClose) >100000 & unadjClose>7 & cap_order<1500 &
          avg_volume>1000000 &
          close<lag1high & sell_rally_day>4 & 
-         avg_delta<.98][
+         avg_drop>.075][
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
-                   symbol,lead1sell_rallydate,hold_max = 5,buy_per_day_max = 1, hold_same_max = F))
+                   symbol,lead1sell_rallydate,hold_max = 1,buy_per_day_max = 1, hold_same_max = F))
 
 # prices[close>7 & avg_volume>500000 & 
 #          close>lag1high & sell_rally_day<2 & 

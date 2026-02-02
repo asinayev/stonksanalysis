@@ -14,7 +14,7 @@ stocklist = stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1,
                                    cores=splits, ticker_type='ETF') %>%
   rbind(stocklist_from_polygon(key = POLYKEY, date = Sys.Date()-1, 
                                cores=splits, ticker_type='ETV')) %>%
-  merge(etf_list, by='ticker', all.x=T)
+  merge(etf_list[,.(ticker,category,leverage)], by='ticker', all.x=T)
 
 prices = stocklist$ticker %>%
   parallel::mclapply(

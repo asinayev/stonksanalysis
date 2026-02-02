@@ -26,7 +26,7 @@ bigcaps[ date==max(date, na.rm=T) &
 prices[date==max(date, na.rm=T) & 
          close>7 & avg_volume>1000000 & cap_order<1500 &
          close<lag1high & sell_rally_day>4 & 
-         avg_delta<.975][
+         avg_drop>.075][
   order(day_drop_norm/sd_from0, decreasing=F)] %>%
   head(1) %>%
   dplyr::mutate( action='BUY', 
