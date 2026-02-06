@@ -204,3 +204,51 @@ matching_pairs_for_year = function(yr, dataset=prices, reference_etfs=reference_
           by=c('date','reference') )
   comparison_to_reference
 }
+
+add_short_interest = function(dataset, key){
+  shorts = make_request(path="stocks/v1/short-interest", 
+                        query = list( 'limit'=50000 )) %>%
+    get_all_results(key = key)
+  
+  subtract_weekdays <- function(dates, n) {
+    # Simple robust approach: generate a sequence or use a known adjustment
+    # For a vectorised solution without extra packages like 'bizdays':
+    
+    # Calculate raw calendar days to subtract (weeks * 7)
+    weeks <- n %/% 5
+    remainder <- n %% 5
+    
+    new_dates <- dates - (weeks * 7)
+    
+    # For the remainder, we subtract one day at a time skipping weekends
+    # (This loop is small (max 4) so it's efficient enough)
+    if (remainder > 0) {
+      for (i in 1:remainder) {
+        new_dates <- new_dates - 1
+        # If Sunday (0) or Saturday (6), roll back further
+        # POSIXlt wday: 0=Sun, 6=Sat
+        wd <- as.POSIXlt(new_dates)$wday
+        
+        # If Sun, subtract 2 to get Fri
+        # If Sat, subtract 1 to get Fri
+        # Vectorised adjustment
+        is_sun <- (wd == 0)
+        is_sat <- (wd == 6)
+        
+        new_dates[is_sun] <- new_dates[is_sun] - 2
+        new_dates[is_sat] <- new_dates[is_sat] - 1
+      }
+    }
+    return(new_dates)
+  }
+  
+  setorder(dataset, symbol, date)
+  dataset[, join_date := subtract_weekdays(date, 8)]
+  setkey(shorts, ticker, settlement_date)
+  dataset <- shorts[,.(symbol=ticker,settlement_date=as.Date(settlement_date), days_to_cover, short_interest)][
+    dataset, 
+    on = .(symbol, settlement_date = join_date), 
+    roll = TRUE]
+  setorder(dataset, symbol, date)
+  return(dataset)
+}

@@ -10,7 +10,7 @@ source("research/performance.R", local=T)
 POLYKEY = Sys.getenv('POLYGONKEY')
 
 # Get data from polygon instead
-prices=lapply(2004:2015, #16:22
+prices=lapply(2017:2025, #16:22
               function(yr){
                 # x=fread(paste0("/home/rstudio/datasets/stocks_by_yr/",yr,".csv.gz"), colClasses = c(cik = "character"))
                 # if(nrow(x)<1000){
@@ -25,6 +25,8 @@ rbindlist(prices, use.names=T, fill=T)[,.N,year(date)] %>% plot
 
 prices = rbindlist(prices, use.names=T, fill=T)
 setnames(prices, 'stock', 'symbol')
+
+#prices=add_short_interest(prices)
 
 prices = prices[ volume*open*close > 0]
 setorder(prices, symbol, date)
@@ -140,7 +142,7 @@ prices[lead1sell_rally/lead1open<1.5 &
          (volume*close/unadjClose) >100000 & unadjClose>25 & 
          volume>=max_volume & 
          avg_delta_short<.99 & 
-         vp_order>cap_order0 &
+         vp_order>cap_order &
          (close-low)/avg_range<.1 ][
            order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
   with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
@@ -447,6 +449,18 @@ prices[volume>500000 & close>7 & close/open<.825 & close<lag5close &
            order(date,close/open, decreasing=F)] %>%
   with(performance(lead1date,lead1open/close-1,0,
                    symbol,lead1date,hold_max = 1,buy_per_day_max = F, hold_same_max = F))
+
+################
+# short interest
+################
+
+prices[vp_order<500 & unadjClose>7 & 
+         avg_delta>1.01 & avg_delta_short>1.03 &
+         short_interest>100000 & days_to_cover==1][
+           order(date,day_drop_norm/sd_from0, decreasing=F)] %>%
+  with(performance(lead1date,lead1sell_rally/lead1open-1,lead1sell_rallydate-lead1date,
+                   symbol,lead1sell_rallydate,hold_max = 1,buy_per_day_max = 1, hold_same_max = F))
+
 
 
 ###########
