@@ -2,3 +2,5 @@ google-api-python-client
 google-generativeai
 polygon-api-client
 pandas
+requests
+beautifulsoup4
