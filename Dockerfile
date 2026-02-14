@@ -9,10 +9,6 @@ RUN install2.r --error \
     tidyquant \ 
     rpart.plot
     
-RUN git clone https://github.com/asinayev/stonksanalysis.git && \
-    cd stonksanalysis && \
-    git checkout 5acfa771ed8d2f1daa6a38546cd4b694a0867c14 
-
 RUN apt-get update && apt-get install -y \
     python3-pip
 
@@ -21,6 +17,11 @@ RUN pip3 install --upgrade \
     google.genai\
     polygon-api-client\
     pandas\
+    requests\
+    beautifulsoup4\
     --break-system-packages
+
+# Copy local files instead of cloning from git
+COPY . /home/repos/stonksanalysis
 
 CMD bash /home/repos/stonksanalysis/launch.sh
