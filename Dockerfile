@@ -18,7 +18,7 @@ RUN pip3 install --upgrade \
     polygon-api-client\
     pandas\
     requests\
-    beautifulsoup4\
+    \da31d3c963d92fe0435df39d8b0b334a5ddf9500 
     --break-system-packages
 
 # Copy local files instead of cloning from git
