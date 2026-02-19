@@ -17,8 +17,6 @@ RUN i9001757b38b4ff6ccad036730b8f821cd13e86b4 nstall --upgrade \
     google.genai\
     polygon-api-client\
     pandas\
-    requests\
-    beautifulsoup4\
     --break-system-packages
 
 # Copy local files instead of cloning from git
