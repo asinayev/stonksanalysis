@@ -20,9 +20,6 @@ fi
 if [ $run_what == "buybacks" ] ; then
 	python3 /home/repos/stonksanalysis/ai_news/buybacks.py /home/repos/stonksanalysis
 fi
-if [ $run_what == "steves_buybacks" ] || [ $run_what == "steves_news" ] ; then
-	python3 /home/repos/stonksanalysis/ai_news/steves_reads_news.py /home/repos/stonksanalysis
-fi
 if [ $run_what == "etf_parser" ] ; then
 	python3 /home/repos/stonksanalysis/ai_news/etf_parser.py /home/repos/stonksanalysis
 fi

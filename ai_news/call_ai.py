@@ -39,7 +39,7 @@ def fetch_article(url):
         
         # 5. Remove last quarter of the text because this has links to other articles
         cutoff_index = int(len(text_only) * 0.75)
-        text_only = text_only[:cutoff_index]
+        text_only = text[:cutoff_index]
         return text_only
     except Exception as e:
         logger.error(f"Error extracting content from {url}: {e}")
