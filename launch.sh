@@ -17,6 +17,9 @@ fi
 if [ $run_what == "snapshot" ] ; then
 	Rscript /home/repos/stonksanalysis/implement/get_snapshot.R /home/repos/stonksanalysis
 fi
+if [ $run_what == "steves_buybacks" ] ; then
+	python3 /home/repos/stonksanalysis/ai_news/steves_buybacks.py /home/repos/stonksanalysis
+fi
 if [ $run_what == "buybacks" ] ; then
 	python3 /home/repos/stonksanalysis/ai_news/buybacks.py /home/repos/stonksanalysis
 fi
