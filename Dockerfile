@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN i9001757b38b4ff6ccad036730b8f821cd13e86b4 nstall --upgrade \
     google-api-python-client\ 
-    google.genai\
+    .66e3b3cfaa1386668666d3b53f4afb43d7cabe0e genai\
     polygon-api-client\
     pandas\
     --break-system-packages
