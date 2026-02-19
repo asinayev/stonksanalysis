@@ -12,11 +12,13 @@ RUN install2.r --error \
 RUN apt-get update && apt-get install -y \
     python3-pip
 
-RUN pip install --upgrade \
+RUN pip3 install --upgrade \
     google-api-python-client\ 
-    .66e3b3cfaa1386668666d3b53f4afb43d7cabe0e genai\
+    google.genai\
     polygon-api-client\
-    \de105f0df9e4700e320cea52dbaa3c518008174e 
+    pandas\
+    requests\
+    beautifulsoup4\
     --break-system-packages
 
 # Copy local files instead of cloning from git
