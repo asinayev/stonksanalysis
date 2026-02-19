@@ -12,7 +12,7 @@ RUN install2.r --error \
 RUN apt-get update && apt-get install -y \
     python3-pip
 
-RUN pip3 install --upgrade \
+RUN i9001757b38b4ff6ccad036730b8f821cd13e86b4 nstall --upgrade \
     google-api-python-client\ 
     google.genai\
     polygon-api-client\
